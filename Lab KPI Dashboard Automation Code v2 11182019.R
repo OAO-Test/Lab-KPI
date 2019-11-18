@@ -121,5 +121,33 @@ if((Holiday_Det) & (Yesterday_Day =="Monday")){
 Cytology_Backlog <- read.xlsx(file.choose(), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
 Cytology_Backlog <- Cytology_Backlog[-nrow((Cytology_Backlog),)]
 
+#------------------------------Data Pre-Processing------------------------------#
+
+#-----------Pathology-----------#
+
+
+
+#-----------Cytology-----------#
+
+
+#------------------------------Turn Around Times Calculations------------------------------#
+
+#-----------Pathology-----------#
+#----Weekdays----#
+
+
+
+#----Not Weekdays----#
+
+
+#-----------Cytology-----------#
+#----Weekdays----#
+
+
+
+#----Not Weekdays----#
+
+
+#------------------------------Backlog Calculations------------------------------#
 
 
