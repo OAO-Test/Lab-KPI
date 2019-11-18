@@ -122,9 +122,4 @@ Cytology_Backlog <- read.xlsx(file.choose(), startRow = 2, header = TRUE, string
 Cytology_Backlog <- Cytology_Backlog[-nrow((Cytology_Backlog),)]
 
 
- 
-
-
-
-
 
