@@ -28,8 +28,14 @@ library(readxl)
 Yesterday_Day <- weekdays(as.Date(Sys.Date()-1))
 #Change the format for the date into timeDate format to be ready for the next function
 Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+
+#Excludes Good Friday from the NYSE Holidays
+NYSE_Holidays <- as.Date(holidayNYSE())
+GoodFriday <- as.Date(GoodFriday())
+MSHS_Holiday <- NYSE_Holidays[GoodFriday != NYSE_Holidays]
+
 #This function determines whether yesterday was a holiday/weekend or no
-Holiday_Det <- isHoliday(Yesterday, holidays = holidayNYSE())
+Holiday_Det <- isHoliday(Yesterday, holidays = MSHS_Holiday)
 
 #------------------------------Read Excel sheets------------------------------#
 
