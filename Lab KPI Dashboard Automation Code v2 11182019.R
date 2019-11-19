@@ -119,7 +119,7 @@ if((Holiday_Det) & (Yesterday_Day =="Monday")){
 #Also I made sure to remove the last line
 
 Cytology_Backlog <- read.xlsx(choose.files(caption = "Select Cytology Backlog Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
-Cytology_Backlog <- Cytology_Backlog[-nrow((Cytology_Backlog),)]
+Cytology_Backlog <- Cytology_Backlog[-nrow(Cytology_Backlog),]
 
 
 
