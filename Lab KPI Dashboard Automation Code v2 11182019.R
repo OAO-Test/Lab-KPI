@@ -93,27 +93,27 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Saturday Report"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
-  PP_Not_Weekday <- rbind(rbind(PP_Holiday_Monday_or_Friday ,PP_Sunday),PP_Saturday)
+  PP_Not_Weekday <- data.frame(rbind(rbind(PP_Holiday_Monday_or_Friday ,PP_Sunday),PP_Saturday),stringsAsFactors = FALSE)
   PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
-  PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),],stringsAsFactors = FALSE)
 } else if ((Holiday_Det) & (Yesterday_Day =="Sun")){
   PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Sunday Report"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
   PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Saturday Report"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
-  PP_Not_Weekday <- rbind(PP_Sunday,PP_Saturday)
+  PP_Not_Weekday <- data.frame(rbind(PP_Sunday,PP_Saturday),stringsAsFactors = FALSE)
   PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
-  PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 } else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sun"))){
   PP_Holiday_Weekday <- read_excel(choose.files(caption = "Select PowerPath Holiday Report"), skip = 1, 1)
   PP_Holiday_Weekday <- PP_Holiday_Weekday[-nrow(PP_Holiday_Weekday),]
-  PP_Not_Weekday <- PP_Holiday_Weekday
+  PP_Not_Weekday <- data.frame(PP_Holiday_Weekday, stringsAsFactors = FALSE)
   PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
-  PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 } else {
   PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
-  PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
+  PP_Weekday <- data.farme(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 }
 
 #-----------Cytology Backlog Excel Files-----------#
@@ -121,10 +121,32 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
 #Also I made sure to remove the last line
 
 Cytology_Backlog <- read_excel(choose.files(caption = "Select Cytology Backlog Report"), skip = 1, 1)
-Cytology_Backlog <- Cytology_Backlog[-nrow(Cytology_Backlog),]
+Cytology_Backlog <- data.frame(Cytology_Backlog[-nrow(Cytology_Backlog),], stringsAsFactors = FALSE)
 
 
 #------------------------------Data Pre-Processing------------------------------#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
