@@ -126,7 +126,22 @@ Cytology_Backlog <- data.frame(Cytology_Backlog[-nrow(Cytology_Backlog),], strin
 
 #------------------------------Data Pre-Processing------------------------------#
 
+#Cytology
+#Keep the cyto gyn and cyto non-gyn
 
+Cytology_Weekday <- PP_Weekday[which(PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN"),]
+Cytology_NoT_Weekday <- PP_Not_Weekday[which(PP_Not_Weekday$spec_group=="CYTO NONGYN" | PP_Not_Weekday$spec_group=="CYTO GYN"),]
+
+#Surgical Pathology
+#Keep the Breast and GI
+
+GI_Codes <- data.frame(read_excel(choose.files(caption = "Select Cytology Backlog Report"), 1), stringsAsFactors = FALSE)
+Only_GI <- PP_Weekday[which(PP_Weekday$spec_group=="GI"),]
+
+Trial1 <- merge(Only_GI, GI_Codes, all.X = TRUE)
+
+Surgical_Pathology_Weekday <- PP_Weekday[which(PP_Weekday$spec_group=="Breast" | PP_Weekday$spec_group=="GI"),]
+Surgical_Pathology_Not_Weekday <- PP_Not_Weekday[which(PP_Not_Weekday$spec_group=="Breast" | PP_Not_Weekday$spec_group=="GI"),]
 
 
 
