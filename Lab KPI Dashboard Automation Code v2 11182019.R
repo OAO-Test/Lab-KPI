@@ -136,12 +136,13 @@ Cytology_NoT_Weekday <- PP_Not_Weekday[which(PP_Not_Weekday$spec_group=="CYTO NO
 #Keep the Breast and GI
 
 GI_Codes <- data.frame(read_excel(choose.files(caption = "Select Cytology Backlog Report"), 1), stringsAsFactors = FALSE)
-Only_GI <- PP_Weekday[which(PP_Weekday$spec_group=="GI"),]
 
-Trial1 <- merge(Only_GI, GI_Codes, all.X = TRUE)
+#Merge the exclusion/inclusion cloumn into PP Dataset
+PP_Weekday_Excl <- merge(x = PP_Weekday, y= GI_Codes, all.x = TRUE)
+Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group=="GI") &(PP_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Weekday_Excl$spec_group=="Breast"),]
 
-Surgical_Pathology_Weekday <- PP_Weekday[which(PP_Weekday$spec_group=="Breast" | PP_Weekday$spec_group=="GI"),]
-Surgical_Pathology_Not_Weekday <- PP_Not_Weekday[which(PP_Not_Weekday$spec_group=="Breast" | PP_Not_Weekday$spec_group=="GI"),]
+PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday, y= GI_Codes, all.x = TRUE)
+Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
 
 
 
