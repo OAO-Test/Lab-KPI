@@ -13,11 +13,6 @@
 
 #Required packages: run these everytime you run the code
 library(timeDate)
-library(rJava)
-#### Set-Up #### 
-options(java.parameters = "-Xmx1000m")
-################
-library(xlsx)
 library(readxl)
 
 #-------------------------------holiday/weekend-------------------------------#
@@ -91,33 +86,33 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
 #For the powerpath files the read excel is starting from the second row
 #Also I made sure to remove the last line
 if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){
-  PP_Holiday_Monday_or_Friday <- read.xlsx(choose.files(caption = "Select PowerPath Holiday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select PowerPath Holiday Report"), skip = 1, 1)
   PP_Holiday_Monday_or_Friday  <- PP_Holiday_Monday[-nrow(PP_Holiday_Monday_or_Friday),]
-  PP_Sunday <- read.xlsx(choose.files(caption = "Select PowerPath Sunday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Sunday Report"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read.xlsx(choose.files(caption = "Select PowerPath Saturday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Saturday Report"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
   PP_Not_Weekday <- rbind(rbind(PP_Holiday_Monday_or_Friday ,PP_Sunday),PP_Saturday)
-  PP_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Weekday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
   PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
 } else if ((Holiday_Det) & (Yesterday_Day =="Sun")){
-  PP_Sunday <- read.xlsx(choose.files(caption = "Select PowerPath Sunday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Sunday Report"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read.xlsx(choose.files(caption = "Select PowerPath Saturday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Saturday Report"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
   PP_Not_Weekday <- rbind(PP_Sunday,PP_Saturday)
-  PP_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Weekday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
   PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
 } else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sun"))){
-  PP_Holiday_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Holiday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Holiday_Weekday <- read_excel(choose.files(caption = "Select PowerPath Holiday Report"), skip = 1, 1)
   PP_Holiday_Weekday <- PP_Holiday_Weekday[-nrow(PP_Holiday_Weekday),]
   PP_Not_Weekday <- PP_Holiday_Weekday
-  PP_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Weekday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
   PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
 } else {
-  PP_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Weekday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
   PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
 }
 
@@ -125,7 +120,7 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
 #For the backlog files the read excel is starting from the second row
 #Also I made sure to remove the last line
 
-Cytology_Backlog <- read.xlsx(choose.files(caption = "Select Cytology Backlog Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+Cytology_Backlog <- read_excel(choose.files(caption = "Select Cytology Backlog Report"), skip = 1, 1)
 Cytology_Backlog <- Cytology_Backlog[-nrow(Cytology_Backlog),]
 
 
