@@ -8,6 +8,7 @@
 #install.packages("timeDate")
 #install.packages("xlsx")
 #install.packages("readxl")
+#install.packages("dplyr")
 
 #-------------------------------Required packages-------------------------------#
 
@@ -19,15 +20,18 @@ options(java.parameters = "-Xmx1000m")
 ################
 library(xlsx)
 library(readxl)
+library(dplyr)
 
 #-------------------------------holiday/weekend-------------------------------#
 
 #Determine if yesterday was a holiday/weekend 
 
 #get yesterday's DOW
-Yesterday_Day <- weekdays(as.Date(Sys.Date()-1))
+# Yesterday_Day <- weekdays(as.Date(Sys.Date()-1))
+Yest <- as.Date("11/25/2019", format = "%m/%d/%Y")
+Yesterday_Day <- weekdays(Yest) #Rename as Yest_DOW
 #Change the format for the date into timeDate format to be ready for the next function
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(Yest)
 
 #Excludes Good Friday from the NYSE Holidays
 NYSE_Holidays <- as.Date(holidayNYSE())
@@ -129,6 +133,29 @@ Cytology_Backlog <- Cytology_Backlog[-nrow(Cytology_Backlog),]
 
 
 #------------------------------Data Pre-Processing------------------------------#
+# Import analysis reference data starting with test codes for SCC and Sunquest
+test_code <- read_excel("Analysis REference 2019-12-02.xlsx", sheet = "TestNames")
+scc_icu <- read_excel("Analysis Reference 2019-12-02.xlsx", sheet = "SCC_ICU")
 
+scc_wday <- SCC_Weekday
+sq_wday <- SQ_Weekday
 
+# Format data fields
+scc_wday[c("Ward", "WARD_NAME", 
+           "REQUESTING_DOC", 
+           "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", 
+           "COLLECT_CENTER_ID", "SITE", "CLINIC_TYPE")] <- lapply(scc_wday[c("Ward", "WARD_NAME", 
+                                                                             "REQUESTING_DOC", 
+                                                                             "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", 
+                                                                             "COLLECT_CENTER_ID", "SITE", "CLINIC_TYPE")], as.factor)
 
+scc_wday$ORDERING_DATE <- as.POSIXct(scc_wday$ORDERING_DATE, tz = "", format = "%Y-%m-%d %H:%M:%S.%f")
+
+scc_wday$Ward <- as.factor(scc_wday$Ward)
+scc_wday$WARD_NAME <- as.factor(scc_wday$WARD_NAME)
+
+scc_wday <- left_join(scc_wday, test_code[ , c("Test", "SCC_TestID")], by = c("TEST_ID" = "SCC_TestID"))
+scc_wday$TestIncl <- ifelse(is.na(scc_wday$Test), FALSE, TRUE)
+scc_wday <- scc_wday[scc_wday$TestIncl == TRUE, ]
+scc_wday$WardandName <- paste(scc_wday$Ward, scc_wday$WARD_NAME)
+scc_wday <- left_join(scc_wday, scc_icu[ , c("Concatenate", "ICU?")], by = c("WardandName" = "Concatenate"))
