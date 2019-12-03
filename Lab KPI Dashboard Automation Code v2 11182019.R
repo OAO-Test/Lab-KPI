@@ -137,7 +137,27 @@ PP_Not_Weekday_PS <- merge(x=PP_Not_Weekday, y=Patient_Setting, all.x = TRUE )
 #Keep the cyto gyn and cyto non-gyn
 
 Cytology_Weekday <- PP_Weekday_PS[which(PP_Weekday_PS$spec_group=="CYTO NONGYN" | PP_Weekday_PS$spec_group=="CYTO GYN"),]
-Cytology_NoT_Weekday <- PP_Not_Weekday_PS[which(PP_Not_Weekday_PS$spec_group=="CYTO NONGYN" | PP_Not_Weekday_PS$spec_group=="CYTO GYN"),]
+Cytology_Not_Weekday <- PP_Not_Weekday_PS[which(PP_Not_Weekday_PS$spec_group=="CYTO NONGYN" | PP_Not_Weekday_PS$spec_group=="CYTO GYN"),]
+
+#If there are any N/A in the dates, remove that sample
+Cytology_Weekday <- Cytology_Weekday[!(is.na(Cytology_Weekday$Case_created_date)|is.na(Cytology_Weekday$Collection_Date) | is.na(Cytology_Weekday$Received_Date) | is.na(Cytology_Weekday$signed_out_date)),]
+Cytology_Not_Weekday <- Cytology_Not_Weekday[!(is.na(Cytology_Not_Weekday$Case_created_date)|is.na(Cytology_Not_Weekday$Collection_Date) | is.na(Cytology_Not_Weekday$Received_Date) | is.na(Cytology_Not_Weekday$signed_out_date)),]
+
+#Change all Dates into POSIXct format to start the calculations
+
+Cytology_Weekday$Case_created_date <- as.POSIXct(Cytology_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
+Cytology_Weekday$Collection_Date <- as.POSIXct(Cytology_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
+Cytology_Weekday$Received_Date <- as.POSIXct(Cytology_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
+Cytology_Weekday$signed_out_date <- as.POSIXct(Cytology_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
+
+Cytology_Not_Weekday$Case_created_date <- as.POSIXct(Cytology_Not_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
+Cytology_Not_Weekday$Collection_Date <- as.POSIXct(Cytology_Not_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
+Cytology_Not_Weekday$Received_Date <- as.POSIXct(Cytology_Not_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
+Cytology_Not_Weekday$signed_out_date <- as.POSIXct(Cytology_Not_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
+
+
+
+
 
 #Surgical Pathology
 
@@ -152,8 +172,21 @@ Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group
 PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday_PS, y= GI_Codes, all.x = TRUE)
 Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
 
-###test
+#If there are any N/A in the dates, remove that sample
+Surgical_Pathology_Weekday <- Surgical_Pathology_Weekday[!(is.na(Surgical_Pathology_Weekday$Case_created_date)|is.na(Surgical_Pathology_Weekday$Collection_Date) | is.na(Surgical_Pathology_Weekday$Received_Date) | is.na(Surgical_Pathology_Weekday$signed_out_date)),]
+Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday[!(is.na(Surgical_Pathology_Not_Weekday$Case_created_date)|is.na(Surgical_Pathology_Not_Weekday$Collection_Date) | is.na(Surgical_Pathology_Not_Weekday$Received_Date) | is.na(Surgical_Pathology_Not_Weekday$signed_out_date)),]
 
+#Change all Dates into POSIXct format to start the calculations
+
+Surgical_Pathology_Weekday$Case_created_date <- as.POSIXct(Surgical_Pathology_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
+Surgical_Pathology_Weekday$Collection_Date <- as.POSIXct(Surgical_Pathology_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
+Surgical_Pathology_Weekday$Received_Date <- as.POSIXct(Surgical_Pathology_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
+Surgical_Pathology_Weekday$signed_out_date <- as.POSIXct(Surgical_Pathology_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
+
+Surgical_Pathology_Not_Weekday$Case_created_date <- as.POSIXct(Surgical_Pathology_Not_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
+Surgical_Pathology_Not_Weekday$Collection_Date <- as.POSIXct(Surgical_Pathology_Not_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
+Surgical_Pathology_Not_Weekday$Received_Date <- as.POSIXct(Surgical_Pathology_Not_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
+Surgical_Pathology_Not_Weekday$signed_out_date <- as.POSIXct(Surgical_Pathology_Not_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
 
 
 
