@@ -131,32 +131,7 @@ Cytology_Backlog <- data.frame(Cytology_Backlog[-nrow(Cytology_Backlog),], strin
 
 
 #------------------------------Data Pre-Processing------------------------------#
-# Import analysis reference data starting with test codes for SCC and Sunquest
-test_code <- read_excel("Analysis REference 2019-12-02.xlsx", sheet = "TestNames")
-scc_icu <- read_excel("Analysis Reference 2019-12-02.xlsx", sheet = "SCC_ICU")
 
-scc_wday <- SCC_Weekday
-sq_wday <- SQ_Weekday
-
-# Format data fields
-scc_wday[c("Ward", "WARD_NAME", 
-           "REQUESTING_DOC", 
-           "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", 
-           "COLLECT_CENTER_ID", "SITE", "CLINIC_TYPE")] <- lapply(scc_wday[c("Ward", "WARD_NAME", 
-                                                                             "REQUESTING_DOC", 
-                                                                             "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", 
-                                                                             "COLLECT_CENTER_ID", "SITE", "CLINIC_TYPE")], as.factor)
-
-scc_wday$ORDERING_DATE <- as.POSIXct(scc_wday$ORDERING_DATE, tz = "", format = "%Y-%m-%d %H:%M:%S.%f")
-
-scc_wday$Ward <- as.factor(scc_wday$Ward)
-scc_wday$WARD_NAME <- as.factor(scc_wday$WARD_NAME)
-
-scc_wday <- left_join(scc_wday, test_code[ , c("Test", "SCC_TestID")], by = c("TEST_ID" = "SCC_TestID"))
-scc_wday$TestIncl <- ifelse(is.na(scc_wday$Test), FALSE, TRUE)
-scc_wday <- scc_wday[scc_wday$TestIncl == TRUE, ]
-scc_wday$WardandName <- paste(scc_wday$Ward, scc_wday$WARD_NAME)
-scc_wday <- left_join(scc_wday, scc_icu[ , c("Concatenate", "ICU?")], by = c("WardandName" = "Concatenate"))
 
 #Using Rev Center to determine patient setting
 Patient_Setting <- data.frame(read_excel(choose.files(caption = "Select Cytology Backlog Report"), sheet = "final"), stringsAsFactors = FALSE)
@@ -184,26 +159,30 @@ Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group
 PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday_PS, y= GI_Codes, all.x = TRUE)
 Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
 
+# CP and Micro --------------------------------
+# Import analysis reference data starting with test codes for SCC and Sunquest
+test_code <- read_excel("Analysis REference 2019-12-02.xlsx", sheet = "TestNames")
+scc_icu <- read_excel("Analysis Reference 2019-12-02.xlsx", sheet = "SCC_ICU")
 
+scc_wday <- SCC_Weekday
+sq_wday <- SQ_Weekday
 
+# Format data fields
+scc_wday[c("Ward", "WARD_NAME", 
+           "REQUESTING_DOC", 
+           "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", 
+           "COLLECT_CENTER_ID", "SITE", "CLINIC_TYPE")] <- lapply(scc_wday[c("Ward", "WARD_NAME", 
+                                                                             "REQUESTING_DOC", 
+                                                                             "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", 
+                                                                             "COLLECT_CENTER_ID", "SITE", "CLINIC_TYPE")], as.factor)
 
+scc_wday$ORDERING_DATE <- as.POSIXct(scc_wday$ORDERING_DATE, tz = "", format = "%Y-%m-%d %H:%M:%S.%f")
 
+scc_wday$Ward <- as.factor(scc_wday$Ward)
+scc_wday$WARD_NAME <- as.factor(scc_wday$WARD_NAME)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> 579c2015ccce8735113044bfaa512d1b592951ce
+scc_wday <- left_join(scc_wday, test_code[ , c("Test", "SCC_TestID")], by = c("TEST_ID" = "SCC_TestID"))
+scc_wday$TestIncl <- ifelse(is.na(scc_wday$Test), FALSE, TRUE)
+scc_wday <- scc_wday[scc_wday$TestIncl == TRUE, ]
+scc_wday$WardandName <- paste(scc_wday$Ward, scc_wday$WARD_NAME)
+scc_wday <- left_join(scc_wday, scc_icu[ , c("Concatenate", "ICU?")], by = c("WardandName" = "Concatenate"))
