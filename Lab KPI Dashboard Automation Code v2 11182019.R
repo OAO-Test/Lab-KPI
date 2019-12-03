@@ -155,8 +155,18 @@ Cytology_Not_Weekday$Collection_Date <- as.POSIXct(Cytology_Not_Weekday$Collecti
 Cytology_Not_Weekday$Received_Date <- as.POSIXct(Cytology_Not_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
 Cytology_Not_Weekday$signed_out_date <- as.POSIXct(Cytology_Not_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
 
+#add columns for calculations: collection to signed out and received to signed out
+#order to signed out
+Cytology_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Weekday$signed_out_date, Cytology_Weekday$Collection_Date, units = "days"))
+Cytology_Not_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Not_Weekday$signed_out_date, Cytology_Not_Weekday$Collection_Date, units = "days"))
 
+#recieve to signed out
+Cytology_Weekday$Received_to_signed_out <- as.numeric(difftime(Cytology_Weekday$signed_out_date, Cytology_Weekday$Received_Date, units = "days"))
+Cytology_Not_Weekday$Received_to_signed_out <- as.numeric(difftime(Cytology_Not_Weekday$signed_out_date, Cytology_Not_Weekday$Received_Date, units = "days"))
 
+#find any negative calculation and remove them
+Cytology_Weekday <- Cytology_Weekday[!(Cytology_Weekday$Collection_to_signed_out<=0 | Cytology_Weekday$Received_to_signed_out<=0),]
+Cytology_Not_Weekday <- Cytology_Not_Weekday[!(Cytology_Not_Weekday$Collection_to_signed_out<=0 | Cytology_Not_Weekday$Received_to_signed_out<=0),]
 
 
 #Surgical Pathology
@@ -187,6 +197,19 @@ Surgical_Pathology_Not_Weekday$Case_created_date <- as.POSIXct(Surgical_Patholog
 Surgical_Pathology_Not_Weekday$Collection_Date <- as.POSIXct(Surgical_Pathology_Not_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
 Surgical_Pathology_Not_Weekday$Received_Date <- as.POSIXct(Surgical_Pathology_Not_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
 Surgical_Pathology_Not_Weekday$signed_out_date <- as.POSIXct(Surgical_Pathology_Not_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
+
+#add columns for calculations: collection to signed out and received to signed out
+#order to signed out
+Surgical_Pathology_Weekday$Collection_to_signed_out <- as.numeric(difftime(Surgical_Pathology_Weekday$signed_out_date, Surgical_Pathology_Weekday$Collection_Date, units = "days"))
+Surgical_Pathology_Not_Weekday$Collection_to_signed_out <- as.numeric(difftime(Surgical_Pathology_Not_Weekday$signed_out_date, Surgical_Pathology_Not_Weekday$Collection_Date, units = "days"))
+
+#recieve to signed out
+Surgical_Pathology_Weekday$Received_to_signed_out <- as.numeric(difftime(Surgical_Pathology_Weekday$signed_out_date, Surgical_Pathology_Weekday$Received_Date, units = "days"))
+Surgical_Pathology_Not_Weekday$Received_to_signed_out <- as.numeric(difftime(Surgical_Pathology_Not_Weekday$signed_out_date, Surgical_Pathology_Not_Weekday$Received_Date, units = "days"))
+
+#find any negative calculation and remove them
+Surgical_Pathology_Weekday <- Surgical_Pathology_Weekday[!(Surgical_Pathology_Weekday$Collection_to_signed_out<=0 | Surgical_Pathology_Weekday$Received_to_signed_out<=0),]
+Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday[!(Surgical_Pathology_Not_Weekday$Collection_to_signed_out<=0 | Surgical_Pathology_Not_Weekday$Received_to_signed_out<=0),]
 
 
 
