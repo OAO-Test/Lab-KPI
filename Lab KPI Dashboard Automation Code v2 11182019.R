@@ -14,11 +14,6 @@
 
 #Required packages: run these everytime you run the code
 library(timeDate)
-library(rJava)
-#### Set-Up #### 
-options(java.parameters = "-Xmx1000m")
-################
-library(xlsx)
 library(readxl)
 library(dplyr)
 
@@ -33,6 +28,9 @@ Yesterday_Day <- weekdays(Yest) #Rename as Yest_DOW
 #Change the format for the date into timeDate format to be ready for the next function
 Yesterday <- as.timeDate(Yest)
 
+#get yesterday's DOW
+Yesterday_Day <- dayOfWeek(Yesterday)
+
 #Excludes Good Friday from the NYSE Holidays
 NYSE_Holidays <- as.Date(holidayNYSE())
 GoodFriday <- as.Date(GoodFriday())
@@ -46,20 +44,20 @@ Holiday_Det <- isHoliday(Yesterday, holidays = MSHS_Holiday)
 
 #-----------SCC Excel Files-----------#
 
-if((Holiday_Det) & (Yesterday_Day =="Monday")){
-  SCC_Holiday_Monday <- read_excel(choose.files(caption = "Select SCC Holiday Report"), sheet = 1, col_names = TRUE)
+if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){
+  SCC_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select SCC Holiday Report"), sheet = 1, col_names = TRUE)
   SCC_Sunday <- read_excel(choose.files(caption = "Select SCC Sunday Report"), sheet = 1, col_names = TRUE)
   SCC_Saturday <- read_excel(choose.files(caption = "Select SCC Saturday Report"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
-  SCC_Not_Weekday <- rbind(rbind(SCC_Holiday_Monday,SCC_Sunday),SCC_Saturday)
+  SCC_Not_Weekday <- rbind(rbind(SCC_Holiday_Monday_or_Friday,SCC_Sunday),SCC_Saturday)
   SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Weekday Report"), sheet = 1, col_names = TRUE)
-} else if ((Holiday_Det) & (Yesterday_Day =="Sunday")){
+} else if ((Holiday_Det) & (Yesterday_Day =="Sun")){
   SCC_Sunday <- read_excel(choose.files(caption = "Select SCC Sunday Report"), sheet = 1, col_names = TRUE)
   SCC_Saturday <- read_excel(choose.files(caption = "Select SCC Saturday Report"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
   SCC_Not_Weekday <- rbind(SCC_Sunday,SCC_Saturday)
   SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Weekday Report"), sheet = 1, col_names = TRUE)
-} else if ((Holiday_Det) & ((Yesterday_Day !="Monday")|(Yesterday_Day !="Sunday"))){
+} else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sun"))){
   SCC_Holiday_Weekday <- read_excel(choose.files(caption = "Select SCC Holiday Report"), sheet = 1, col_names = TRUE)
   SCC_Not_Weekday <- SCC_Holiday_Weekday
   SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Weekday Report"), sheet = 1, col_names = TRUE)
@@ -69,20 +67,20 @@ if((Holiday_Det) & (Yesterday_Day =="Monday")){
 
 #-----------SunQuest Excel Files-----------#
 
-if((Holiday_Det) & (Yesterday_Day =="Monday")){
-  SQ_Holiday_Monday <- read_excel(choose.files(caption = "Select SunQuest Holiday Report"), sheet = 1, col_names = TRUE)
+if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){
+  SQ_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select SunQuest Holiday Report"), sheet = 1, col_names = TRUE)
   SQ_Sunday <- read_excel(choose.files(caption = "Select SunQuest Sunday Report"), sheet = 1, col_names = TRUE)
   SQ_Saturday <- read_excel(choose.files(caption = "Select SunQuest Saturday Report"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
-  SQ_Not_Weekday <- rbind(rbind(SQ_Holiday_Monday,SQ_Sunday),SQ_Saturday)
+  SQ_Not_Weekday <- rbind(rbind(SQ_Holiday_Monday_or_Friday ,SQ_Sunday),SQ_Saturday)
   SQ_Weekday <- read_excel(choose.files(caption = "Select SunQuest Weekday Report"), sheet = 1, col_names = TRUE)
-} else if ((Holiday_Det) & (Yesterday_Day =="Sunday")){
+} else if ((Holiday_Det) & (Yesterday_Day =="Sun")){
   SQ_Sunday <- read_excel(choose.files(caption = "Select SunQuest Sunday Report"), sheet = 1, col_names = TRUE)
   SQ_Saturday <- read_excel(choose.files(caption = "Select SunQuest Saturday Report"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
   SQ_Not_Weekday <- rbind(SQ_Sunday,SQ_Saturday)
   SQ_Weekday <- read_excel(choose.files(caption = "Select SunQuest Weekday Report"), sheet = 1, col_names = TRUE)
-} else if ((Holiday_Det) & ((Yesterday_Day !="Monday")|(Yesterday_Day !="Sunday"))){
+} else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sunday"))){
   SQ_Holiday_Weekday <- read_excel(choose.files(caption = "Select SunQuest Holiday Report"), sheet = 1, col_names = TRUE)
   SQ_Not_Weekday <- SQ_Holiday_Weekday
   SQ_Weekday <- read_excel(choose.files(caption = "Select SunQuest Weekday Report"), sheet = 1, col_names = TRUE)
@@ -93,43 +91,43 @@ if((Holiday_Det) & (Yesterday_Day =="Monday")){
 #-----------PowerPath Excel Files-----------#
 #For the powerpath files the read excel is starting from the second row
 #Also I made sure to remove the last line
-if((Holiday_Det) & (Yesterday_Day =="Monday")){
-  PP_Holiday_Monday <- read.xlsx(choose.files(caption = "Select PowerPath Holiday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
-  PP_Holiday_Monday <- PP_Holiday_Monday[-nrow(PP_Holiday_Monday),]
-  PP_Sunday <- read.xlsx(choose.files(caption = "Select PowerPath Sunday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){
+  PP_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select PowerPath Holiday Report"), skip = 1, 1)
+  PP_Holiday_Monday_or_Friday  <- PP_Holiday_Monday[-nrow(PP_Holiday_Monday_or_Friday),]
+  PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Sunday Report"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read.xlsx(choose.files(caption = "Select PowerPath Saturday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Saturday Report"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
-  PP_Not_Weekday <- rbind(rbind(PP_Holiday_Monday,PP_Sunday),PP_Saturday)
-  PP_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Weekday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
-  PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
-} else if ((Holiday_Det) & (Yesterday_Day =="Sunday")){
-  PP_Sunday <- read.xlsx(choose.files(caption = "Select PowerPath Sunday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Not_Weekday <- data.frame(rbind(rbind(PP_Holiday_Monday_or_Friday ,PP_Sunday),PP_Saturday),stringsAsFactors = FALSE)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),],stringsAsFactors = FALSE)
+} else if ((Holiday_Det) & (Yesterday_Day =="Sun")){
+  PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Sunday Report"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read.xlsx(choose.files(caption = "Select PowerPath Saturday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Saturday Report"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
-  PP_Not_Weekday <- rbind(PP_Sunday,PP_Saturday)
-  PP_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Weekday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
-  PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
-} else if ((Holiday_Det) & ((Yesterday_Day !="Monday")|(Yesterday_Day !="Sunday"))){
-  PP_Holiday_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Holiday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
+  PP_Not_Weekday <- data.frame(rbind(PP_Sunday,PP_Saturday),stringsAsFactors = FALSE)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
+} else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sun"))){
+  PP_Holiday_Weekday <- read_excel(choose.files(caption = "Select PowerPath Holiday Report"), skip = 1, 1)
   PP_Holiday_Weekday <- PP_Holiday_Weekday[-nrow(PP_Holiday_Weekday),]
-  PP_Not_Weekday <- PP_Holiday_Weekday
-  PP_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Weekday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
-  PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
+  PP_Not_Weekday <- data.frame(PP_Holiday_Weekday, stringsAsFactors = FALSE)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 } else {
-  PP_Weekday <- read.xlsx(choose.files(caption = "Select PowerPath Weekday Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
-  PP_Weekday <- PP_Weekday[-nrow(PP_Weekday),]
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
+  PP_Weekday <- data.farme(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 }
 
 #-----------Cytology Backlog Excel Files-----------#
 #For the backlog files the read excel is starting from the second row
 #Also I made sure to remove the last line
 
-Cytology_Backlog <- read.xlsx(choose.files(caption = "Select Cytology Backlog Report"), startRow = 2, header = TRUE, stringsAsFactors=FALSE, 1)
-Cytology_Backlog <- Cytology_Backlog[-nrow(Cytology_Backlog),]
+Cytology_Backlog <- read_excel(choose.files(caption = "Select Cytology Backlog Report"), skip = 1, 1)
+Cytology_Backlog <- data.frame(Cytology_Backlog[-nrow(Cytology_Backlog),], stringsAsFactors = FALSE)
 
 
 #------------------------------Data Pre-Processing------------------------------#
@@ -159,3 +157,53 @@ scc_wday$TestIncl <- ifelse(is.na(scc_wday$Test), FALSE, TRUE)
 scc_wday <- scc_wday[scc_wday$TestIncl == TRUE, ]
 scc_wday$WardandName <- paste(scc_wday$Ward, scc_wday$WARD_NAME)
 scc_wday <- left_join(scc_wday, scc_icu[ , c("Concatenate", "ICU?")], by = c("WardandName" = "Concatenate"))
+
+#Using Rev Center to determine patient setting
+Patient_Setting <- data.frame(read_excel(choose.files(caption = "Select Cytology Backlog Report"), sheet = "final"), stringsAsFactors = FALSE)
+
+#vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
+PP_Weekday_PS <- merge(x=PP_Weekday, y=Patient_Setting, all.x = TRUE ) 
+PP_Not_Weekday_PS <- merge(x=PP_Not_Weekday, y=Patient_Setting, all.x = TRUE )
+
+#Cytology
+#Keep the cyto gyn and cyto non-gyn
+
+Cytology_Weekday <- PP_Weekday_PS[which(PP_Weekday_PS$spec_group=="CYTO NONGYN" | PP_Weekday_PS$spec_group=="CYTO GYN"),]
+Cytology_NoT_Weekday <- PP_Not_Weekday_PS[which(PP_Not_Weekday_PS$spec_group=="CYTO NONGYN" | PP_Not_Weekday_PS$spec_group=="CYTO GYN"),]
+
+#Surgical Pathology
+
+#Upload the exclusion vs inclusion criteria associated with the GI codes
+GI_Codes <- data.frame(read_excel(choose.files(caption = "Select Cytology Backlog Report"), 1), stringsAsFactors = FALSE)
+
+#Merge the exclusion/inclusion cloumn into the modified powerpath Dataset for weekdays and not weekdays
+
+PP_Weekday_Excl <- merge(x = PP_Weekday_PS, y= GI_Codes, all.x = TRUE)
+Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group=="GI") &(PP_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Weekday_Excl$spec_group=="Breast"),]
+
+PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday_PS, y= GI_Codes, all.x = TRUE)
+Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>> 579c2015ccce8735113044bfaa512d1b592951ce
