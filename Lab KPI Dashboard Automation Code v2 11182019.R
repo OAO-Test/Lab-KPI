@@ -57,6 +57,7 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Weekday Report"), sheet = 1, col_names = TRUE)
 } else {
   SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Weekday Report"), sheet = 1, col_names = TRUE)
+  SSC_Not_Weekday <- NULL
 }
 
 #-----------SunQuest Excel Files-----------#
@@ -80,6 +81,7 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   SQ_Weekday <- read_excel(choose.files(caption = "Select SunQuest Weekday Report"), sheet = 1, col_names = TRUE)
 } else {
   SQ_Weekday <- read_excel(choose.files(caption = "Select SunQuest Weekday Report"), sheet = 1, col_names = TRUE)
+  SQ_Not_Weekday <- NULL
 }
 
 #-----------PowerPath Excel Files-----------#
@@ -114,6 +116,7 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
 } else {
   PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
+  PP_Not_Weekday <- NULL
 }
 
 #-----------Cytology Backlog Excel Files-----------#
