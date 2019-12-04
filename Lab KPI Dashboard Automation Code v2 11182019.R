@@ -130,7 +130,7 @@ Cytology_Backlog <- data.frame(Cytology_Backlog[-nrow(Cytology_Backlog),], strin
 #------------------------------Data Pre-Processing------------------------------#
 
 #Using Rev Center to determine patient setting
-Patient_Setting <- data.frame(read_excel(choose.files(caption = "Select Cytology Backlog Report"), sheet = "final"), stringsAsFactors = FALSE)
+Patient_Setting <- data.frame(read_excel(choose.files(caption = "Select Patient Setting Dataframe"), sheet = "final"), stringsAsFactors = FALSE)
 
 #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
 PP_Weekday_PS <- merge(x=PP_Weekday, y=Patient_Setting, all.x = TRUE ) 
@@ -175,7 +175,7 @@ Cytology_Not_Weekday <- Cytology_Not_Weekday[!(Cytology_Not_Weekday$Collection_t
 #Surgical Pathology
 
 #Upload the exclusion vs inclusion criteria associated with the GI codes
-GI_Codes <- data.frame(read_excel(choose.files(caption = "Select Cytology Backlog Report"), 1), stringsAsFactors = FALSE)
+GI_Codes <- data.frame(read_excel(choose.files(caption = "Select GI Codes dataframe"), 1), stringsAsFactors = FALSE)
 
 #Merge the exclusion/inclusion cloumn into the modified powerpath Dataset for weekdays and not weekdays
 
