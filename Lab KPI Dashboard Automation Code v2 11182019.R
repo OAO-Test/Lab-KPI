@@ -226,5 +226,14 @@ scc_wday$CollectResultTarget <- ifelse(!is.na(match(scc_wday$Concate2, tat_targe
                                 ifelse(!is.na(match(scc_wday$Concate1, tat_targets$Concate)), tat_targets$CollectToResultTarget[match(scc_wday$Concate1, tat_targets$Concate)],
                                        tat_targets$CollectToResultTarget[match(scc_wday$Test, tat_targets$Concate)]))
 
-df <- scc_wday[ , c("Test", "MasterPriority", "MasterSetting", "ReceiveResultTarget", "CollectResultTarget")]
-x <- unique(df)
+scc_wday$MissingCollect <- ifelse(scc_wday$CollectToReceive == 0, TRUE, FALSE)
+scc_wday$ReceiveResultInTarget <- ifelse(scc_wday$ReceiveToResult <= scc_wday$ReceiveResultTarget, TRUE, FALSE)
+scc_wday$CollectResultInTarget <- ifelse(scc_wday$CollectToResult <= scc_wday$CollectResultTarget, TRUE, FALSE)
+
+scc_wday %>%
+  group_by(SITE, Test, CollectResultInTarget) %>%
+  summarize("Total Volume" = n())
+
+scc_wday %>%
+  group_by(SITE, Test, ReceiveResultInTarget) %>%
+  summarize("Total Volume" = n())
