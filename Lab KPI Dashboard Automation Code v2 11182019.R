@@ -7,6 +7,7 @@
 #Install packages only the first time you run the code
 #install.packages("timeDate")
 #install.packages("readxl")
+#install.packages("bizdays")
 #install.packages("rmarkdown")
 
 #-------------------------------Required packages-------------------------------#
@@ -14,7 +15,9 @@
 #Required packages: run these everytime you run the code
 library(timeDate)
 library(readxl)
-
+library(bizdays)
+library(dplyr)
+library(reshape2)
 #-------------------------------holiday/weekend-------------------------------#
 
 #Determine if yesterday was a holiday/weekend 
@@ -136,6 +139,10 @@ Patient_Setting <- data.frame(read_excel(choose.files(caption = "Select Patient 
 PP_Weekday_PS <- merge(x=PP_Weekday, y=Patient_Setting, all.x = TRUE ) 
 PP_Not_Weekday_PS <- merge(x=PP_Not_Weekday, y=Patient_Setting, all.x = TRUE )
 
+#Set up a default calendar for TAT calculations
+create.calendar("MSHS_working_days", MSHS_Holiday, weekdays=c("saturday","sunday"))
+bizdays.options$set(default.calendar="MSHS_working_days")
+
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
 
@@ -162,23 +169,26 @@ if (is.null(PP_Not_Weekday)){
   Cytology_Not_Weekday$signed_out_date <- as.POSIXct(Cytology_Not_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
 }
 
+
 #add columns for calculations: collection to signed out and received to signed out
-#order to signed out
+#collection to signed out
+#All days in the calendar
 Cytology_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Weekday$signed_out_date, Cytology_Weekday$Collection_Date, units = "days"))
 
 if (is.null(PP_Not_Weekday)){
   Cytology_Not_Weekday <- Cytology_Not_Weekday
 } else {
-  Cytology_Not_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Not_Weekday$signed_out_date, Cytology_Not_Weekday$Collection_Date, units = "days"))
+  Cytology_Not_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Weekday$signed_out_date, Cytology_Weekday$Collection_Date, units = "days"))
 }
 
 #recieve to signed out
-Cytology_Weekday$Received_to_signed_out <- as.numeric(difftime(Cytology_Weekday$signed_out_date, Cytology_Weekday$Received_Date, units = "days"))
+#without weekends and holidays
+Cytology_Weekday$Received_to_signed_out <- bizdays(Cytology_Weekday$Received_Date, Cytology_Weekday$signed_out_date)
 
 if (is.null(PP_Not_Weekday)){
   Cytology_Not_Weekday <- Cytology_Not_Weekday
 } else {
-  Cytology_Not_Weekday$Received_to_signed_out <- as.numeric(difftime(Cytology_Not_Weekday$signed_out_date, Cytology_Not_Weekday$Received_Date, units = "days"))
+  Cytology_Not_Weekday$Received_to_signed_out <- bizdays(Cytology_Not_Weekday$Received_Date, Cytology_Not_Weekday$signed_out_date)
 }
 
 #find any negative calculation and remove them
@@ -190,6 +200,37 @@ if (is.null(PP_Not_Weekday)){
   Cytology_Not_Weekday <- Cytology_Not_Weekday[!(Cytology_Not_Weekday$Collection_to_signed_out<=0 | Cytology_Not_Weekday$Received_to_signed_out<=0),]
 }
 
+#Calculate Average for Collection to signed out
+
+Cytology_Patient_Metric <- summarise(group_by(Cytology_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
+
+Cytology_Patient_Metric <- dcast(Cytology_Patient_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
+
+if (is.null(PP_Not_Weekday)){
+  Cytology_Patient_Metric_Not_Weekday <- NULL
+} else {
+  Cytology_Patient_Metric_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
+  
+  Cytology_Patient_Metric_Not_Weekday <- dcast(Cytology_Patient_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
+}
+
+#Calculate % Receive to result TAT within target
+GYN_Lab_Metric <- summarise(group_by(Cytology_Weekday[Cytology_Weekday$spec_group=="CYTO GYN",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 10)/sum(Received_to_signed_out >= 0),2)))
+GYN_Lab_Metric <- dcast(GYN_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+
+NONGYN_Lab_Metric <- summarise(group_by(Cytology_Weekday[Cytology_Weekday$spec_group=="CYTO NONGYN",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 2)/sum(Received_to_signed_out >= 0),2)))
+NONGYN_Lab_Metric <- dcast(NONGYN_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+
+if (is.null(PP_Not_Weekday)){
+  GYN_Lab_Metric_Not_Weekday <- NULL
+  NONGYN_Lab_Metric_Not_Weekday <-NULL
+} else {
+  GYN_Lab_Metric_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday[Cytology_Not_Weekday$spec_group=="CYTO GYN",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 10)/sum(Received_to_signed_out >= 0),2)))
+  GYN_Lab_Metric_Not_Weekday <- dcast(GYN_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+  
+  NONGYN_Lab_Metric_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday[Cytology_Not_Weekday$spec_group=="CYTO NONGYN",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 2)/sum(Received_to_signed_out >= 0),2)))
+  NONGYN_Lab_Metric_Not_Weekday <- dcast(NONGYN_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+}
 
 #Surgical Pathology
 
@@ -225,7 +266,8 @@ if (is.null(PP_Not_Weekday)){
 }
 
 #add columns for calculations: collection to signed out and received to signed out
-#order to signed out
+#Collection to signed out
+#All days in the calendar
 Surgical_Pathology_Weekday$Collection_to_signed_out <- as.numeric(difftime(Surgical_Pathology_Weekday$signed_out_date, Surgical_Pathology_Weekday$Collection_Date, units = "days"))
 
 if (is.null(PP_Not_Weekday)){
@@ -235,12 +277,13 @@ if (is.null(PP_Not_Weekday)){
 }
 
 #recieve to signed out
-Surgical_Pathology_Weekday$Received_to_signed_out <- as.numeric(difftime(Surgical_Pathology_Weekday$signed_out_date, Surgical_Pathology_Weekday$Received_Date, units = "days"))
+#without weekends and holidays
+Surgical_Pathology_Weekday$Received_to_signed_out <- bizdays(Surgical_Pathology_Weekday$Received_Date, Surgical_Pathology_Weekday$signed_out_date)
 
 if (is.null(PP_Not_Weekday)){
   Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday
 } else {
-  Surgical_Pathology_Not_Weekday$Received_to_signed_out <- as.numeric(difftime(Surgical_Pathology_Not_Weekday$signed_out_date, Surgical_Pathology_Not_Weekday$Received_Date, units = "days"))
+  Surgical_Pathology_Not_Weekday$Received_to_signed_out <- bizdays(Surgical_Pathology_Not_Weekday$Received_Date, Surgical_Pathology_Not_Weekday$signed_out_date)
 }
 
 #find any negative calculation and remove them
@@ -251,8 +294,37 @@ if (is.null(PP_Not_Weekday)){
   Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday[!(Surgical_Pathology_Not_Weekday$Collection_to_signed_out<=0 | Surgical_Pathology_Not_Weekday$Received_to_signed_out<=0),]
 }
 
+#Calculate Average for Collection to signed out
 
+Surgical_Pathology_Patient_Metric <- summarise(group_by(Surgical_Pathology_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
 
+Surgical_Pathology_Patient_Metric <- dcast(Surgical_Pathology_Patient_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
+
+if (is.null(PP_Not_Weekday)){
+  Surgical_Pathology_Patient_Metric_Not_Weekday <- NULL
+} else {
+  Surgical_Pathology_Patient_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
+  
+  Surgical_Pathology_Patient_Metric_Not_Weekday <- dcast(Surgical_Pathology_Patient_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
+}
+
+#Calculate % Receive to result TAT within target
+BREAST_Lab_Metric <- summarise(group_by(Surgical_Pathology_Weekday[Surgical_Pathology_Weekday$spec_group=="BREAST",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 5)/sum(Received_to_signed_out >= 0),2)))
+BREAST_Lab_Metric <- dcast(BREAST_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+
+GI_Lab_Metric <- summarise(group_by(Surgical_Pathology_Weekday[Surgical_Pathology_Weekday$spec_group=="GI",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 3)/sum(Received_to_signed_out >= 0),2)))
+GI_Lab_Metric <- dcast(GI_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+
+if (is.null(PP_Not_Weekday)){
+  BREAST_Lab_Metric_Not_Weekday <- NULL
+  GI_Lab_Metric_Not_Weekday <-NULL
+} else {
+  BREAST_Lab_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday[Surgical_Pathology_Not_Weekday$spec_group=="BREAST",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 5)/sum(Received_to_signed_out >= 0),2)))
+  BREAST_Lab_Metric_Not_Weekday <- dcast(BREAST_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+  
+  GI_Lab_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday[Surgical_Pathology_Not_Weekday$spec_group=="GI",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 3)/sum(Received_to_signed_out >= 0),2)))
+  GI_Lab_Metric_Not_Weekday <- dcast(GI_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+}
 
 
 
