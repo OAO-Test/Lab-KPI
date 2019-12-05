@@ -178,7 +178,7 @@ Cytology_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Weekda
 if (is.null(PP_Not_Weekday)){
   Cytology_Not_Weekday <- Cytology_Not_Weekday
 } else {
-  Cytology_Not_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Weekday$signed_out_date, Cytology_Weekday$Collection_Date, units = "days"))
+  Cytology_Not_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Not_Weekday$signed_out_date, Cytology_Not_Weekday$Collection_Date, units = "days"))
 }
 
 #recieve to signed out
