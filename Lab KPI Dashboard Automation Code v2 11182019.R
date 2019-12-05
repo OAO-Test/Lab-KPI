@@ -9,7 +9,7 @@
 #install.packages("readxl")
 #install.packages("bizdays")
 #install.packages("rmarkdown")
-
+#install.packages("tinytex")
 #-------------------------------Required packages-------------------------------#
 
 #Required packages: run these everytime you run the code
@@ -18,6 +18,8 @@ library(readxl)
 library(bizdays)
 library(dplyr)
 library(reshape2)
+library(rmarkdown)
+library(tinytex)
 #-------------------------------holiday/weekend-------------------------------#
 
 #Determine if yesterday was a holiday/weekend 
