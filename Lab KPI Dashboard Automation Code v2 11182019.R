@@ -202,15 +202,21 @@ if (is.null(PP_Not_Weekday)){
   Cytology_Not_Weekday <- Cytology_Not_Weekday[!(Cytology_Not_Weekday$Collection_to_signed_out<=0 | Cytology_Not_Weekday$Received_to_signed_out<=0),]
 }
 
-#Calculate Average for Collection to signed out
+#Calculate Average for Collection to signed out and number of cases signed
+
+Cytology_Cases_Signed <- summarise(group_by(Cytology_Weekday,spec_group, Patient.Setting), No_Cases_Signed = n())
 
 Cytology_Patient_Metric <- summarise(group_by(Cytology_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
 
 Cytology_Patient_Metric <- dcast(Cytology_Patient_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
 
+
 if (is.null(PP_Not_Weekday)){
   Cytology_Patient_Metric_Not_Weekday <- NULL
+  Cytology_Cases_Signed <- NULL
 } else {
+  Cytology_Cases_Signed_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday,spec_group, Patient.Setting), No_Cases_Signed = n())
+  
   Cytology_Patient_Metric_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
   
   Cytology_Patient_Metric_Not_Weekday <- dcast(Cytology_Patient_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
@@ -298,13 +304,18 @@ if (is.null(PP_Not_Weekday)){
 
 #Calculate Average for Collection to signed out
 
+Surgical_Pathology_Cases_Signed <- summarise(group_by(Surgical_Pathology_Weekday,spec_group, Patient.Setting), No_Cases_Signed = n())
+
 Surgical_Pathology_Patient_Metric <- summarise(group_by(Surgical_Pathology_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
 
 Surgical_Pathology_Patient_Metric <- dcast(Surgical_Pathology_Patient_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
 
 if (is.null(PP_Not_Weekday)){
   Surgical_Pathology_Patient_Metric_Not_Weekday <- NULL
+  Surgical_Pathology_Cases_Signed_Not_Weekday <- NULL
 } else {
+  Surgical_Pathology_Cases_Signed_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday,spec_group, Patient.Setting), No_Cases_Signed = n())
+  
   Surgical_Pathology_Patient_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
   
   Surgical_Pathology_Patient_Metric_Not_Weekday <- dcast(Surgical_Pathology_Patient_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
