@@ -213,7 +213,7 @@ Cytology_Patient_Metric <- dcast(Cytology_Patient_Metric, spec_group + Patient.S
 
 if (is.null(PP_Not_Weekday)){
   Cytology_Patient_Metric_Not_Weekday <- NULL
-  Cytology_Cases_Signed <- NULL
+  Cytology_Cases_Signed_Not_Weekday <- NULL
 } else {
   Cytology_Cases_Signed_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday,spec_group, Patient.Setting), No_Cases_Signed = n())
   
@@ -239,6 +239,20 @@ if (is.null(PP_Not_Weekday)){
   NONGYN_Lab_Metric_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday[Cytology_Not_Weekday$spec_group=="CYTO NONGYN",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 2)/sum(Received_to_signed_out >= 0),2)))
   NONGYN_Lab_Metric_Not_Weekday <- dcast(NONGYN_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
 }
+
+
+#here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
+
+#Cytology Weekday table
+Cytology_Table_Weekday <- left_join(full_join(Cytology_Cases_Signed, Cytology_Patient_Metric), bind_rows(GYN_Lab_Metric,NONGYN_Lab_Metric), by = c("spec_group", "Patient.Setting"))
+
+#Cytology Not-Weekday table
+if (is.null(PP_Not_Weekday)){
+  Cytology_Table_Not_Weekday <- NULL
+} else{
+  Cytology_Table_Not_Weekday <- left_join(full_join(Cytology_Cases_Signed_Not_Weekday, Cytology_Patient_Metric_Not_Weekday), bind_rows(GYN_Lab_Metric_Not_Weekday,NONGYN_Lab_Metric_Not_Weekday), by = c("spec_group", "Patient.Setting"))
+}
+
 
 #Surgical Pathology
 
