@@ -353,6 +353,17 @@ if (is.null(PP_Not_Weekday)){
   GI_Lab_Metric_Not_Weekday <- dcast(GI_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
 }
 
+#here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
+
+#Pathology Weekday table
+Pathology_Table_Weekday <- left_join(full_join(Surgical_Pathology_Cases_Signed, Surgical_Pathology_Patient_Metric), bind_rows(Breast_Lab_Metric,GI_Lab_Metric), by = c("spec_group", "Patient.Setting"))
+
+#Pathology Not-Weekday table
+if (is.null(PP_Not_Weekday)){
+  Pathology_Table_Not_Weekday <- NULL
+} else{
+  Pathology_Table_Not_Weekday <- left_join(full_join(Surgical_Pathology_Cases_Signed_Not_Weekday, Surgical_Pathology_Patient_Metric_Not_Weekday), bind_rows(Breast_Lab_Metric_Not_Weekday,GI_Lab_Metric_Not_Weekday), by = c("spec_group", "Patient.Setting"))
+}
 
 
 
