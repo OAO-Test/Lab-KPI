@@ -322,18 +322,18 @@ if (is.null(PP_Not_Weekday)){
 }
 
 #Calculate % Receive to result TAT within target
-BREAST_Lab_Metric <- summarise(group_by(Surgical_Pathology_Weekday[Surgical_Pathology_Weekday$spec_group=="BREAST",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 5)/sum(Received_to_signed_out >= 0),2)))
+BREAST_Lab_Metric <- summarise(group_by(Surgical_Pathology_Weekday[Surgical_Pathology_Weekday$spec_group=="Breast",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 5)/sum(Received_to_signed_out >= 0),2)))
 BREAST_Lab_Metric <- dcast(BREAST_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
 
 GI_Lab_Metric <- summarise(group_by(Surgical_Pathology_Weekday[Surgical_Pathology_Weekday$spec_group=="GI",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 3)/sum(Received_to_signed_out >= 0),2)))
 GI_Lab_Metric <- dcast(GI_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
 
 if (is.null(PP_Not_Weekday)){
-  BREAST_Lab_Metric_Not_Weekday <- NULL
+  Breast_Lab_Metric_Not_Weekday <- NULL
   GI_Lab_Metric_Not_Weekday <-NULL
 } else {
-  BREAST_Lab_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday[Surgical_Pathology_Not_Weekday$spec_group=="BREAST",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 5)/sum(Received_to_signed_out >= 0),2)))
-  BREAST_Lab_Metric_Not_Weekday <- dcast(BREAST_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+  Breast_Lab_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday[Surgical_Pathology_Not_Weekday$spec_group=="BREAST",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 5)/sum(Received_to_signed_out >= 0),2)))
+  Breast_Lab_Metric_Not_Weekday <- dcast(Breast_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
   
   GI_Lab_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday[Surgical_Pathology_Not_Weekday$spec_group=="GI",],spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= 3)/sum(Received_to_signed_out >= 0),2)))
   GI_Lab_Metric_Not_Weekday <- dcast(GI_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
