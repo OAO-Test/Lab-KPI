@@ -37,6 +37,8 @@ library(rmarkdown)
 library(tinytex)
 library(kableExtra)
 #-------------------------------holiday/weekend-------------------------------#
+#Today's date:
+Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 
@@ -222,6 +224,30 @@ if (is.null(PP_Not_Weekday)){
 }
 
 
+#Cytology backlog Calculation
+
+#Keep the cyto gyn and cyto non-gyn
+Cytology_Backlog_Weekday <- Cytology_Backlog[which(Cytology_Backlog$spec_group=="CYTO NONGYN" | Cytology_Backlog$spec_group=="CYTO GYN"),]
+
+#Change all Dates into POSIXct format to start the calculations
+Cytology_Backlog_Weekday$Case_created_date <- as.POSIXct(Cytology_Backlog_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
+Cytology_Backlog_Weekday$Collection_Date <- as.POSIXct(Cytology_Backlog_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
+Cytology_Backlog_Weekday$Received_Date <- as.POSIXct(Cytology_Backlog_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
+
+#Backlog Calculations: Date now - case created date
+#without weekends and holidays
+Cytology_Backlog_Weekday$Backlog <- bizdays(Cytology_Backlog_Weekday$Case_created_date, Today)
+
+#Case Volume
+GYN_Backlog_Volume <- summarise(group_by(Cytology_Backlog_Weekday[Cytology_Backlog_Weekday$spec_group=="CYTO GYN",],spec_group), GYN_Backlog = format(round(sum(Backlog >= 10),2)))
+
+NONGYN_Backlog_Volume <- summarise(group_by(Cytology_Backlog_Weekday[Cytology_Backlog_Weekday$spec_group=="CYTO NONGYN",],spec_group), NONGYN_Backlog = format(round(sum(Backlog >= 2),2)))
+
+#Days of work
+GYN_case_Volume <- as.numeric(GYN_Backlog_Volume$GYN_Backlog)/80
+
+################################################################################################################################
+
 #Surgical Pathology
 
 #Upload the exclusion vs inclusion criteria associated with the GI codes
@@ -343,9 +369,9 @@ Cytology_Table_Weekday %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
   add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 8, "Receive to Result TAT "=8), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
   column_spec(4:11, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
-  row_spec(1:7, background = "white", color = "black")%>%
+  row_spec(1:4, background = "white", color = "black")%>%
   column_spec(12:19, background = "#221F72",color="white", include_thead = TRUE)%>%
-  row_spec(1:7, background = "white", color="black")%>%
+  row_spec(1:4, background = "white", color="black")%>%
   collapse_rows(columns = 1)%>%
   add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=19))%>%
   add_header_above(c("Cytology Efficiency Indicator"=19))
@@ -358,9 +384,9 @@ Pathology_Table_Weekday %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
   add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 9, "Receive to Result TAT "=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
   column_spec(4:12, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
-  row_spec(1:7, background = "white", color = "black")%>%
+  row_spec(1:3, background = "white", color = "black")%>%
   column_spec(13:21, background = "#221F72",color="white", include_thead = TRUE)%>%
-  row_spec(1:7, background = "white", color="black")%>%
+  row_spec(1:3, background = "white", color="black")%>%
   collapse_rows(columns = 1)%>%
   add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
   add_header_above(c("Surgical Pathology Efficiency Indicator"=21))
