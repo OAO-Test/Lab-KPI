@@ -337,17 +337,18 @@ if (is.null(PP_Not_Weekday)){
 ```
 
 
-
 ```{r, echo=FALSE}
 Cytology_Table_Weekday %>%
   kable() %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
-  add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 8, "Receive to Result TAT "=8))%>%
-  column_spec(4:11, background = "#D80B8C", color= "white",include_thead = TRUE)%>%
+  add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 8, "Receive to Result TAT "=8), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
+  column_spec(4:11, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
   row_spec(1:7, background = "white", color = "black")%>%
   column_spec(12:19, background = "#221F72",color="white", include_thead = TRUE)%>%
   row_spec(1:7, background = "white", color="black")%>%
-  collapse_rows(columns = 1)
+  collapse_rows(columns = 1)%>%
+  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=19))%>%
+  add_header_above(c("Cytology Efficiency Indicator"=19))
 ```
 
 
@@ -355,32 +356,18 @@ Cytology_Table_Weekday %>%
 Pathology_Table_Weekday %>%
   kable() %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
-  add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 9, "Receive to Result TAT "=9))%>%
-  column_spec(4:12, background = "#D80B8C", color= "white",include_thead = TRUE)%>%
+  add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 9, "Receive to Result TAT "=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
+  column_spec(4:12, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
   row_spec(1:7, background = "white", color = "black")%>%
   column_spec(13:21, background = "#221F72",color="white", include_thead = TRUE)%>%
   row_spec(1:7, background = "white", color="black")%>%
-  collapse_rows(columns = 1)
+  collapse_rows(columns = 1)%>%
+  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
+  add_header_above(c("Surgical Pathology Efficiency Indicator"=21))
 ```
 ```
 
 
-
-```{r, echo=FALSE}
-if (is.null(PP_Not_Weekday)){
-  Cytology_Table_Not_Weekday <- NULL
-}else{
-  Cytology_Table_Not_Weekday %>%
-    kable() %>%
-    kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12)%>%
-    add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 8, "Receive to Result TAT "=8))%>%
-    column_spec(4:11, background = "#D80B8C", color= "white",include_thead = TRUE)%>%
-    row_spec(1:7, background = "white", color = "black")%>%
-    column_spec(12:19, background = "#221F72",color="white", include_thead = TRUE)%>%
-    row_spec(1:7, background = "white", color="black")%>%
-    collapse_rows(columns = 1)
-}
-```
 
 
 
