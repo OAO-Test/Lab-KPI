@@ -233,6 +233,12 @@ Cytology_Table_Weekday_New <- merge(x = Table_Template, y= Cytology_Table_Weekda
 #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
 Cytology_Table_Weekday_New2 <- merge(x = Table_Template[c(1,2)], y= Cytology_Table_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
 
+#Rearrange the columns based on their names
+
+columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+
+Cytology_Table_Weekday_New2 <- Cytology_Table_Weekday_New2[, columns_order]
+
 
 #Cytology backlog Calculation
 
@@ -374,17 +380,17 @@ if (is.null(PP_Not_Weekday)){
 
 
 ```{r, echo=FALSE}
-Cytology_Table_Weekday %>%
+Cytology_Table_Weekday_New2 %>%
   kable() %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
-  add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 8, "Receive to Result TAT "=8), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
-  column_spec(4:11, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
+  add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 9, "Receive to Result TAT "=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
+  column_spec(4:12, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
   row_spec(1:4, background = "white", color = "black")%>%
-  column_spec(12:19, background = "#221F72",color="white", include_thead = TRUE)%>%
+  column_spec(13:21, background = "#221F72",color="white", include_thead = TRUE)%>%
   row_spec(1:4, background = "white", color="black")%>%
   collapse_rows(columns = 1)%>%
-  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=19))%>%
-  add_header_above(c("Cytology Efficiency Indicator"=19))
+  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
+  add_header_above(c("Cytology Efficiency Indicator"=21))
 ```
 
 
