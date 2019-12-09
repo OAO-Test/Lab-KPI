@@ -37,7 +37,6 @@ library(rmarkdown)
 library(tinytex)
 library(kableExtra)
 #-------------------------------holiday/weekend-------------------------------#
-#Today's date:
 Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
@@ -97,10 +96,8 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
 #-----------Cytology Backlog Excel Files-----------#
 #For the backlog files the read excel is starting from the second row
 #Also I made sure to remove the last line
-
-Cytology_Backlog <- read_excel(choose.files(caption = "Select Cytology Backlog Report"), skip = 1, 1)
+Cytology_Backlog_I <- read_excel(choose.files(caption = "Select Cytology Backlog Report"),skip =1 , 1)
 Cytology_Backlog <- data.frame(Cytology_Backlog[-nrow(Cytology_Backlog),], stringsAsFactors = FALSE)
-
 
 #------------------------------Data Pre-Processing------------------------------#
 
@@ -111,7 +108,7 @@ Patient_Setting <- data.frame(read_excel(choose.files(caption = "Select Patient 
 PP_Weekday_PS <- merge(x=PP_Weekday, y=Patient_Setting, all.x = TRUE ) 
 PP_Not_Weekday_PS <- merge(x=PP_Not_Weekday, y=Patient_Setting, all.x = TRUE )
 
-#Set up a default calendar for TAT calculations
+#Set up a default calendar for collect to received TAT calculations
 create.calendar("MSHS_working_days", MSHS_Holiday, weekdays=c("saturday","sunday"))
 bizdays.options$set(default.calendar="MSHS_working_days")
 
@@ -226,7 +223,7 @@ if (is.null(PP_Not_Weekday)){
   Cytology_Table_Not_Weekday <- left_join(full_join(Cytology_Cases_Signed_Not_Weekday, Cytology_Patient_Metric_Not_Weekday), bind_rows(GYN_Lab_Metric_Not_Weekday,NONGYN_Lab_Metric_Not_Weekday), by = c("spec_group", "Patient.Setting"))
 }
 
-#To add all the missing rows and columns to the data
+#To add all the missing rows and columns to the Cytology weekday table
 #first step is merging the table template with the cytology table and this will include all of the missing columns.
 Cytology_Table_Weekday_New <- merge(x = Table_Template, y= Cytology_Table_Weekday, all.y=TRUE)
 
@@ -238,6 +235,26 @@ Cytology_Table_Weekday_New2 <- merge(x = Table_Template[c(1,2)], y= Cytology_Tab
 columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
 
 Cytology_Table_Weekday_New2 <- Cytology_Table_Weekday_New2[, columns_order]
+
+
+#To add all the missing rows and columns to the Cytology not weekday table
+
+if (is.null(PP_Not_Weekday)){
+  Cytology_Table_Not_Weekday_New <- NULL
+  Cytology_Table_Not_Weekday_New2 <- NULL
+} else {
+  #first step is merging the table template with the cytology table and this will include all of the missing columns.
+  Cytology_Table_Not_Weekday_New <- merge(x = Table_Template, y= Cytology_Table_Not_Weekday, all.y=TRUE)
+  
+  #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
+  Cytology_Table_Not_Weekday_New2 <- merge(x = Table_Template[c(1,2)], y= Cytology_Table_Not_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+  
+  #Rearrange the columns based on their names
+  
+  columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+  
+  Cytology_Table_Weekday_New2 <- Cytology_Table_Not_Weekday_New2[, columns_order]
+}
 
 
 #Cytology backlog Calculation
