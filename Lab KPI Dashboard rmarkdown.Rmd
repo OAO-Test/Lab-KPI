@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+#install.packages("knitr")
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -22,9 +23,12 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("timeDate")
 #install.packages("readxl")
 #install.packages("bizdays")
+#install.packages("dplyr")
+#install.packages("reshape2")
 #install.packages("rmarkdown")
 #install.packages("tinytex")
 #install.packages("kableExtra")
+
 #-------------------------------Required packages-------------------------------#
 
 #Required packages: run these everytime you run the code
@@ -96,7 +100,7 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
 #-----------Cytology Backlog Excel Files-----------#
 #For the backlog files the read excel is starting from the second row
 #Also I made sure to remove the last line
-Cytology_Backlog_I <- read_excel(choose.files(caption = "Select Cytology Backlog Report"),skip =1 , 1)
+Cytology_Backlog <- read_excel(choose.files(caption = "Select Cytology Backlog Report"),skip =1 , 1)
 Cytology_Backlog <- data.frame(Cytology_Backlog[-nrow(Cytology_Backlog),], stringsAsFactors = FALSE)
 
 #------------------------------Data Pre-Processing------------------------------#
