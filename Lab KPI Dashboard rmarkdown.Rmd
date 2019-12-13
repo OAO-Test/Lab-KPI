@@ -461,7 +461,7 @@ Pathology_Table_Weekday_New2 %>%
   row_spec(1:4, background = "white", color="black")%>%
   collapse_rows(columns = 1)%>%
   add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
-  add_header_above(c("Cytology Efficiency Indicator"=21))
+  add_header_above(c("Pathology Efficiency Indicator"=21))
 ```
 ```
 
