@@ -213,9 +213,6 @@ if (is.null(PP_Not_Weekday)){
 
 
 #here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
-#import table template
-Table_Template <- read_excel(choose.files(caption = "Select Table Dataframe"), sheet = "Cyto") 
-names(Table_Template) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
 
 #Cytology Weekday table
 Cytology_Table_Weekday <- left_join(full_join(Cytology_Cases_Signed, bind_rows(GYN_Lab_Metric,NONGYN_Lab_Metric)), Cytology_Patient_Metric, by = c("spec_group", "Patient.Setting"))
@@ -229,6 +226,11 @@ if (is.null(PP_Not_Weekday)){
 
 #To add all the missing rows and columns to the Cytology weekday table
 #first step is merging the table template with the cytology table and this will include all of the missing columns.
+
+#import table template
+Table_Template <- read_excel(choose.files(caption = "Select Table Dataframe"), sheet = "Cyto") 
+names(Table_Template) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+
 Cytology_Table_Weekday_New <- merge(x = Table_Template, y= Cytology_Table_Weekday, all.y=TRUE)
 
 #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
@@ -257,7 +259,7 @@ if (is.null(PP_Not_Weekday)){
   
   columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
   
-  Cytology_Table_Weekday_New2 <- Cytology_Table_Not_Weekday_New2[, columns_order]
+  Cytology_Table_Not_Weekday_New2 <- Cytology_Table_Not_Weekday_New2[, columns_order]
 }
 
 
@@ -396,6 +398,39 @@ if (is.null(PP_Not_Weekday)){
   Pathology_Table_Not_Weekday <- left_join(full_join(Surgical_Pathology_Cases_Signed_Not_Weekday, Surgical_Pathology_Patient_Metric_Not_Weekday), bind_rows(Breast_Lab_Metric_Not_Weekday,GI_Lab_Metric_Not_Weekday), by = c("spec_group", "Patient.Setting"))
 }
 
+#To add all the missing rows and columns to the pathology weekday table
+#first step is merging the table template 2 with the pathology table and this will include all of the missing columns.
+
+#import table template
+Table_Template_2 <- read_excel(choose.files(caption = "Select Table Dataframe"), sheet = "Patho") 
+names(Table_Template_2) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+
+Pathology_Table_Weekday_New <- merge(x = Table_Template_2, y= Pathology_Table_Weekday, all.y=TRUE)
+
+#second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
+Pathology_Table_Weekday_New2 <- merge(x = Table_Template_2[c(1,2)], y= Pathology_Table_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+
+#Rearrange the columns based on their names
+
+Pathology_Table_Weekday_New2 <- Pathology_Table_Weekday_New2[, columns_order]
+
+
+#To add all the missing rows and columns to the Pathology not weekday table
+
+if (is.null(PP_Not_Weekday)){
+  Pathology_Table_Not_Weekday_New <- NULL
+  Pathology_Table_Not_Weekday_New2 <- NULL
+} else {
+  #first step is merging the table template with the cytology table and this will include all of the missing columns.
+  Pathology_Table_Not_Weekday_New <- merge(x = Table_Template_2, y= Pathology_Table_Not_Weekday, all.y=TRUE)
+  
+  #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
+  Pathology_Table_Not_Weekday_New2 <- merge(x = Table_Template_2[c(1,2)], y= Pathology_Table_Not_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+  
+  #Rearrange the columns based on their names
+  
+  Pathology_Table_Not_Weekday_New2 <- Pathology_Table_Not_Weekday_New2[, columns_order]
+}
 
 ```
 
@@ -416,17 +451,17 @@ Cytology_Table_Weekday_New2 %>%
 
 
 ```{r, echo=FALSE}
-Pathology_Table_Weekday %>%
+Pathology_Table_Weekday_New2 %>%
   kable() %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
-  add_header_above(c(" "= 3, "Average Collection to Result TAT (Calendar Days)"= 9, "Receive to Result TAT "=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
+  add_header_above(c(" "= 3, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
   column_spec(4:12, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
-  row_spec(1:3, background = "white", color = "black")%>%
+  row_spec(1:4, background = "white", color = "black")%>%
   column_spec(13:21, background = "#221F72",color="white", include_thead = TRUE)%>%
-  row_spec(1:3, background = "white", color="black")%>%
+  row_spec(1:4, background = "white", color="black")%>%
   collapse_rows(columns = 1)%>%
   add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
-  add_header_above(c("Surgical Pathology Efficiency Indicator"=21))
+  add_header_above(c("Cytology Efficiency Indicator"=21))
 ```
 ```
 
