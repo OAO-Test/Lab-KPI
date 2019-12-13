@@ -181,6 +181,11 @@ mshs_site <- read_excel(reference_file, sheet = "SiteNames")
 scc_wday <- SCC_Weekday
 sun_wday <- SQ_Weekday
 
+cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT")
+site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")
+pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
+pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
+
 # SCC lookup references ----------------------------------------------
 # Crosswalk labs included and remove out of scope labs
 scc_wday <- left_join(scc_wday, test_code[ , c("Test", "SCC_TestID")], by = c("TEST_ID" = "SCC_TestID"))
@@ -219,7 +224,7 @@ scc_wday$MasterSetting <- ifelse(scc_wday$CLINIC_TYPE == "E", "ED",
 
 # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
 scc_wday$AdjPriority <- ifelse(scc_wday$MasterSetting == "ED" | scc_wday$MasterSetting == "ICU" | scc_wday$PRIORITY == "S", "Stat", "Routine")
-scc_wday$MasterPriority <- ifelse(tat_targets$Priority[match(scc_wday$Test, tat_targets$Test)] == "All", "AllSpecimen", scc_wday$AdjPriority)
+scc_wday$DashboardPriority <- ifelse(tat_targets$Priority[match(scc_wday$Test, tat_targets$Test)] == "All", "AllSpecimen", scc_wday$AdjPriority)
 
 # Calculate turnaround times
 scc_wday$CollectToReceive <- scc_wday$RECEIVE_DATE - scc_wday$COLLECTION_DATE
@@ -234,8 +239,8 @@ scc_wday$AddOnMaster <- ifelse(difftime(scc_wday$ORDERING_DATE, scc_wday$RECEIVE
 scc_wday$MissingCollect <- ifelse(scc_wday$CollectToReceive == 0, TRUE, FALSE)
 
 # Determine target TAT based on test, priority, and patient setting
-scc_wday$Concate1 <- paste(scc_wday$Test, scc_wday$MasterPriority)
-scc_wday$Concate2 <- paste(scc_wday$Test, scc_wday$MasterPriority, scc_wday$MasterSetting)
+scc_wday$Concate1 <- paste(scc_wday$Test, scc_wday$DashboardPriority)
+scc_wday$Concate2 <- paste(scc_wday$Test, scc_wday$DashboardPriority, scc_wday$MasterSetting)
 
 scc_wday$ReceiveResultTarget <- ifelse(!is.na(match(scc_wday$Concate2, tat_targets$Concate)), tat_targets$ReceiveToResultTarget[match(scc_wday$Concate2, tat_targets$Concate)], 
                                 ifelse(!is.na(match(scc_wday$Concate1, tat_targets$Concate)), tat_targets$ReceiveToResultTarget[match(scc_wday$Concate1, tat_targets$Concate)],
@@ -304,7 +309,7 @@ sun_wday$MasterSetting <- ifelse(sun_wday$SettingRollUp == "ED", "ED",
 # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
 sun_wday$AdjPriority <- ifelse(sun_wday$MasterSetting != "ED" & sun_wday$MasterSetting != "ICU" & is.na(sun_wday$SpecimenPriority), "Routine",
                                ifelse(sun_wday$MasterSetting == "ED" | sun_wday$MasterSetting == "ICU" | sun_wday$SpecimenPriority == "S", "Stat", "Routine"))
-sun_wday$MasterPriority <- ifelse(tat_targets$Priority[match(sun_wday$Test, tat_targets$Test)] == "All", "AllSpecimen", sun_wday$AdjPriority)
+sun_wday$DashboardPriority <- ifelse(tat_targets$Priority[match(sun_wday$Test, tat_targets$Test)] == "All", "AllSpecimen", sun_wday$AdjPriority)
 
 # Calculate turnaround times
 sun_wday$CollectToReceive <- sun_wday$ReceiveDateTime - sun_wday$CollectDateTime
@@ -319,8 +324,8 @@ sun_wday$AddOnMaster <- ifelse(difftime(sun_wday$OrderDateTime, sun_wday$Receive
 sun_wday$MissingCollect <- ifelse(sun_wday$CollectDateTime == sun_wday$OrderDateTime, TRUE, FALSE)
 
 # Determine target TAT based on test, priority, and patient setting
-sun_wday$Concate1 <- paste(sun_wday$Test, sun_wday$MasterPriority)
-sun_wday$Concate2 <- paste(sun_wday$Test, sun_wday$MasterPriority, sun_wday$MasterSetting)
+sun_wday$Concate1 <- paste(sun_wday$Test, sun_wday$DashboardPriority)
+sun_wday$Concate2 <- paste(sun_wday$Test, sun_wday$DashboardPriority, sun_wday$MasterSetting)
 
 sun_wday$ReceiveResultTarget <- ifelse(!is.na(match(sun_wday$Concate2, tat_targets$Concate)), tat_targets$ReceiveToResultTarget[match(sun_wday$Concate2, tat_targets$Concate)], 
                                        ifelse(!is.na(match(sun_wday$Concate1, tat_targets$Concate)), tat_targets$ReceiveToResultTarget[match(sun_wday$Concate1, tat_targets$Concate)],
@@ -333,6 +338,15 @@ sun_wday$CollectResultTarget <- ifelse(!is.na(match(sun_wday$Concate2, tat_targe
 sun_wday$ReceiveResultInTarget <- ifelse(sun_wday$ReceiveToResult <= sun_wday$ReceiveResultTarget, TRUE, FALSE)
 sun_wday$CollectResultInTarget <- ifelse(sun_wday$CollectToResult <= sun_wday$CollectResultTarget, TRUE, FALSE)
 
+# Identify and remove duplicate tests
+sun_wday$Concate3 <- paste(sun_wday$PtNumber, 
+                           sun_wday$HISOrderNumber, sun_wday$TSTName,
+                           sun_wday$CollectDateTime, sun_wday$ReceiveDateTime, sun_wday$ResultDateTime)
+
+sun_wday <- sun_wday[!duplicated(sun_wday$Concate3), ]
+
+
+
 # Identify which labs to include in TAT analysis
 # Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
 sun_wday$TATInclude <- ifelse(sun_wday$AddOnMaster == "AddOn" | sun_wday$MasterSetting == "Other" | sun_wday$CollectToResult < 0 | sun_wday$ReceiveToResult < 0 | is.na(sun_wday$CollectToResult) | is.na(sun_wday$ReceiveToResult), FALSE, TRUE)
@@ -341,38 +355,80 @@ sun_wday$TATInclude <- ifelse(sun_wday$AddOnMaster == "AddOn" | sun_wday$MasterS
 # Standardize and combine SCC and Sunquest data ----------------------------------------------
 # Create new dataframe with columns of interest and rename with common names across SCC and Sunquest to bind later
 scc_wday_master <- scc_wday[ , c("Ward", "WARD_NAME", "WardandName", 
-                                 "ORDER_ID", "REQUESTING_DOC NAME", 
-                                 "MPI", "WORK SHIFT", "TEST_NAME", "Test",
-                                 "PRIORITY", "Site", "ICU", "Setting", "SettingRollUp", 
-                                 "MasterSetting", "MasterPriority", 
-                                 "ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE",
-                                 "CollectToReceive", "ReceiveToResult", "CollectToResult", "AddOnMaster", "MissingCollect",
-                                 "ReceiveResultTarget", "CollectResultTarget", "ReceiveResultInTarget", "CollectResultInTarget", "TATInclude")]
-colnames(scc_wday_master) <- c("Loc", "LocNames", "LocConcat",
-                               "OrderID", "RequestMD",
-                               "MSMRN", "WorkShift", "TestName", "Test",
-                               "OrderPriority", "Site", "ICU", "Setting", "SettingRollUp",
-                               "MasterSetting", "MasterPriority", 
-                               "OrderDate", "CollectDate", "ReceiveDate", "ResultDate",
-                               "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", "AddOnMaster", "MissingCollect",
-                               "ReceiveResultTarget", "CollectResultTarget", "ReceiveResultInTarget", "CollectResultInTarget", "TATInclude")
+                                 "ORDER_ID", "REQUESTING_DOC NAME", "MPI", "WORK SHIFT", 
+                                 "TEST_NAME", "Test", "PRIORITY", 
+                                 "Site", "ICU", "CLINIC_TYPE", 
+                                 "Setting", "SettingRollUp", "MasterSetting", 
+                                 "AdjPriority", "DashboardPriority", 
+                                 "ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE", 
+                                 "CollectToReceive", "ReceiveToResult", "CollectToResult", 
+                                 "AddOnMaster", "MissingCollect", 
+                                 "ReceiveResultTarget", "CollectResultTarget", 
+                                 "ReceiveResultInTarget", "CollectResultInTarget", 
+                                 "TATInclude")]
 
+sun_wday_master <- sun_wday[ ,c("LocCode", "LocName", "LocandName", 
+                           "HISOrderNumber", "PhysName", "PtNumber", "SHIFT",            
+                           "TSTName", "Test", "SpecimenPriority", 
+                           "Site", "ICU", "LocType",               
+                           "Setting", "SettingRollUp", "MasterSetting", 
+                           "AdjPriority", "DashboardPriority", 
+                           "OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime", 
+                           "CollecttoReceive", "ReceivetoResult", "CollecttoResult", 
+                           "AddOnMaster", "MissingCollect", 
+                           "ReceiveResultTarget", "CollectResultTarget", 
+                           "ReceiveResultInTarget", "CollectResultInTarget", 
+                           "TATInclude")]
 
+colnames(scc_wday_master) <- c("LocCode", "LocName", "LocConcat", 
+                               "OrderID", "RequestMD", "MSMRN", "WorkShift", 
+                               "TestName", "Test", "OrderPriority", 
+                               "Site", "ICU", "LocType", 
+                               "Setting", "SettingRollUp", "MasterSetting", 
+                               "AdjPriority", "DashboardPriority", 
+                               "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
+                               "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
+                               "AddOnMaster", "MissingCollect", 
+                               "ReceiveResultTarget", "CollectResultTarget", 
+                               "ReceiveResultInTarget", "CollectResultInTarget", 
+                               "TATInclude")
+
+colnames(sun_wday_master) <- c("LocCode", "LocName", "LocConcat", 
+                               "OrderID", "RequestMD", "MSMRN", "WorkShift", 
+                               "TestName", "Test", "OrderPriority", 
+                               "Site", "ICU", "LocType", 
+                               "Setting", "SettingRollUp", "MasterSetting", 
+                               "AdjPriority", "DashboardPriority", 
+                               "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
+                               "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
+                               "AddOnMaster", "MissingCollect", 
+                               "ReceiveResultTarget", "CollectResultTarget", 
+                               "ReceiveResultInTarget", "CollectResultInTarget", 
+                               "TATInclude")
+
+cp_micro_wday_master <- rbind(scc_wday_master, sun_wday_master)
+
+cp_micro_wday_master[c("LocConcat", "RequestMD", "WorkShift", "MasterSetting", "AdjPriority", "DashboardPriority", "AddOnMaster")] <-
+  lapply(cp_micro_wday_master[c("LocConcat", "RequestMD", "WorkShift", "MasterSetting", "AdjPriority", "DashboardPriority", "AddOnMaster")], as.factor)
+
+cp_micro_wday_master$Site <- factor(cp_micro_wday_master$Site, levels = site_order)
+cp_micro_wday_master$Test <- factor(cp_micro_wday_master$Test, levels = cp_micro_lab_order)
+cp_micro_wday_master$MasterSetting <- factor(cp_micro_wday_master$MasterSetting, levels = pt_setting_order)
 
 
 # Manipulate and reshape SCC and Sunquest data -----------------------------------------------
 # Start summarizing data
-chem_hem <- scc_wday_master[(scc_wday_master$Test == "Troponin" | scc_wday_master$Test == "Lactate WB" | scc_wday_master$Test == "BUN" | scc_wday_master$Test == "HGB" | scc_wday_master$Test == "PT") & scc_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, MasterPriority, MasterSetting) %>%
+chem_hem <- cp_micro_wday_master[(cp_micro_wday_master$Test == "Troponin" | cp_micro_wday_master$Test == "Lactate WB" | cp_micro_wday_master$Test == "BUN" | cp_micro_wday_master$Test == "HGB" | cp_micro_wday_master$Test == "PT") & cp_micro_wday_master$TATInclude == TRUE, ] %>%
+  group_by(Test, Site, DashboardPriority, MasterSetting) %>%
   summarize(ResultedVolume = n(), CollectResultVolInTarget = sum(CollectResultInTarget), ReceiveResultInTarget = sum(ReceiveResultInTarget),
-            CollectToResultPercent = CollectResultVolInTarget/ResultedVolume*100, ReceiveResultPercent = ReceiveResultInTarget/ResultedVolume*100)
+            CollectToResultPercent = round(CollectResultVolInTarget/ResultedVolume, digits = 1)*100, ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 1)*100)
 
-chem_hem_2 <- melt(chem_hem, na.rm = FALSE, id.vars = c("Test", "Site", "MasterPriority", "MasterSetting"), 
+chem_hem_2 <- melt(chem_hem, na.rm = FALSE, id.vars = c("Test", "Site", "DashboardPriority", "MasterSetting"), 
                    measure.vars = c("CollectToResultPercent", "ReceiveResultPercent"))
 
-chem_hem_2 <- dcast(chem_hem_2, Test + MasterPriority + MasterSetting ~ rev(variable) + Site, value.var = "value")
+chem_hem_2 <- dcast(chem_hem_2, Test + DashboardPriority + MasterSetting ~ rev(variable) + Site, value.var = "value")
 
 micro <- scc_wday_master[(scc_wday_master$Test == "Rapid Flu" | scc_wday_master$Test == "C. diff") & scc_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, MasterPriority, MasterSetting) %>%
+  group_by(Test, Site, DashboardPriority, MasterSetting) %>%
   summarize(ResultedVolume = n(), CollectResultVolInTarget = sum(CollectResultInTarget), ReceiveResultInTarget = sum(ReceiveResultInTarget),
             CollectToResultPercent = CollectResultVolInTarget/ResultedVolume*100, ReceiveResultPercent = ReceiveResultInTarget/ResultedVolume*100)
