@@ -181,15 +181,21 @@ mshs_site <- read_excel(reference_file, sheet = "SiteNames")
 scc_wday <- SCC_Weekday
 sun_wday <- SQ_Weekday
 
-cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT")
+cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu", "C. diff")
+
+# cp_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT")
+# chem_order <- c("Troponin", "Lactate WB", "BUN")
+# hem_order <- c("HGB", "PT")
+# micro_order <- c("Rapid Flu", "C. diff")
 site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 
 # SCC lookup references ----------------------------------------------
 # Crosswalk labs included and remove out of scope labs
-scc_wday <- left_join(scc_wday, test_code[ , c("Test", "SCC_TestID")], by = c("TEST_ID" = "SCC_TestID"))
+scc_wday <- left_join(scc_wday, test_code[ , c("Test", "SCC_TestID", "Division")], by = c("TEST_ID" = "SCC_TestID"))
 scc_wday$TEST_ID <- as.factor(scc_wday$TEST_ID)
+scc_wday$Division <- as.factor(scc_wday$Division)
 scc_wday$TestIncl <- ifelse(is.na(scc_wday$Test), FALSE, TRUE)
 scc_wday <- scc_wday[scc_wday$TestIncl == TRUE, ]
 # Crosswalk units and identify ICUs
@@ -262,13 +268,14 @@ scc_wday <- scc_wday[!duplicated(scc_wday$Concate3), ]
 
 # Identify which labs to include in TAT analysis
 # Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
-scc_wday$TATInclude <- ifelse(scc_wday$AddOnMaster == "AddOn" | scc_wday$MasterSetting == "Other" | scc_wday$CollectToResult < 0 | scc_wday$ReceiveToResult < 0 | is.na(scc_wday$CollectToResult) | is.na(scc_wday$ReceiveToResult), FALSE, TRUE)
+scc_wday$TATInclude <- ifelse(scc_wday$AddOnMaster != "Original" | scc_wday$MasterSetting == "Other" | scc_wday$CollectToResult < 0 | scc_wday$ReceiveToResult < 0 | is.na(scc_wday$CollectToResult) | is.na(scc_wday$ReceiveToResult), FALSE, TRUE)
 
 
 # Sunquest lookup references -------------------------------------------
 # Crosswalk labs included and remove out of scope labs
-sun_wday <- left_join(sun_wday, test_code[ , c("Test", "SUN_TestCode")], by = c("TestCode" = "SUN_TestCode"))
+sun_wday <- left_join(sun_wday, test_code[ , c("Test", "SUN_TestCode", "Division")], by = c("TestCode" = "SUN_TestCode"))
 sun_wday$TestCode <- as.factor(sun_wday$TestCode)
+sun_wday$Division <- as.factor(sun_wday$Division)
 sun_wday$TestIncl <- ifelse(is.na(sun_wday$Test), FALSE, TRUE)
 sun_wday <- sun_wday[sun_wday$TestIncl == TRUE, ]
 # Crosswalk units and identify ICUs
@@ -349,14 +356,14 @@ sun_wday <- sun_wday[!duplicated(sun_wday$Concate3), ]
 
 # Identify which labs to include in TAT analysis
 # Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
-sun_wday$TATInclude <- ifelse(sun_wday$AddOnMaster == "AddOn" | sun_wday$MasterSetting == "Other" | sun_wday$CollectToResult < 0 | sun_wday$ReceiveToResult < 0 | is.na(sun_wday$CollectToResult) | is.na(sun_wday$ReceiveToResult), FALSE, TRUE)
+sun_wday$TATInclude <- ifelse(sun_wday$AddOnMaster != "Original" | sun_wday$MasterSetting == "Other" | sun_wday$CollectToResult < 0 | sun_wday$ReceiveToResult < 0 | is.na(sun_wday$CollectToResult) | is.na(sun_wday$ReceiveToResult), FALSE, TRUE)
 
 
 # Standardize and combine SCC and Sunquest data ----------------------------------------------
 # Create new dataframe with columns of interest and rename with common names across SCC and Sunquest to bind later
 scc_wday_master <- scc_wday[ , c("Ward", "WARD_NAME", "WardandName", 
                                  "ORDER_ID", "REQUESTING_DOC NAME", "MPI", "WORK SHIFT", 
-                                 "TEST_NAME", "Test", "PRIORITY", 
+                                 "TEST_NAME", "Test", "Division", "PRIORITY", 
                                  "Site", "ICU", "CLINIC_TYPE", 
                                  "Setting", "SettingRollUp", "MasterSetting", 
                                  "AdjPriority", "DashboardPriority", 
@@ -369,7 +376,7 @@ scc_wday_master <- scc_wday[ , c("Ward", "WARD_NAME", "WardandName",
 
 sun_wday_master <- sun_wday[ ,c("LocCode", "LocName", "LocandName", 
                            "HISOrderNumber", "PhysName", "PtNumber", "SHIFT",            
-                           "TSTName", "Test", "SpecimenPriority", 
+                           "TSTName", "Test", "Division", "SpecimenPriority", 
                            "Site", "ICU", "LocType",               
                            "Setting", "SettingRollUp", "MasterSetting", 
                            "AdjPriority", "DashboardPriority", 
@@ -382,7 +389,7 @@ sun_wday_master <- sun_wday[ ,c("LocCode", "LocName", "LocandName",
 
 colnames(scc_wday_master) <- c("LocCode", "LocName", "LocConcat", 
                                "OrderID", "RequestMD", "MSMRN", "WorkShift", 
-                               "TestName", "Test", "OrderPriority", 
+                               "TestName", "Test", "Division", "OrderPriority", 
                                "Site", "ICU", "LocType", 
                                "Setting", "SettingRollUp", "MasterSetting", 
                                "AdjPriority", "DashboardPriority", 
@@ -395,7 +402,7 @@ colnames(scc_wday_master) <- c("LocCode", "LocName", "LocConcat",
 
 colnames(sun_wday_master) <- c("LocCode", "LocName", "LocConcat", 
                                "OrderID", "RequestMD", "MSMRN", "WorkShift", 
-                               "TestName", "Test", "OrderPriority", 
+                               "TestName", "Test", "Division", "OrderPriority", 
                                "Site", "ICU", "LocType", 
                                "Setting", "SettingRollUp", "MasterSetting", 
                                "AdjPriority", "DashboardPriority", 
@@ -418,17 +425,43 @@ cp_micro_wday_master$MasterSetting <- factor(cp_micro_wday_master$MasterSetting,
 
 # Manipulate and reshape SCC and Sunquest data -----------------------------------------------
 # Start summarizing data
-chem_hem <- cp_micro_wday_master[(cp_micro_wday_master$Test == "Troponin" | cp_micro_wday_master$Test == "Lactate WB" | cp_micro_wday_master$Test == "BUN" | cp_micro_wday_master$Test == "HGB" | cp_micro_wday_master$Test == "PT") & cp_micro_wday_master$TATInclude == TRUE, ] %>%
+chemistry <- cp_micro_wday_master[cp_micro_wday_master$Division == "Chemistry" & cp_micro_wday_master$TATInclude == TRUE, ] %>%
   group_by(Test, Site, DashboardPriority, MasterSetting) %>%
-  summarize(ResultedVolume = n(), CollectResultVolInTarget = sum(CollectResultInTarget), ReceiveResultInTarget = sum(ReceiveResultInTarget),
-            CollectToResultPercent = round(CollectResultVolInTarget/ResultedVolume, digits = 1)*100, ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 1)*100)
+  summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 1)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 1)*100)
 
-chem_hem_2 <- melt(chem_hem, na.rm = FALSE, id.vars = c("Test", "Site", "DashboardPriority", "MasterSetting"), 
-                   measure.vars = c("CollectToResultPercent", "ReceiveResultPercent"))
-
-chem_hem_2 <- dcast(chem_hem_2, Test + DashboardPriority + MasterSetting ~ rev(variable) + Site, value.var = "value")
-
-micro <- scc_wday_master[(scc_wday_master$Test == "Rapid Flu" | scc_wday_master$Test == "C. diff") & scc_wday_master$TATInclude == TRUE, ] %>%
+hematology <- cp_micro_wday_master[cp_micro_wday_master$Division == "Hematology" & cp_micro_wday_master$TATInclude == TRUE, ] %>%
   group_by(Test, Site, DashboardPriority, MasterSetting) %>%
-  summarize(ResultedVolume = n(), CollectResultVolInTarget = sum(CollectResultInTarget), ReceiveResultInTarget = sum(ReceiveResultInTarget),
-            CollectToResultPercent = CollectResultVolInTarget/ResultedVolume*100, ReceiveResultPercent = ReceiveResultInTarget/ResultedVolume*100)
+  summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 1)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 1)*100)
+
+micro <- cp_micro_wday_master[cp_micro_wday_master$Division == "Microbiology RRL" & cp_micro_wday_master$TATInclude == TRUE, ] %>%
+  group_by(Test, Site, DashboardPriority, MasterSetting) %>%
+  summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 1)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 1)*100)
+
+  
+# chem_hem_2 <- melt(chem_hem, na.rm = FALSE, id.vars = c("Test", "Site", "DashboardPriority", "MasterSetting"), 
+#                    measure.vars = c("CollectToResultPercent", "ReceiveResultPercent"))
+# 
+# chem_hem_2 <- dcast(chem_hem_2, Test + DashboardPriority + MasterSetting ~ rev(variable) + Site, value.var = "value")
+# 
+# micro <- scc_wday_master[(scc_wday_master$Test == "Rapid Flu" | scc_wday_master$Test == "C. diff") & scc_wday_master$TATInclude == TRUE, ] %>%
+#   group_by(Test, Site, DashboardPriority, MasterSetting) %>%
+#   summarize(ResultedVolume = n(), CollectResultVolInTarget = sum(CollectResultInTarget), ReceiveResultInTarget = sum(ReceiveResultInTarget),
+#             CollectToResultPercent = CollectResultVolInTarget/ResultedVolume*100, ReceiveResultPercent = ReceiveResultInTarget/ResultedVolume*100)
+
+
+# # Determine percentage of labs with missing collection times -------------------------------
+missing_collect <- cp_micro_wday_master %>%
+  group_by(Site) %>%
+  summarize(ResultedVolume = n(), MissingCollection = sum(MissingCollect, na.rm = TRUE), Percent = round(MissingCollection/ResultedVolume*100, digits = 1))
+
+missing_collect_table <- dcast(missing_collect, "Percent Specimens Missing Collection" ~ Site, value.var = "Percent")
+
+# Determine number of add-on orders stratified by test and site
+add_on_volume <- cp_micro_wday_master %>%
+  group_by(Test, Site) %>%
+  summarize(AddOnVolume = sum(AddOnMaster == "AddOn", na.rm = TRUE))#, Percent = round(MissingCollection/ResultedVolume*100, digits = 1))
+
+add_on_table <- dcast(add_ons, Test ~ Site, value.var = "AddOnVolume")
