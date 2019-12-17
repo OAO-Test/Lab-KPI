@@ -440,17 +440,6 @@ micro <- cp_micro_wday_master[cp_micro_wday_master$Division == "Microbiology RRL
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 1)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 1)*100)
 
-  
-# chem_hem_2 <- melt(chem_hem, na.rm = FALSE, id.vars = c("Test", "Site", "DashboardPriority", "MasterSetting"), 
-#                    measure.vars = c("CollectToResultPercent", "ReceiveResultPercent"))
-# 
-# chem_hem_2 <- dcast(chem_hem_2, Test + DashboardPriority + MasterSetting ~ rev(variable) + Site, value.var = "value")
-# 
-# micro <- scc_wday_master[(scc_wday_master$Test == "Rapid Flu" | scc_wday_master$Test == "C. diff") & scc_wday_master$TATInclude == TRUE, ] %>%
-#   group_by(Test, Site, DashboardPriority, MasterSetting) %>%
-#   summarize(ResultedVolume = n(), CollectResultVolInTarget = sum(CollectResultInTarget), ReceiveResultInTarget = sum(ReceiveResultInTarget),
-#             CollectToResultPercent = CollectResultVolInTarget/ResultedVolume*100, ReceiveResultPercent = ReceiveResultInTarget/ResultedVolume*100)
-
 
 # # Determine percentage of labs with missing collection times -------------------------------
 missing_collect <- cp_micro_wday_master %>%
@@ -459,9 +448,9 @@ missing_collect <- cp_micro_wday_master %>%
 
 missing_collect_table <- dcast(missing_collect, "Percent Specimens Missing Collection" ~ Site, value.var = "Percent")
 
-# Determine number of add-on orders stratified by test and site
+# Determine number of add-on orders stratified by test and site ------------------------------
 add_on_volume <- cp_micro_wday_master %>%
   group_by(Test, Site) %>%
-  summarize(AddOnVolume = sum(AddOnMaster == "AddOn", na.rm = TRUE))#, Percent = round(MissingCollection/ResultedVolume*100, digits = 1))
+  summarize(AddOnVolume = sum(AddOnMaster == "AddOn", na.rm = TRUE))
 
-add_on_table <- dcast(add_ons, Test ~ Site, value.var = "AddOnVolume")
+add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
