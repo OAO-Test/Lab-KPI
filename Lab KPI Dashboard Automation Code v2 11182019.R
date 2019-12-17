@@ -428,17 +428,33 @@ cp_micro_wday_master$MasterSetting <- factor(cp_micro_wday_master$MasterSetting,
 chemistry <- cp_micro_wday_master[cp_micro_wday_master$Division == "Chemistry" & cp_micro_wday_master$TATInclude == TRUE, ] %>%
   group_by(Test, Site, DashboardPriority, MasterSetting) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 1)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 1)*100)
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
 
+chemistry_table <- melt(chemistry, value.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPrecent", "CollectResultPercent"))
+
+chemistry_table2 <- dcast(chemistry_table, Test + DashboardPriority + MasterSetting ~ variable + Site, value.var = "value")
+
+                        
+                        
 hematology <- cp_micro_wday_master[cp_micro_wday_master$Division == "Hematology" & cp_micro_wday_master$TATInclude == TRUE, ] %>%
   group_by(Test, Site, DashboardPriority, MasterSetting) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 1)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 1)*100)
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
+
+hematology_table <- melt(hematology, value.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPrecent", "CollectResultPercent"))
+
+hematology_table2 <- dcast(hematology_table, Test + DashboardPriority + MasterSetting ~ variable + Site, value.var = "value")
+
 
 micro <- cp_micro_wday_master[cp_micro_wday_master$Division == "Microbiology RRL" & cp_micro_wday_master$TATInclude == TRUE, ] %>%
   group_by(Test, Site, DashboardPriority, MasterSetting) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 1)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 1)*100)
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
+
+micro_table <- melt(micro, value.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPrecent", "CollectResultPercent"))
+
+micro_table2 <- dcast(micro_table, Test + DashboardPriority + MasterSetting ~ variable + Site, value.var = "value")
+
 
 
 # # Determine percentage of labs with missing collection times -------------------------------
