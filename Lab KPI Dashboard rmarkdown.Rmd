@@ -478,7 +478,7 @@ Cytology_Table_Weekday_New2 %>%
                           ifelse(is.na(KH.x), cell_spec(KH.x, "html", color = "grey"), cell_spec(KH.x, "html", background = "yellow"))))
     ) %>%
   select(everything()) %>%
-  kable(escape = F) %>%
+  kable(escape = F, col.names = c("Case Type","Setting","No. Cases Signed","MSH", "BIMC","MSQ", "MSS","NYEE","PACC","R","SL", "KH","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")) %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
   column_spec(4:12, background = "#00B9F2",include_thead = TRUE)%>%
   row_spec(1:6, background = "white")%>%
@@ -544,7 +544,7 @@ Pathology_Table_Weekday_New2 %>%
                           ifelse(is.na(KH.x), cell_spec(KH.x, "html", color = "grey"), cell_spec(KH.x, "html", background = "yellow"))))
     ) %>%
   select(everything()) %>%
-  kable(escape = F) %>%
+  kable(escape = F, col.names = c("Case Type","Setting","No. Cases Signed","MSH", "BIMC","MSQ", "MSS","NYEE","PACC","R","SL", "KH","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")) %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
   add_header_above(c(" "= 3, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
   column_spec(4:12, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
