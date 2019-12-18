@@ -28,6 +28,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("rmarkdown")
 #install.packages("tinytex")
 #install.packages("kableExtra")
+#install.packages("formattable")
 
 #-------------------------------Required packages-------------------------------#
 
@@ -40,6 +41,7 @@ library(reshape2)
 library(rmarkdown)
 library(tinytex)
 library(kableExtra)
+library(formattable)
 #-------------------------------holiday/weekend-------------------------------#
 Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
 
@@ -248,6 +250,7 @@ Cytology_Table_Weekday_New2 <- merge(x = Table_Template[c(1,2)], y= Cytology_Tab
 columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
 
 Cytology_Table_Weekday_New2 <- Cytology_Table_Weekday_New2[, columns_order]
+Cytology_Table_Weekday_New2[,4:21] <- lapply(Cytology_Table_Weekday_New2[,4:21], as.numeric)
 
 
 #To add all the missing rows and columns to the Cytology not weekday table
@@ -267,6 +270,7 @@ if (is.null(PP_Not_Weekday)|nrow(Cytology_Not_Weekday)==0){
   columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
   
   Cytology_Table_Not_Weekday_New2 <- Cytology_Table_Not_Weekday_New2[, columns_order]
+  Cytology_Table_Not_Weekday_New2[,4:21] <- lapply(Cytology_Table_Not_Weekday_New2[,4:21], as.numeric)
 }
 
 
@@ -418,7 +422,7 @@ Pathology_Table_Weekday_New2 <- merge(x = Table_Template_2[c(1,2)], y= Pathology
 #Rearrange the columns based on their names
 
 Pathology_Table_Weekday_New2 <- Pathology_Table_Weekday_New2[, columns_order]
-
+Pathology_Table_Weekday_New2[,4:21] <- lapply(Pathology_Table_Weekday_New2[,4:21], as.numeric)
 
 #To add all the missing rows and columns to the Pathology not weekday table
 
@@ -435,6 +439,7 @@ if (is.null(PP_Not_Weekday)|nrow(Surgical_Pathology_Not_Weekday==0)){
   #Rearrange the columns based on their names
   
   Pathology_Table_Not_Weekday_New2 <- Pathology_Table_Not_Weekday_New2[, columns_order]
+  Pathology_Table_Not_Weekday_New2[,4:21] <- lapply(Pathology_Table_Not_Weekday_New2[,4:21], as.numeric)
 }
 
 ```
@@ -442,22 +447,104 @@ if (is.null(PP_Not_Weekday)|nrow(Surgical_Pathology_Not_Weekday==0)){
 
 ```{r, echo=FALSE}
 Cytology_Table_Weekday_New2 %>%
-  kable() %>%
+  mutate(
+    MSH.x = ifelse(MSH.x > 0.9, cell_spec(MSH.x, "html", background  = "lightgreen"),
+                   ifelse(MSH.x < 0.8, cell_spec(MSH.x, "html", background = "red"),
+                          ifelse(is.na(MSH.x), cell_spec(MSH.x, "html", color = "grey"), cell_spec(MSH.x, "html", background = "yellow")))),
+    
+    BIMC.x = ifelse(BIMC.x > 0.9, cell_spec(BIMC.x, "html", background  = "lightgreen"),
+                   ifelse(BIMC.x < 0.8, cell_spec(BIMC.x, "html", background = "red"),
+                          ifelse(is.na(BIMC.x), cell_spec(BIMC.x, "html", color = "grey"), cell_spec(BIMC.x, "html", background = "yellow")))),
+    MSQ.x = ifelse(MSQ.x > 0.9, cell_spec(MSQ.x, "html", background = "lightgreen"),
+                   ifelse(MSQ.x < 0.8, cell_spec(MSQ.x, "html", background = "red"),
+                          ifelse(is.na(MSQ.x), cell_spec(MSQ.x, "html", color = "grey"), cell_spec(MSQ.x, "html", background = "yellow")))),
+    MSS.x = ifelse(MSS.x > 0.9, cell_spec(MSS.x, "html", background = "lightgreen"),
+                   ifelse(MSS.x < 0.8, cell_spec(MSS.x, "html", background= "red"),
+                          ifelse(is.na(MSS.x), cell_spec(MSS.x, "html", color = "grey"), cell_spec(MSS.x, "html", background = "yellow")))),
+    NYEE.x = ifelse(NYEE.x > 0.9, cell_spec(NYEE.x, "html", background = "lightgreen"),
+                   ifelse(NYEE.x < 0.8, cell_spec(NYEE.x, "html", background = "red"),
+                          ifelse(is.na(NYEE.x), cell_spec(NYEE.x, "html", color = "grey"), cell_spec(NYEE.x, "html", background = "yellow")))),
+    PACC.x = ifelse(PACC.x > 0.9, cell_spec(PACC.x, "html", background = "lightgreen"),
+                   ifelse(PACC.x < 0.8, cell_spec(PACC.x, "html", background = "red"),
+                          ifelse(is.na(PACC.x), cell_spec(PACC.x, "html", color = "grey"), cell_spec(PACC.x, "html", background = "yellow")))),
+    R.x = ifelse(R.x > 0.9, cell_spec(R.x, "html", background = "lightgreen"),
+                   ifelse(R.x < 0.8, cell_spec(R.x, "html", background = "red"),
+                          ifelse(is.na(R.x), cell_spec(R.x, "html", color = "grey"), cell_spec(R.x, "html", background = "yellow")))),
+    SL.x = ifelse(SL.x > 0.9, cell_spec(SL.x, "html", background = "lightgreen"),
+                   ifelse(SL.x < 0.8, cell_spec(SL.x, "html", background = "red"),
+                          ifelse(is.na(SL.x), cell_spec(SL.x, "html", color = "grey"), cell_spec(SL.x, "html", background = "yellow")))),
+    KH.x = ifelse(KH.x > 0.9, cell_spec(KH.x, "html", background = "lightgreen"),
+                   ifelse(KH.x < 0.8, cell_spec(KH.x, "html", background = "red"),
+                          ifelse(is.na(KH.x), cell_spec(KH.x, "html", color = "grey"), cell_spec(KH.x, "html", background = "yellow"))))
+    ) %>%
+  select(everything()) %>%
+  kable(escape = F) %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
-  add_header_above(c(" "= 3, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
-  column_spec(4:12, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
-  row_spec(1:6, background = "white", color = "black")%>%
-  column_spec(13:21, background = "#221F72",color="white", include_thead = TRUE)%>%
-  row_spec(1:6, background = "white", color="black")%>%
+  column_spec(4:12, background = "#00B9F2",include_thead = TRUE)%>%
+  row_spec(1:6, background = "white")%>%
+  column_spec(13:21, background = "#221F72", include_thead = TRUE)%>%
+  row_spec(1:6, background = "white")%>%
+  row_spec(0, color = "white") %>%
   collapse_rows(columns = 1)%>%
+  column_spec(1:3, color = "grey", include_thead = TRUE) %>%
+  add_header_above(c(" "= 3, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
   add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
   add_header_above(c("Cytology Efficiency Indicator"=21))
+
 ```
+
+```{r, echo=FALSE}
+#IGNORE THIS
+background_color <- function(x){
+  if(is.na(x)){return("black")}
+  else if (x >= 0.9){return("green")}
+  else if (x <= 0.8){return("red")}
+  else {return("yellow")}
+}
+Cytology_Table_Weekday_New2 <- as.data.frame(Cytology_Table_Weekday_New2)
+
+formattable(Cytology_Table_Weekday_New2, align = "c", list(area(col = 4:12) ~ formatter("span", style = x ~ style(color=sapply(x,background_color)))))
+  
+
+
+```
+
 
 
 ```{r, echo=FALSE}
 Pathology_Table_Weekday_New2 %>%
-  kable() %>%
+  mutate(
+    MSH.x = ifelse(MSH.x > 0.9, cell_spec(MSH.x, "html", background  = "lightgreen"),
+                   ifelse(MSH.x < 0.8, cell_spec(MSH.x, "html", background = "red"),
+                          ifelse(is.na(MSH.x), cell_spec(MSH.x, "html", color = "grey"), cell_spec(MSH.x, "html", background = "yellow")))),
+    
+    BIMC.x = ifelse(BIMC.x > 0.9, cell_spec(BIMC.x, "html", background  = "lightgreen"),
+                   ifelse(BIMC.x < 0.8, cell_spec(BIMC.x, "html", background = "red"),
+                          ifelse(is.na(BIMC.x), cell_spec(BIMC.x, "html", color = "grey"), cell_spec(BIMC.x, "html", background = "yellow")))),
+    MSQ.x = ifelse(MSQ.x > 0.9, cell_spec(MSQ.x, "html", background = "lightgreen"),
+                   ifelse(MSQ.x < 0.8, cell_spec(MSQ.x, "html", background = "red"),
+                          ifelse(is.na(MSQ.x), cell_spec(MSQ.x, "html", color = "grey"), cell_spec(MSQ.x, "html", background = "yellow")))),
+    MSS.x = ifelse(MSS.x > 0.9, cell_spec(MSS.x, "html", background = "lightgreen"),
+                   ifelse(MSS.x < 0.8, cell_spec(MSS.x, "html", background= "red"),
+                          ifelse(is.na(MSS.x), cell_spec(MSS.x, "html", color = "grey"), cell_spec(MSS.x, "html", background = "yellow")))),
+    NYEE.x = ifelse(NYEE.x > 0.9, cell_spec(NYEE.x, "html", background = "lightgreen"),
+                   ifelse(NYEE.x < 0.8, cell_spec(NYEE.x, "html", background = "red"),
+                          ifelse(is.na(NYEE.x), cell_spec(NYEE.x, "html", color = "grey"), cell_spec(NYEE.x, "html", background = "yellow")))),
+    PACC.x = ifelse(PACC.x > 0.9, cell_spec(PACC.x, "html", background = "lightgreen"),
+                   ifelse(PACC.x < 0.8, cell_spec(PACC.x, "html", background = "red"),
+                          ifelse(is.na(PACC.x), cell_spec(PACC.x, "html", color = "grey"), cell_spec(PACC.x, "html", background = "yellow")))),
+    R.x = ifelse(R.x > 0.9, cell_spec(R.x, "html", background = "lightgreen"),
+                   ifelse(R.x < 0.8, cell_spec(R.x, "html", background = "red"),
+                          ifelse(is.na(R.x), cell_spec(R.x, "html", color = "grey"), cell_spec(R.x, "html", background = "yellow")))),
+    SL.x = ifelse(SL.x > 0.9, cell_spec(SL.x, "html", background = "lightgreen"),
+                   ifelse(SL.x < 0.8, cell_spec(SL.x, "html", background = "red"),
+                          ifelse(is.na(SL.x), cell_spec(SL.x, "html", color = "grey"), cell_spec(SL.x, "html", background = "yellow")))),
+    KH.x = ifelse(KH.x > 0.9, cell_spec(KH.x, "html", background = "lightgreen"),
+                   ifelse(KH.x < 0.8, cell_spec(KH.x, "html", background = "red"),
+                          ifelse(is.na(KH.x), cell_spec(KH.x, "html", color = "grey"), cell_spec(KH.x, "html", background = "yellow"))))
+    ) %>%
+  select(everything()) %>%
+  kable(escape = F) %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
   add_header_above(c(" "= 3, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
   column_spec(4:12, background = "#00B9F2", color= "white",include_thead = TRUE)%>%
@@ -468,7 +555,7 @@ Pathology_Table_Weekday_New2 %>%
   add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
   add_header_above(c("Pathology Efficiency Indicator"=21))
 ```
-```
+
 
 
 
