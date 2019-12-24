@@ -126,4 +126,6 @@ cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu
 site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
+
+dashboard_priority_order <- c("All")
 ```

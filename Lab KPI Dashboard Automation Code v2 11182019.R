@@ -1,6 +1,6 @@
 
 #The purpose of this code: is to build an automated version of the cytology/pathology dashboard in R
-#Coder: Asala Erekat
+#Coder: Asala Erekat and Kate Nevin
 
 #-------------------------------Install packages-------------------------------#
 
@@ -191,6 +191,8 @@ site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 
+dashboard_priority_order <- c("AllSpecimen", "Stat", "Routine")
+
 # SCC lookup references ----------------------------------------------
 # Crosswalk labs included and remove out of scope labs
 scc_wday <- left_join(scc_wday, test_code[ , c("Test", "SCC_TestID", "Division")], by = c("TEST_ID" = "SCC_TestID"))
@@ -227,6 +229,7 @@ scc_wday$MasterSetting <- ifelse(scc_wday$CLINIC_TYPE == "E", "ED",
                                  ifelse(scc_wday$CLINIC_TYPE == "O", "Amb", 
                                          ifelse(scc_wday$CLINIC_TYPE == "I" & scc_wday$ICU == TRUE, "ICU", 
                                                 ifelse(scc_wday$CLINIC_TYPE == "I" & scc_wday$ICU != TRUE, "IP Non-ICU", "Other"))))
+scc_wday$DashboardSetting <- ifelse(scc_wday$MasterSetting == "ED" | scc_wday$MasterSetting == "ICU", "ED & ICU", scc_wday$MasterSetting)
 
 # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
 scc_wday$AdjPriority <- ifelse(scc_wday$MasterSetting == "ED" | scc_wday$MasterSetting == "ICU" | scc_wday$PRIORITY == "S", "Stat", "Routine")
@@ -311,7 +314,7 @@ sun_wday$MasterSetting <- ifelse(sun_wday$SettingRollUp == "ED", "ED",
                                  ifelse(sun_wday$SettingRollUp == "Amb", "Amb", 
                                         ifelse(sun_wday$SettingRollUp == "IP" & sun_wday$ICU == TRUE, "ICU",
                                                ifelse(sun_wday$SettingRollUp == "IP" & sun_wday$ICU == FALSE, "IP Non-ICU", "Other"))))
-
+sun_wday$DashboardSetting <- ifelse(sun_wday$MasterSetting == "ED" | sun_wday$MasterSetting == "ICU", "ED & ICU", sun_wday$MasterSetting)
 
 # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
 sun_wday$AdjPriority <- ifelse(sun_wday$MasterSetting != "ED" & sun_wday$MasterSetting != "ICU" & is.na(sun_wday$SpecimenPriority), "Routine",
@@ -365,7 +368,7 @@ scc_wday_master <- scc_wday[ , c("Ward", "WARD_NAME", "WardandName",
                                  "ORDER_ID", "REQUESTING_DOC NAME", "MPI", "WORK SHIFT", 
                                  "TEST_NAME", "Test", "Division", "PRIORITY", 
                                  "Site", "ICU", "CLINIC_TYPE", 
-                                 "Setting", "SettingRollUp", "MasterSetting", 
+                                 "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
                                  "AdjPriority", "DashboardPriority", 
                                  "ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE", 
                                  "CollectToReceive", "ReceiveToResult", "CollectToResult", 
@@ -378,7 +381,7 @@ sun_wday_master <- sun_wday[ ,c("LocCode", "LocName", "LocandName",
                            "HISOrderNumber", "PhysName", "PtNumber", "SHIFT",            
                            "TSTName", "Test", "Division", "SpecimenPriority", 
                            "Site", "ICU", "LocType",               
-                           "Setting", "SettingRollUp", "MasterSetting", 
+                           "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
                            "AdjPriority", "DashboardPriority", 
                            "OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime", 
                            "CollecttoReceive", "ReceivetoResult", "CollecttoResult", 
@@ -391,7 +394,7 @@ colnames(scc_wday_master) <- c("LocCode", "LocName", "LocConcat",
                                "OrderID", "RequestMD", "MSMRN", "WorkShift", 
                                "TestName", "Test", "Division", "OrderPriority", 
                                "Site", "ICU", "LocType", 
-                               "Setting", "SettingRollUp", "MasterSetting", 
+                               "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
                                "AdjPriority", "DashboardPriority", 
                                "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
                                "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
@@ -404,7 +407,7 @@ colnames(sun_wday_master) <- c("LocCode", "LocName", "LocConcat",
                                "OrderID", "RequestMD", "MSMRN", "WorkShift", 
                                "TestName", "Test", "Division", "OrderPriority", 
                                "Site", "ICU", "LocType", 
-                               "Setting", "SettingRollUp", "MasterSetting", 
+                               "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
                                "AdjPriority", "DashboardPriority", 
                                "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
                                "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
@@ -415,47 +418,59 @@ colnames(sun_wday_master) <- c("LocCode", "LocName", "LocConcat",
 
 cp_micro_wday_master <- rbind(scc_wday_master, sun_wday_master)
 
-cp_micro_wday_master[c("LocConcat", "RequestMD", "WorkShift", "MasterSetting", "AdjPriority", "DashboardPriority", "AddOnMaster")] <-
-  lapply(cp_micro_wday_master[c("LocConcat", "RequestMD", "WorkShift", "MasterSetting", "AdjPriority", "DashboardPriority", "AddOnMaster")], as.factor)
+cp_micro_wday_master[c("LocConcat", "RequestMD", "WorkShift", "AdjPriority", "AddOnMaster")] <-
+  lapply(cp_micro_wday_master[c("LocConcat", "RequestMD", "WorkShift", "AdjPriority", "AddOnMaster")], as.factor)
 
 cp_micro_wday_master$Site <- factor(cp_micro_wday_master$Site, levels = site_order)
 cp_micro_wday_master$Test <- factor(cp_micro_wday_master$Test, levels = cp_micro_lab_order)
 cp_micro_wday_master$MasterSetting <- factor(cp_micro_wday_master$MasterSetting, levels = pt_setting_order)
+cp_micro_wday_master$DashboardSetting <- factor(cp_micro_wday_master$DashboardSetting, levels = pt_setting_order2)
+cp_micro_wday_master$DashboardPriority <- factor(cp_micro_wday_master$DashboardPriority, levels = dashboard_priority_order)
 
 
 # Manipulate and reshape SCC and Sunquest data -----------------------------------------------
 # Start summarizing data
 chemistry <- cp_micro_wday_master[cp_micro_wday_master$Division == "Chemistry" & cp_micro_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, DashboardPriority, MasterSetting) %>%
+  group_by(Test, Site, DashboardPriority, DashboardSetting) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
 
-chemistry_table <- melt(chemistry, value.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPrecent", "CollectResultPercent"))
-
-chemistry_table2 <- dcast(chemistry_table, Test + DashboardPriority + MasterSetting ~ variable + Site, value.var = "value")
-
-                        
+# chemistry_table <- melt(chemistry, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPercent", "CollectResultPercent"))
+# 
+# chemistry_table2 <- dcast(chemistry_table, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
+# 
+chemistry_dashboard <- melt(chemistry, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+chemistry_summary <- dcast(chemistry_dashboard, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")                        
                         
 hematology <- cp_micro_wday_master[cp_micro_wday_master$Division == "Hematology" & cp_micro_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, DashboardPriority, MasterSetting) %>%
+  group_by(Test, Site, DashboardPriority, DashboardSetting) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
 
-hematology_table <- melt(hematology, value.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPrecent", "CollectResultPercent"))
+hematology_table <- melt(hematology, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPercent", "CollectResultPercent"))
 
-hematology_table2 <- dcast(hematology_table, Test + DashboardPriority + MasterSetting ~ variable + Site, value.var = "value")
+hematology_table2 <- dcast(hematology_table, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
 
+hematology_dashboard <- melt(hematology, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+hematology_summary <- dcast(hematology_dashboard, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
 
 micro <- cp_micro_wday_master[cp_micro_wday_master$Division == "Microbiology RRL" & cp_micro_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, DashboardPriority, MasterSetting) %>%
+  group_by(Test, Site, DashboardPriority, DashboardSetting) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectToResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
 
-micro_table <- melt(micro, value.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPrecent", "CollectResultPercent"))
+micro_table <- melt(micro, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), value.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPercent", "CollectResultPercent"))
 
-micro_table2 <- dcast(micro_table, Test + DashboardPriority + MasterSetting ~ variable + Site, value.var = "value")
+micro_table2 <- dcast(micro_table, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
 
+micro_dashboard <- melt(micro, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+micro_dashboard <- micro_dashboard[!(micro_dashboard$Test == "C. diff" & micro_dashboard$DashboardSetting == "Amb"), ]
 
+micro_summary <- dcast(micro_dashboard, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
+micro_summary[micro_summary$Test == "Rapid Flu" & micro_summary$DashboardSetting == "Amb", ]
+
+micro_volume <- melt(micro, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ResultedVolume"))
+micro_volume <- dcast(micro_volume, Test + DashboardPriority + DashboardSetting ~ variable + Site)
 
 # # Determine percentage of labs with missing collection times -------------------------------
 missing_collect <- cp_micro_wday_master %>%
