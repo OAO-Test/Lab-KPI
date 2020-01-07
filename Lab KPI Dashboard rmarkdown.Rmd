@@ -12,8 +12,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
-
-
 #The purpose of this code: is to build an automated version of the cytology/pathology dashboard in R
 #Coder: Asala Erekat
 
@@ -54,7 +52,7 @@ Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
 Yesterday_Day <- dayOfWeek(Yesterday)
 
 #Excludes Good Friday from the NYSE Holidays
-NYSE_Holidays <- as.Date(holidayNYSE())
+NYSE_Holidays <- as.Date(holidayNYSE(year = 1990:2100))
 GoodFriday <- as.Date(GoodFriday())
 MSHS_Holiday <- NYSE_Holidays[GoodFriday != NYSE_Holidays]
 
@@ -196,7 +194,7 @@ Cytology_Patient_Metric_Weekday <- summarise(group_by(Cytology_Weekday,spec_grou
 Cytology_Patient_Metric_Weekday <- dcast(Cytology_Patient_Metric_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
 
 
-if (is.null(PP_Not_Weekday)|nrow(Cytology_Not_Weekday)==0){
+if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
   Cytology_Patient_Metric_Not_Weekday <- NULL
   Cytology_Cases_Signed_Not_Weekday <- NULL
 } else {
@@ -208,11 +206,12 @@ if (is.null(PP_Not_Weekday)|nrow(Cytology_Not_Weekday)==0){
 }
 
 #Calculate % Receive to result TAT within target
-Cytology_Lab_Metric_Weekday <- summarise(group_by(Cytology_Weekday,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
+Cytology_Lab_Metric_Weekday <-summarise(group_by(Cytology_Weekday,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
+
 
 Cytology_Lab_Metric_Weekday <- dcast(Cytology_Lab_Metric_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
 
-if (is.null(PP_Not_Weekday)|nrow(Cytology_Not_Weekday)==0){
+if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
   Cytology_Lab_Metric_Not_Weekday <- NULL
 } else {
   Cytology_Lab_Metric_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
@@ -227,7 +226,7 @@ if (is.null(PP_Not_Weekday)|nrow(Cytology_Not_Weekday)==0){
 Cytology_Table_Weekday <- left_join(full_join(Cytology_Cases_Signed, Cytology_Lab_Metric_Weekday), Cytology_Patient_Metric_Weekday, by = c("spec_group", "Patient.Setting"))
 
 #Cytology Not-Weekday table
-if (is.null(PP_Not_Weekday)|nrow(Cytology_Not_Weekday)==0){
+if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
   Cytology_Table_Not_Weekday <- NULL
 } else{
   Cytology_Table_Not_Weekday <- left_join(full_join(Cytology_Cases_Signed_Not_Weekday, Cytology_Lab_Metric_Not_Weekday), Cytology_Patient_Metric_Not_Weekday, by = c("spec_group", "Patient.Setting"))
@@ -252,10 +251,27 @@ columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BI
 Cytology_Table_Weekday_New2 <- Cytology_Table_Weekday_New2[, columns_order]
 Cytology_Table_Weekday_New2[,4:21] <- lapply(Cytology_Table_Weekday_New2[,4:21], as.numeric)
 
+#steps for conditional formatting:
+
+
+Cytology_Table_Weekday_New3 <- melt(Cytology_Table_Weekday_New2, id = c("spec_group","Patient.Setting","No_Cases_Signed","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y"))
+
+
+Cytology_Table_Weekday_New3 <- Cytology_Table_Weekday_New3 %>%
+  mutate(value = ifelse(value > 0.9, cell_spec(value, "html", background  = "lightgreen"),
+                   ifelse(value < 0.8, cell_spec(value, "html", background = "red"),
+                          ifelse(is.na(value), cell_spec(value, "html", color = "grey"), cell_spec(value, "html", background = "yellow")))))
+
+
+Cytology_Table_Weekday_New3 <- dcast(Cytology_Table_Weekday_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
+
+columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+
+Cytology_Table_Weekday_New3 <- Cytology_Table_Weekday_New3[, columns_order]
 
 #To add all the missing rows and columns to the Cytology not weekday table
 
-if (is.null(PP_Not_Weekday)|nrow(Cytology_Not_Weekday)==0){
+if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
   Cytology_Table_Not_Weekday_New <- NULL
   Cytology_Table_Not_Weekday_New2 <- NULL
 } else {
@@ -266,8 +282,6 @@ if (is.null(PP_Not_Weekday)|nrow(Cytology_Not_Weekday)==0){
   Cytology_Table_Not_Weekday_New2 <- merge(x = Table_Template[c(1,2)], y= Cytology_Table_Not_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
   
   #Rearrange the columns based on their names
-  
-  columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
   
   Cytology_Table_Not_Weekday_New2 <- Cytology_Table_Not_Weekday_New2[, columns_order]
   Cytology_Table_Not_Weekday_New2[,4:21] <- lapply(Cytology_Table_Not_Weekday_New2[,4:21], as.numeric)
@@ -301,8 +315,31 @@ Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog_Weekday,spec_grou
 #Days of work
 Cytology_case_Volume_DOW <- as.numeric(Cytology_Backlog_Volume$GYN_Backlog)/80
 
-################################################################################################################################
+```
 
+
+
+```{r, echo=FALSE}
+Cytology_Table_Weekday_New3 %>%
+  select(everything()) %>%
+  kable(escape = F, col.names = c("Case Type","Setting","No. Cases Signed","MSH", "BIMC","MSQ", "MSS","NYEE","PACC","R","SL", "KH","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")) %>%
+  kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
+  column_spec(4:12, background = "#00B9F2",include_thead = TRUE)%>%
+  row_spec(1:6, background = "white")%>%
+  column_spec(13:21, background = "#221F72", include_thead = TRUE)%>%
+  row_spec(1:6, background = "white")%>%
+  row_spec(0, color = "white") %>%
+  collapse_rows(columns = 1)%>%
+  column_spec(1:3, color = "grey", include_thead = TRUE) %>%
+  add_header_above(c(" "= 3, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
+  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
+  add_header_above(c("Cytology Efficiency Indicator"=21))
+
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 #Surgical Pathology
 
 #Upload the exclusion vs inclusion criteria associated with the GI codes
@@ -373,7 +410,7 @@ Surgical_Pathology_Patient_Metric_Weekday <- summarise(group_by(Surgical_Patholo
 
 Surgical_Pathology_Patient_Metric_Weekday <- dcast(Surgical_Pathology_Patient_Metric_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
 
-if (is.null(PP_Not_Weekday)|nrow(Surgical_Pathology_Not_Weekday==0)){
+if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
   Surgical_Pathology_Patient_Metric_Not_Weekday <- NULL
   Surgical_Pathology_Cases_Signed_Not_Weekday <- NULL
 } else {
@@ -388,7 +425,7 @@ if (is.null(PP_Not_Weekday)|nrow(Surgical_Pathology_Not_Weekday==0)){
 Surgical_Pathology_Lab_Metric_Weekday <- summarise(group_by(Surgical_Pathology_Weekday,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
 Surgical_Pathology_Lab_Metric_Weekday <- dcast(Surgical_Pathology_Lab_Metric_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
 
-if (is.null(PP_Not_Weekday)|nrow(Surgical_Pathology_Not_Weekday==0)){
+if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
   Surgical_Pathology_Lab_Metric_Not_Weekday <- NULL
 } else {
   Surgical_Pathology_Lab_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
@@ -401,7 +438,7 @@ if (is.null(PP_Not_Weekday)|nrow(Surgical_Pathology_Not_Weekday==0)){
 Pathology_Table_Weekday <- left_join(full_join(Surgical_Pathology_Cases_Signed_Weekday, Surgical_Pathology_Lab_Metric_Weekday), Surgical_Pathology_Patient_Metric_Weekday, by = c("spec_group", "Patient.Setting"))
 
 #Pathology Not-Weekday table
-if (is.null(PP_Not_Weekday)|nrow(Surgical_Pathology_Not_Weekday==0)){
+if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
   Pathology_Table_Not_Weekday <- NULL
 } else{
   Pathology_Table_Not_Weekday <- left_join(full_join(Surgical_Pathology_Cases_Signed_Not_Weekday, Surgical_Pathology_Lab_Metric_Not_Weekday), Surgical_Pathology_Patient_Metric_Not_Weekday, by = c("spec_group", "Patient.Setting"))
@@ -424,9 +461,25 @@ Pathology_Table_Weekday_New2 <- merge(x = Table_Template_2[c(1,2)], y= Pathology
 Pathology_Table_Weekday_New2 <- Pathology_Table_Weekday_New2[, columns_order]
 Pathology_Table_Weekday_New2[,4:21] <- lapply(Pathology_Table_Weekday_New2[,4:21], as.numeric)
 
+Pathology_Table_Weekday_New3 <- melt(Pathology_Table_Weekday_New2, id = c("spec_group","Patient.Setting","No_Cases_Signed","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y"))
+
+
+Pathology_Table_Weekday_New3 <- Pathology_Table_Weekday_New3 %>%
+  mutate(value = ifelse(value > 0.9, cell_spec(value, "html", background  = "lightgreen"),
+                   ifelse(value < 0.8, cell_spec(value, "html", background = "red"),
+                          ifelse(is.na(value), cell_spec(value, "html", color = "grey"), cell_spec(value, "html", background = "yellow")))))
+
+
+Pathology_Table_Weekday_New3 <- dcast(Pathology_Table_Weekday_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
+
+columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+
+Pathology_Table_Weekday_New3 <- Pathology_Table_Weekday_New3[, columns_order]
+
+
 #To add all the missing rows and columns to the Pathology not weekday table
 
-if (is.null(PP_Not_Weekday)|nrow(Surgical_Pathology_Not_Weekday==0)){
+if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
   Pathology_Table_Not_Weekday_New <- NULL
   Pathology_Table_Not_Weekday_New2 <- NULL
 } else {
@@ -445,104 +498,9 @@ if (is.null(PP_Not_Weekday)|nrow(Surgical_Pathology_Not_Weekday==0)){
 ```
 
 
-```{r, echo=FALSE}
-Cytology_Table_Weekday_New2 %>%
-  mutate(
-    MSH.x = ifelse(MSH.x > 0.9, cell_spec(MSH.x, "html", background  = "lightgreen"),
-                   ifelse(MSH.x < 0.8, cell_spec(MSH.x, "html", background = "red"),
-                          ifelse(is.na(MSH.x), cell_spec(MSH.x, "html", color = "grey"), cell_spec(MSH.x, "html", background = "yellow")))),
-    
-    BIMC.x = ifelse(BIMC.x > 0.9, cell_spec(BIMC.x, "html", background  = "lightgreen"),
-                   ifelse(BIMC.x < 0.8, cell_spec(BIMC.x, "html", background = "red"),
-                          ifelse(is.na(BIMC.x), cell_spec(BIMC.x, "html", color = "grey"), cell_spec(BIMC.x, "html", background = "yellow")))),
-    MSQ.x = ifelse(MSQ.x > 0.9, cell_spec(MSQ.x, "html", background = "lightgreen"),
-                   ifelse(MSQ.x < 0.8, cell_spec(MSQ.x, "html", background = "red"),
-                          ifelse(is.na(MSQ.x), cell_spec(MSQ.x, "html", color = "grey"), cell_spec(MSQ.x, "html", background = "yellow")))),
-    MSS.x = ifelse(MSS.x > 0.9, cell_spec(MSS.x, "html", background = "lightgreen"),
-                   ifelse(MSS.x < 0.8, cell_spec(MSS.x, "html", background= "red"),
-                          ifelse(is.na(MSS.x), cell_spec(MSS.x, "html", color = "grey"), cell_spec(MSS.x, "html", background = "yellow")))),
-    NYEE.x = ifelse(NYEE.x > 0.9, cell_spec(NYEE.x, "html", background = "lightgreen"),
-                   ifelse(NYEE.x < 0.8, cell_spec(NYEE.x, "html", background = "red"),
-                          ifelse(is.na(NYEE.x), cell_spec(NYEE.x, "html", color = "grey"), cell_spec(NYEE.x, "html", background = "yellow")))),
-    PACC.x = ifelse(PACC.x > 0.9, cell_spec(PACC.x, "html", background = "lightgreen"),
-                   ifelse(PACC.x < 0.8, cell_spec(PACC.x, "html", background = "red"),
-                          ifelse(is.na(PACC.x), cell_spec(PACC.x, "html", color = "grey"), cell_spec(PACC.x, "html", background = "yellow")))),
-    R.x = ifelse(R.x > 0.9, cell_spec(R.x, "html", background = "lightgreen"),
-                   ifelse(R.x < 0.8, cell_spec(R.x, "html", background = "red"),
-                          ifelse(is.na(R.x), cell_spec(R.x, "html", color = "grey"), cell_spec(R.x, "html", background = "yellow")))),
-    SL.x = ifelse(SL.x > 0.9, cell_spec(SL.x, "html", background = "lightgreen"),
-                   ifelse(SL.x < 0.8, cell_spec(SL.x, "html", background = "red"),
-                          ifelse(is.na(SL.x), cell_spec(SL.x, "html", color = "grey"), cell_spec(SL.x, "html", background = "yellow")))),
-    KH.x = ifelse(KH.x > 0.9, cell_spec(KH.x, "html", background = "lightgreen"),
-                   ifelse(KH.x < 0.8, cell_spec(KH.x, "html", background = "red"),
-                          ifelse(is.na(KH.x), cell_spec(KH.x, "html", color = "grey"), cell_spec(KH.x, "html", background = "yellow"))))
-    ) %>%
-  select(everything()) %>%
-  kable(escape = F, col.names = c("Case Type","Setting","No. Cases Signed","MSH", "BIMC","MSQ", "MSS","NYEE","PACC","R","SL", "KH","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")) %>%
-  kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
-  column_spec(4:12, background = "#00B9F2",include_thead = TRUE)%>%
-  row_spec(1:6, background = "white")%>%
-  column_spec(13:21, background = "#221F72", include_thead = TRUE)%>%
-  row_spec(1:6, background = "white")%>%
-  row_spec(0, color = "white") %>%
-  collapse_rows(columns = 1)%>%
-  column_spec(1:3, color = "grey", include_thead = TRUE) %>%
-  add_header_above(c(" "= 3, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
-  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
-  add_header_above(c("Cytology Efficiency Indicator"=21))
-
-```
 
 ```{r, echo=FALSE}
-#IGNORE THIS
-background_color <- function(x){
-  if(is.na(x)){return("black")}
-  else if (x >= 0.9){return("green")}
-  else if (x <= 0.8){return("red")}
-  else {return("yellow")}
-}
-Cytology_Table_Weekday_New2 <- as.data.frame(Cytology_Table_Weekday_New2)
-
-formattable(Cytology_Table_Weekday_New2, align = "c", list(area(col = 4:12) ~ formatter("span", style = x ~ style(color=sapply(x,background_color)))))
-  
-
-
-```
-
-
-
-```{r, echo=FALSE}
-Pathology_Table_Weekday_New2 %>%
-  mutate(
-    MSH.x = ifelse(MSH.x > 0.9, cell_spec(MSH.x, "html", background  = "lightgreen"),
-                   ifelse(MSH.x < 0.8, cell_spec(MSH.x, "html", background = "red"),
-                          ifelse(is.na(MSH.x), cell_spec(MSH.x, "html", color = "grey"), cell_spec(MSH.x, "html", background = "yellow")))),
-    
-    BIMC.x = ifelse(BIMC.x > 0.9, cell_spec(BIMC.x, "html", background  = "lightgreen"),
-                   ifelse(BIMC.x < 0.8, cell_spec(BIMC.x, "html", background = "red"),
-                          ifelse(is.na(BIMC.x), cell_spec(BIMC.x, "html", color = "grey"), cell_spec(BIMC.x, "html", background = "yellow")))),
-    MSQ.x = ifelse(MSQ.x > 0.9, cell_spec(MSQ.x, "html", background = "lightgreen"),
-                   ifelse(MSQ.x < 0.8, cell_spec(MSQ.x, "html", background = "red"),
-                          ifelse(is.na(MSQ.x), cell_spec(MSQ.x, "html", color = "grey"), cell_spec(MSQ.x, "html", background = "yellow")))),
-    MSS.x = ifelse(MSS.x > 0.9, cell_spec(MSS.x, "html", background = "lightgreen"),
-                   ifelse(MSS.x < 0.8, cell_spec(MSS.x, "html", background= "red"),
-                          ifelse(is.na(MSS.x), cell_spec(MSS.x, "html", color = "grey"), cell_spec(MSS.x, "html", background = "yellow")))),
-    NYEE.x = ifelse(NYEE.x > 0.9, cell_spec(NYEE.x, "html", background = "lightgreen"),
-                   ifelse(NYEE.x < 0.8, cell_spec(NYEE.x, "html", background = "red"),
-                          ifelse(is.na(NYEE.x), cell_spec(NYEE.x, "html", color = "grey"), cell_spec(NYEE.x, "html", background = "yellow")))),
-    PACC.x = ifelse(PACC.x > 0.9, cell_spec(PACC.x, "html", background = "lightgreen"),
-                   ifelse(PACC.x < 0.8, cell_spec(PACC.x, "html", background = "red"),
-                          ifelse(is.na(PACC.x), cell_spec(PACC.x, "html", color = "grey"), cell_spec(PACC.x, "html", background = "yellow")))),
-    R.x = ifelse(R.x > 0.9, cell_spec(R.x, "html", background = "lightgreen"),
-                   ifelse(R.x < 0.8, cell_spec(R.x, "html", background = "red"),
-                          ifelse(is.na(R.x), cell_spec(R.x, "html", color = "grey"), cell_spec(R.x, "html", background = "yellow")))),
-    SL.x = ifelse(SL.x > 0.9, cell_spec(SL.x, "html", background = "lightgreen"),
-                   ifelse(SL.x < 0.8, cell_spec(SL.x, "html", background = "red"),
-                          ifelse(is.na(SL.x), cell_spec(SL.x, "html", color = "grey"), cell_spec(SL.x, "html", background = "yellow")))),
-    KH.x = ifelse(KH.x > 0.9, cell_spec(KH.x, "html", background = "lightgreen"),
-                   ifelse(KH.x < 0.8, cell_spec(KH.x, "html", background = "red"),
-                          ifelse(is.na(KH.x), cell_spec(KH.x, "html", color = "grey"), cell_spec(KH.x, "html", background = "yellow"))))
-    ) %>%
+Pathology_Table_Weekday_New3 %>%
   select(everything()) %>%
   kable(escape = F, col.names = c("Case Type","Setting","No. Cases Signed","MSH", "BIMC","MSQ", "MSS","NYEE","PACC","R","SL", "KH","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")) %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
