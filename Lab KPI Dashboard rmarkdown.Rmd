@@ -140,10 +140,12 @@ Cytology_Not_Weekday <- Cytology_Not_Weekday[!(is.na(Cytology_Not_Weekday$Case_c
 
 #Change all Dates into POSIXct format to start the calculations
 
-Cytology_Weekday$Case_created_date <- as.POSIXct(Cytology_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
-Cytology_Weekday$Collection_Date <- as.POSIXct(Cytology_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
-Cytology_Weekday$Received_Date <- as.POSIXct(Cytology_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
-Cytology_Weekday$signed_out_date <- as.POSIXct(Cytology_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
+Cytology_Weekday[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Cytology_Weekday[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, format='%m/%d/%y %I:%M %p')
+
+#Cytology_Weekday$Case_created_date <- as.POSIXct(Cytology_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
+#Cytology_Weekday$Collection_Date <- as.POSIXct(Cytology_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
+#Cytology_Weekday$Received_Date <- as.POSIXct(Cytology_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
+#Cytology_Weekday$signed_out_date <- as.POSIXct(Cytology_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
 
 if (is.null(PP_Not_Weekday)){
   Cytology_Not_Weekday <- Cytology_Not_Weekday
@@ -250,9 +252,9 @@ columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BI
 
 Cytology_Table_Weekday_New2 <- Cytology_Table_Weekday_New2[, columns_order]
 Cytology_Table_Weekday_New2[,4:21] <- lapply(Cytology_Table_Weekday_New2[,4:21], as.numeric)
+Cytology_Table_Weekday_New2[,4:12] <- lapply(Cytology_Table_Weekday_New2[,4:12],percent)
 
 #steps for conditional formatting:
-
 
 Cytology_Table_Weekday_New3 <- melt(Cytology_Table_Weekday_New2, id = c("spec_group","Patient.Setting","No_Cases_Signed","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y"))
 
@@ -460,6 +462,7 @@ Pathology_Table_Weekday_New2 <- merge(x = Table_Template_2[c(1,2)], y= Pathology
 
 Pathology_Table_Weekday_New2 <- Pathology_Table_Weekday_New2[, columns_order]
 Pathology_Table_Weekday_New2[,4:21] <- lapply(Pathology_Table_Weekday_New2[,4:21], as.numeric)
+Pathology_Table_Weekday_New2[,4:12] <- lapply(Pathology_Table_Weekday_New2[,4:12],percent)
 
 Pathology_Table_Weekday_New3 <- melt(Pathology_Table_Weekday_New2, id = c("spec_group","Patient.Setting","No_Cases_Signed","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y"))
 
