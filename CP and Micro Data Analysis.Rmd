@@ -11,6 +11,7 @@ output: html_document
 #install.packages("reshape2")
 #install.packages("knitr")
 #install.packages("kableExtra")
+#install.packages("formattable")
 
 #-------------------------------Required packages-------------------------------#
 
@@ -22,9 +23,10 @@ library(lubridate)
 library(reshape2)
 library(knitr)
 library(kableExtra)
+library(formattable)
 ```
 
-```{r Determine date, echo = FALSE}
+```{r Determine date, warning = FALSE, echo = FALSE}
 #-------------------------------holiday/weekend-------------------------------#
 
 #Determine if yesterday was a holiday/weekend 
@@ -123,7 +125,7 @@ site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 
-dashboard_priority_order <- c("AllSpecimen", "Stat", "Routine")
+dashboard_priority_order <- c("All", "Stat", "Routine")
 ```
 
 ```{r Preprocessing Function, echo = FALSE}
@@ -168,7 +170,8 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   
   # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
   raw_scc$AdjPriority <- ifelse(raw_scc$MasterSetting == "ED" | raw_scc$MasterSetting == "ICU" | raw_scc$PRIORITY == "S", "Stat", "Routine")
-  raw_scc$DashboardPriority <- ifelse(tat_targets$Priority[match(raw_scc$Test, tat_targets$Test)] == "All", "AllSpecimen", raw_scc$AdjPriority)
+  raw_scc$DashboardPriority <- ifelse(tat_targets$Priority[match(raw_scc$Test, tat_targets$Test)] == "All", "All", raw_scc$AdjPriority)
+  raw_scc$TestPriority <- paste(raw_scc$Test, "-", raw_scc$DashboardPriority, "Labs")
   
   # Calculate turnaround times
   raw_scc$CollectToReceive <- raw_scc$RECEIVE_DATE - raw_scc$COLLECTION_DATE
@@ -213,7 +216,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                    "TEST_NAME", "Test", "Division", "PRIORITY", 
                                    "Site", "ICU", "CLINIC_TYPE", 
                                    "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
-                                   "AdjPriority", "DashboardPriority", 
+                                   "AdjPriority", "DashboardPriority", "TestPriority",
                                    "ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE", 
                                    "CollectToReceive", "ReceiveToResult", "CollectToResult", 
                                    "AddOnMaster", "MissingCollect", 
@@ -225,7 +228,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                  "TestName", "Test", "Division", "OrderPriority", 
                                  "Site", "ICU", "LocType", 
                                  "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
-                                 "AdjPriority", "DashboardPriority", 
+                                 "AdjPriority", "DashboardPriority", "Test-Priority", 
                                  "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
                                  "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
                                  "AddOnMaster", "MissingCollect", 
@@ -278,7 +281,8 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
   raw_sun$AdjPriority <- ifelse(raw_sun$MasterSetting != "ED" & raw_sun$MasterSetting != "ICU" & is.na(raw_sun$SpecimenPriority), "Routine",
                                  ifelse(raw_sun$MasterSetting == "ED" | raw_sun$MasterSetting == "ICU" | raw_sun$SpecimenPriority == "S", "Stat", "Routine"))
-  raw_sun$DashboardPriority <- ifelse(tat_targets$Priority[match(raw_sun$Test, tat_targets$Test)] == "All", "AllSpecimen", raw_sun$AdjPriority)
+  raw_sun$DashboardPriority <- ifelse(tat_targets$Priority[match(raw_sun$Test, tat_targets$Test)] == "All", "All", raw_sun$AdjPriority)
+  raw_sun$TestPriority <- paste(raw_sun$Test, "-", raw_sun$DashboardPriority, "Labs")
   
   # Calculate turnaround times
   raw_sun$CollectToReceive <- raw_sun$ReceiveDateTime - raw_sun$CollectDateTime
@@ -325,7 +329,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                   "TSTName", "Test", "Division", "SpecimenPriority", 
                                   "Site", "ICU", "LocType",               
                                   "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
-                                  "AdjPriority", "DashboardPriority", 
+                                  "AdjPriority", "DashboardPriority", "TestPriority", 
                                   "OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime", 
                                   "CollecttoReceive", "ReceivetoResult", "CollecttoResult", 
                                   "AddOnMaster", "MissingCollect", 
@@ -338,7 +342,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                  "TestName", "Test", "Division", "OrderPriority", 
                                  "Site", "ICU", "LocType", 
                                  "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
-                                 "AdjPriority", "DashboardPriority", 
+                                 "AdjPriority", "DashboardPriority", "Test-Priority",
                                  "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
                                  "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
                                  "AddOnMaster", "MissingCollect", 
@@ -363,78 +367,99 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
 }
 ```
 
-```{r Dashboard Generation, echo = FALSE}
+```{r Data Preprocessing and Merging, echo = FALSE}
 scc_sun_wday_list <- preprocess_scc_sun(SCC_Weekday, SQ_Weekday)
 scc_wday <- scc_sun_wday_list[[1]]
 sun_wday <- scc_sun_wday_list[[2]]
 scc_sun_wday_master <- scc_sun_wday_list[[3]]
+```
 
+```{r Dashboard Tables, echo = FALSE}
 # Manipulate and reshape SCC and Sunquest data -----------------------------------------------
 # Start summarizing data
 chemistry <- scc_sun_wday_master[scc_sun_wday_master$Division == "Chemistry" & scc_sun_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, DashboardPriority, DashboardSetting) %>%
+  group_by(Test, Site, DashboardPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
+            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3), CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3))
 
-chemistry_dashboard <- melt(chemistry, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+# Format target turnaround times for table
+chemistry[c("ReceiveResultTarget", "CollectResultTarget")] <- lapply(chemistry[c("ReceiveResultTarget", "CollectResultTarget")], function(x) paste("<=", x, "min"))
+
+chemistry_dashboard <- melt(chemistry, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+
+chemistry_dashboard$value <- percent(chemistry_dashboard$value, digits = 0)
 
 chemistry_dashboard_2 <- chemistry_dashboard %>%
-  mutate(value = cell_spec(value, "html", color = ifelse(is.na(value), "black", 
-                                                         ifelse(value >= 90.0, "green",
-                                                                ifelse(value >=80.0 &  value < 90.0, "yellow", "red")))))
-chemistry_dashboard_2$value <- paste0(chemistry_dashboard_2$value, "%")
+  mutate(value = cell_spec(value, "html", color = ifelse(is.na(value), "black",
+                                                         ifelse(value >= 0.95, "green",
+                                                                ifelse(value >=0.8 &  value < 0.95, "orange", "red")))))
 
-chemistry_summary <- dcast(chemistry_dashboard_2, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
+chemistry_dashboard_2 <- chemistry_dashboard_2[!((chemistry_dashboard_2$Test == "Troponin" | chemistry_dashboard_2$Test == "Lactate WB") & chemistry_dashboard_2$DashboardSetting == "Amb"), ]
 
-chemistry_summary %>%
-  kable(format = "html", escape = FALSE, align = "c") %>%
-  kable_styling(bootstrap_options = "striped")
+chemistry_summary <- dcast(chemistry_dashboard_2, Test + DashboardPriority + paste(Test, "-", DashboardPriority, "Labs") + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value")
+
+chemistry_summary <- chemistry_summary[ , c(1:2, 4, 3, 6:11, 5, 3, 12:17)]
+
+chemistry_summary[ , 3:ncol(chemistry_summary)] %>%
+  kable(format = "html", escape = FALSE, align = "c", 
+        col.names = c("Test", "Priority", "Setting", "Target", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "Setting", "Target", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
+  # kable_styling(bootstrap_options = "basic") %>%
+  add_header_above(c(" " = 2, "Receive to Result Within Target" = 8, "Collect to Result Within Target" = 8)) %>%
+  column_spec(column = c(2, 10), border_right = TRUE) %>%
+  collapse_rows(columns = c(1, 2, 3, 11), row_group_label_position = "identity") 
+  
+```
+
+```{r Test}
+dt <- data.frame(a = c(1, 1, 2, 2), b = c("a", "a", "a", "b"))
+x <- knitr::kable(dt, "html")
+collapse_rows(x)
 ```
 
 ```{r Additional table, echo = FALSE}
-  
-hematology <- scc_sun_wday_master[scc_sun_wday_master$Division == "Hematology" & scc_sun_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, DashboardPriority, DashboardSetting) %>%
-  summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
-
-hematology_table <- melt(hematology, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPercent", "CollectResultPercent"))
-
-hematology_table2 <- dcast(hematology_table, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
-
-hematology_dashboard <- melt(hematology, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
-hematology_summary <- dcast(hematology_dashboard, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
-
-micro <- scc_sun_wday_master[scc_sun_wday_master$Division == "Microbiology RRL" & scc_sun_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, DashboardPriority, DashboardSetting) %>%
-  summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
-
-micro_table <- melt(micro, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), value.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPercent", "CollectResultPercent"))
-
-micro_table2 <- dcast(micro_table, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
-
-micro_dashboard <- melt(micro, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
-micro_dashboard <- micro_dashboard[!(micro_dashboard$Test == "C. diff" & micro_dashboard$DashboardSetting == "Amb"), ]
-
-micro_summary <- dcast(micro_dashboard, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
-micro_summary[micro_summary$Test == "Rapid Flu" & micro_summary$DashboardSetting == "Amb", ]
-
-micro_volume <- melt(micro, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ResultedVolume"))
-micro_volume <- dcast(micro_volume, Test + DashboardPriority + DashboardSetting ~ variable + Site)
-
-# # Determine percentage of labs with missing collection times -------------------------------
-missing_collect <- scc_sun_wday_master %>%
-  group_by(Site) %>%
-  summarize(ResultedVolume = n(), MissingCollection = sum(MissingCollect, na.rm = TRUE), Percent = round(MissingCollection/ResultedVolume*100, digits = 1))
-
-missing_collect_table <- dcast(missing_collect, "Percent Specimens Missing Collection" ~ Site, value.var = "Percent")
-
-# Determine number of add-on orders stratified by test and site ------------------------------
-add_on_volume <- scc_sun_wday_master %>%
-  group_by(Test, Site) %>%
-  summarize(AddOnVolume = sum(AddOnMaster == "AddOn", na.rm = TRUE))
-
-add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
+#   
+# hematology <- scc_sun_wday_master[scc_sun_wday_master$Division == "Hematology" & scc_sun_wday_master$TATInclude == TRUE, ] %>%
+#   group_by(Test, Site, DashboardPriority, DashboardSetting) %>%
+#   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
+#             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
+# 
+# hematology_table <- melt(hematology, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPercent", "CollectResultPercent"))
+# 
+# hematology_table2 <- dcast(hematology_table, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
+# 
+# hematology_dashboard <- melt(hematology, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+# hematology_summary <- dcast(hematology_dashboard, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
+# 
+# micro <- scc_sun_wday_master[scc_sun_wday_master$Division == "Microbiology RRL" & scc_sun_wday_master$TATInclude == TRUE, ] %>%
+#   group_by(Test, Site, DashboardPriority, DashboardSetting) %>%
+#   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
+#             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3)*100, CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3)*100)
+# 
+# micro_table <- melt(micro, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), value.var = c("ResultedVolume", "ReceiveResultInTarget", "CollectResultInTarget", "ReceiveResultPercent", "CollectResultPercent"))
+# 
+# micro_table2 <- dcast(micro_table, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
+# 
+# micro_dashboard <- melt(micro, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+# micro_dashboard <- micro_dashboard[!(micro_dashboard$Test == "C. diff" & micro_dashboard$DashboardSetting == "Amb"), ]
+# 
+# micro_summary <- dcast(micro_dashboard, Test + DashboardPriority + DashboardSetting ~ variable + Site, value.var = "value")
+# micro_summary[micro_summary$Test == "Rapid Flu" & micro_summary$DashboardSetting == "Amb", ]
+# 
+# micro_volume <- melt(micro, id.var = c("Test", "Site", "DashboardPriority", "DashboardSetting"), measure.vars = c("ResultedVolume"))
+# micro_volume <- dcast(micro_volume, Test + DashboardPriority + DashboardSetting ~ variable + Site)
+# 
+# # # Determine percentage of labs with missing collection times -------------------------------
+# missing_collect <- scc_sun_wday_master %>%
+#   group_by(Site) %>%
+#   summarize(ResultedVolume = n(), MissingCollection = sum(MissingCollect, na.rm = TRUE), Percent = round(MissingCollection/ResultedVolume*100, digits = 1))
+# 
+# missing_collect_table <- dcast(missing_collect, "Percent Specimens Missing Collection" ~ Site, value.var = "Percent")
+# 
+# # Determine number of add-on orders stratified by test and site ------------------------------
+# add_on_volume <- scc_sun_wday_master %>%
+#   group_by(Test, Site) %>%
+#   summarize(AddOnVolume = sum(AddOnMaster == "AddOn", na.rm = TRUE))
+# 
+# add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
 ```
 
