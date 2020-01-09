@@ -367,14 +367,14 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
 }
 ```
 
-```{r Data Preprocessing and Merging, echo = FALSE}
+```{r Data Preprocessing and Merging, warning = FALSE, echo = FALSE}
 scc_sun_wday_list <- preprocess_scc_sun(SCC_Weekday, SQ_Weekday)
 scc_wday <- scc_sun_wday_list[[1]]
 sun_wday <- scc_sun_wday_list[[2]]
 scc_sun_wday_master <- scc_sun_wday_list[[3]]
 ```
 
-# Chemistry KPI
+## *Chemistry KPI*
 ```{r Dashboard Tables, echo = FALSE}
 # Manipulate and reshape SCC and Sunquest data -----------------------------------------------
 # Start summarizing data
@@ -407,16 +407,16 @@ names(chem_table)[2:9] <- cell_spec(names(chem_table)[2:9], background = "#00AEE
 chem_table %>%
   kable(format = "html", escape = FALSE, align = "c", 
         col.names = c("Test & Priority", "Setting", "Target", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "Setting", "Target", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
-  kable_styling(bootstrap_options = "hover") %>%
-  add_header_above(c(" " = 1, "Receive to Result Within Target" = (ncol(chem_table)-1)/2, "Collect to Result Within Target" = (ncol(chem_table)-1)/2), background = c("white", "#00AEEF", "#221f72"), color = "white") %>%
-  column_spec(column = c(1, as.integer(ncol(chem_table))/2 + 1, ncol(chem_table)), border_right = "thin solid lightgray") %>%
+  kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
+  add_header_above(c(" " = 1, "Receive to Result Within Target" = (ncol(chem_table)-1)/2, "Collect to Result Within Target" = (ncol(chem_table)-1)/2), background = c("white", "#00AEEF", "#221f72"), color = "white", line = FALSE, font_size = 13) %>%
+  column_spec(column = c(1, 9, 17), border_right = "thin solid lightgray") %>%
   column_spec(column = 2:9, background = "#00AEEF", color = "white", include_thead = TRUE) %>%
   column_spec(column = 10:17, background = "#221f72", color = "white", include_thead = TRUE) %>%
   column_spec(column = 2:17, background = "inherit", color = "inherit") %>%
-  column_spec(column = 1, width_min = "10em") %>%
+  column_spec(column = 1, width_min = "125px", include_thead = TRUE) %>%
+  column_spec(column = c(3, 11), width_min = "100px", include_thead = TRUE) %>%
+  row_spec(row = 0, font_size = 13) %>%
   collapse_rows(columns = c(1, 2, 10))
-
-  
 ```
 
 ```{r Additional table, echo = FALSE}
