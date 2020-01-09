@@ -367,7 +367,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
 }
 ```
 
-```{r Data Preprocessing and Merging, warning = FALSE, echo = FALSE}
+```{r Data Preprocessing and Merging, message = FALSE, warning = FALSE, echo = FALSE}
 scc_sun_wday_list <- preprocess_scc_sun(SCC_Weekday, SQ_Weekday)
 scc_wday <- scc_sun_wday_list[[1]]
 sun_wday <- scc_sun_wday_list[[2]]
