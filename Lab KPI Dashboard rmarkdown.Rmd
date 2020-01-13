@@ -46,7 +46,7 @@ Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
 #Determine if yesterday was a holiday/weekend 
 
 #Change the format for the date into timeDate format to be ready for the next function
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(format(Sys.Date()+1,"%m/%d/%Y"))
 
 #get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -121,182 +121,175 @@ GI_Codes <- data.frame(read_excel(choose.files(caption = "Select GI Codes datafr
 #-----------import table template-----------#
 #Cyto
 Table_Template_Cyto <- read_excel(choose.files(caption = "Select Table Dataframe"), sheet = "Cyto") 
-names(Table_Template) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+names(Table_Template_Cyto) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
 
 #Patho
 Table_Template_Patho <- read_excel(choose.files(caption = "Select Table Dataframe"), sheet = "Patho") 
 names(Table_Template_Patho) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
 
-#------------------------------Data Pre-Processing------------------------------#
-
-#vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
-PP_Weekday_PS <- merge(x=PP_Weekday, y=Patient_Setting, all.x = TRUE ) 
-PP_Not_Weekday_PS <- merge(x=PP_Not_Weekday, y=Patient_Setting, all.x = TRUE )
-
-#vlookup targets based on spec_group and patient setting
-PP_Weekday_PS_Target <- merge(x=PP_Weekday_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
-if (is.null(PP_Not_Weekday)){
-  PP_Not_Weekday_PS_Target <- NULL
-}else {
-  PP_Not_Weekday_PS_Target <- merge(x=PP_Not_Weekday_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
-}
-
-
+#------------------------------Extract the Cytology GYN and NON-GYN Data Only------------------------------#
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
 
-Cytology_Weekday <- PP_Weekday_PS_Target[which(PP_Weekday_PS_Target$spec_group=="CYTO NONGYN" | PP_Weekday_PS_Target$spec_group=="CYTO GYN"),]
-Cytology_Not_Weekday <- PP_Not_Weekday_PS_Target[which(PP_Not_Weekday_PS_Target$spec_group=="CYTO NONGYN" | PP_Not_Weekday_PS_Target$spec_group=="CYTO GYN"),]
+Cytology_Weekday_Raw <- PP_Weekday[which(PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN"),]
+Cytology_Not_Weekday_Raw <- PP_Not_Weekday[which(PP_Not_Weekday$spec_group=="CYTO NONGYN" | PP_Not_Weekday$spec_group=="CYTO GYN"),]
 
-#If there are any N/A in the dates, remove that sample
-Cytology_Weekday <- Cytology_Weekday[!(is.na(Cytology_Weekday$Case_created_date)|is.na(Cytology_Weekday$Collection_Date) | is.na(Cytology_Weekday$Received_Date) | is.na(Cytology_Weekday$signed_out_date)),]
+#------------------------------Extract the All Breast and GI Specimens Data Only------------------------------#
 
-Cytology_Not_Weekday <- Cytology_Not_Weekday[!(is.na(Cytology_Not_Weekday$Case_created_date)|is.na(Cytology_Not_Weekday$Collection_Date) | is.na(Cytology_Not_Weekday$Received_Date) | is.na(Cytology_Not_Weekday$signed_out_date)),]
+#Merge the exclusion/inclusion cloumn into the modified powerpath Dataset for weekdays and not weekdays
 
-#Change all Dates into POSIXct format to start the calculations
+PP_Weekday_Excl <- merge(x = PP_Weekday, y= GI_Codes, all.x = TRUE)
+Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group=="GI") &(PP_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Weekday_Excl$spec_group=="Breast"),]
 
-Cytology_Weekday[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Cytology_Weekday[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, format='%m/%d/%y %I:%M %p')
+PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday, y= GI_Codes, all.x = TRUE)
+Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
 
+#------------------------------Data Pre-Processing------------------------------#
+############Create a function for Data pre-processing############
 
-if (is.null(PP_Not_Weekday)){
-  Cytology_Not_Weekday <- Cytology_Not_Weekday
-} else {
-  Cytology_Not_Weekday$Case_created_date <- as.POSIXct(Cytology_Not_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
-  Cytology_Not_Weekday$Collection_Date <- as.POSIXct(Cytology_Not_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
-  Cytology_Not_Weekday$Received_Date <- as.POSIXct(Cytology_Not_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
-  Cytology_Not_Weekday$signed_out_date <- as.POSIXct(Cytology_Not_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
+pre_processing <- function(Raw_Data){
+  if (is.null(Raw_Data) || nrow(Raw_Data)==0){
+    Raw_Data_PS <- NULL
+    Raw_Data_PS_Target <- NULL
+    Raw_Data_New <- NULL
+    Raw_Data_New_Cases_Signed <- NULL
+    Raw_Data_New_Patient_Metric <- NULL
+    Raw_Data_New_Lab_Metric <- NULL
+    Processed_Data_Table <- NULL
+  } else {
+    #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
+    Raw_Data_PS <- merge(x=Raw_Data, y=Patient_Setting, all.x = TRUE ) 
+
+    #vlookup targets based on spec_group and patient setting
+    Raw_Data_PS_Target <- merge(x=Raw_Data_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
+    
+    #If there are any N/A in the dates, remove that sample
+    Raw_Data_New <- Raw_Data_PS_Target[!(is.na(Raw_Data_PS_Target$Case_created_date)|is.na(Raw_Data_PS_Target$Collection_Date) | is.na(Raw_Data_PS_Target$Received_Date) | is.na(Raw_Data_PS_Target$signed_out_date)),]
+    
+    #Change all Dates into POSIXct format to start the calculations
+    
+    Raw_Data_New[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Raw_Data_New[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, format='%m/%d/%y %I:%M %p')
+    
+    #add columns for calculations: collection to signed out and received to signed out
+    #collection to signed out
+    #All days in the calendar
+    Raw_Data_New$Collection_to_signed_out <- as.numeric(difftime(Raw_Data_New$signed_out_date, Raw_Data_New$Collection_Date, units = "days"))
+    
+    #recieve to signed out
+    #without weekends and holidays
+    Raw_Data_New$Received_to_signed_out <- bizdays(Raw_Data_New$Received_Date, Raw_Data_New$signed_out_date)
+    
+    #find any negative calculation and remove them
+    Raw_Data_New <- Raw_Data_New[!(Raw_Data_New$Collection_to_signed_out<=0 | Raw_Data_New$Received_to_signed_out<=0),]
+    
+    #Calculate Average for Collection to signed out and number of cases signed
+    
+    Raw_Data_New_Cases_Signed <- summarise(group_by(Raw_Data_New,spec_group, Patient.Setting), No_Cases_Signed = n())
+    
+    Raw_Data_New_Patient_Metric <- summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
+    
+    Raw_Data_New_Patient_Metric <- dcast(Raw_Data_New_Patient_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
+    
+    #Calculate % Receive to result TAT within target
+    Raw_Data_New_Lab_Metric <-summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
+    
+    Raw_Data_New_Lab_Metric <- dcast(Raw_Data_New_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+    
+    #here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
+    
+    #Cytology Weekday table
+    Processed_Data_Table <- left_join(full_join(Raw_Data_New_Cases_Signed, Raw_Data_New_Lab_Metric), Raw_Data_New_Patient_Metric, by = c("spec_group", "Patient.Setting"))
+  }
+  return(Processed_Data_Table)
+}
+    
+Cytology_Table_Weekday <- pre_processing(Cytology_Weekday_Raw)
+Cytology_Table_Not_Weekday <- pre_processing(Cytology_Not_Weekday_Raw)
+Surgical_Pathology_Table_Weekday <- pre_processing(Surgical_Pathology_Weekday)
+Surgical_Pathology_Table_Not_Weekday <- pre_processing(Surgical_Pathology_Not_Weekday)
+
+############Create a function for Table standardization for cyto and patho############
+#To add all the missing rows and columns
+#Cytology table
+Table_Merging_Cyto <- function(Cytology_Table){
+  if (is.null(Cytology_Table)){
+    Cytology_Table_New <- NULL
+    Cytology_Table_New2 <- NULL
+  } else {
+    #first step is merging the table template with the cytology table and this will include all of the missing columns.
+
+    Cytology_Table_New <- merge(x = Table_Template_Cyto, y= Cytology_Table, all.y=TRUE)
+    
+    #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
+    Cytology_Table_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+  }
+  return(Cytology_Table_New2)
 }
 
+Cytology_Table_Weekday_New2 <- Table_Merging_Cyto(Cytology_Table_Weekday)
+Cytology_Table_Not_Weekday_New2 <- Table_Merging_Cyto(Cytology_Table_Not_Weekday)
 
-#add columns for calculations: collection to signed out and received to signed out
-#collection to signed out
-#All days in the calendar
-Cytology_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Weekday$signed_out_date, Cytology_Weekday$Collection_Date, units = "days"))
+#Pathology table
+Table_Merging_Patho <- function(Surgical_Pathology_Table){
+  if (is.null(Surgical_Pathology_Table)){
+    Surgical_Pathology_Table_New <- NULL
+    Surgical_Pathology_Table_New2 <- NULL
+  } else {
+    #first step is merging the table template with the cytology table and this will include all of the missing columns.
 
-if (is.null(PP_Not_Weekday)){
-  Cytology_Not_Weekday <- Cytology_Not_Weekday
-} else {
-  Cytology_Not_Weekday$Collection_to_signed_out <- as.numeric(difftime(Cytology_Not_Weekday$signed_out_date, Cytology_Not_Weekday$Collection_Date, units = "days"))
+    Surgical_Pathology_Table_New <- merge(x = Table_Template_Patho, y= Surgical_Pathology_Table, all.y=TRUE)
+    
+    #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
+    Surgical_Pathology_Table_New2 <- merge(x = Table_Template_Patho[c(1,2)], y= Surgical_Pathology_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+  }
+  return(Surgical_Pathology_Table_New2)
 }
 
-#recieve to signed out
-#without weekends and holidays
-Cytology_Weekday$Received_to_signed_out <- bizdays(Cytology_Weekday$Received_Date, Cytology_Weekday$signed_out_date)
+Surgical_Pathology_Table_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Weekday)
+Surgical_Pathology_Table_Not_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Not_Weekday)
 
-if (is.null(PP_Not_Weekday)){
-  Cytology_Not_Weekday <- Cytology_Not_Weekday
-} else {
-  Cytology_Not_Weekday$Received_to_signed_out <- bizdays(Cytology_Not_Weekday$Received_Date, Cytology_Not_Weekday$signed_out_date)
+
+############Create a function for conditional formatting############
+Conditional_Formatting <- function(Table_New2){
+  if (is.null(Table_New2)){
+    Table_New3 <- NULL
+  } else {
+    #Rearrange the columns based on their names
+    columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+    
+    Table_New2 <- Table_New2[, columns_order]
+    Table_New2[,4:21] <- lapply(Table_New2[,4:21], as.numeric)
+    Table_New2[,4:12] <- lapply(Table_New2[,4:12],percent)
+    
+    #steps for conditional formatting:
+    
+    Table_New3 <- melt(Table_New2, id = c("spec_group","Patient.Setting","No_Cases_Signed","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y"))
+    
+    
+    Table_New3 <- Table_New3 %>%
+      mutate(value = ifelse(value > 0.9, cell_spec(value, "html", background  = "lightgreen"),
+                       ifelse(value < 0.8, cell_spec(value, "html", background = "red"),
+                              ifelse(is.na(value), cell_spec(value, "html", color = "grey"), cell_spec(value, "html", background = "yellow")))))
+    
+    
+    Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
+    
+    columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+    
+    Table_New3 <- Table_New3[, columns_order]
+  }
+  return(Table_New3)
 }
 
-#find any negative calculation and remove them
-Cytology_Weekday <- Cytology_Weekday[!(Cytology_Weekday$Collection_to_signed_out<=0 | Cytology_Weekday$Received_to_signed_out<=0),]
+Cytology_Table_Weekday_New3 <- Conditional_Formatting(Cytology_Table_Weekday_New2)
+Cytology_Table_Not_Weekday_New3 <- Conditional_Formatting(Cytology_Table_Not_Weekday_New2)
+Surgical_Pathology_Table_Weekday_New3 <- Conditional_Formatting(Surgical_Pathology_Table_Weekday_New2)
+Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting(Surgical_Pathology_Table_Not_Weekday_New2)
 
-if (is.null(PP_Not_Weekday)){
-  Cytology_Not_Weekday <- Cytology_Not_Weekday
-} else {
-  Cytology_Not_Weekday <- Cytology_Not_Weekday[!(Cytology_Not_Weekday$Collection_to_signed_out<=0 | Cytology_Not_Weekday$Received_to_signed_out<=0),]
-}
-
-#Calculate Average for Collection to signed out and number of cases signed
-
-Cytology_Cases_Signed <- summarise(group_by(Cytology_Weekday,spec_group, Patient.Setting), No_Cases_Signed = n())
-
-Cytology_Patient_Metric_Weekday <- summarise(group_by(Cytology_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
-
-Cytology_Patient_Metric_Weekday <- dcast(Cytology_Patient_Metric_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
+```
 
 
-if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
-  Cytology_Patient_Metric_Not_Weekday <- NULL
-  Cytology_Cases_Signed_Not_Weekday <- NULL
-} else {
-  Cytology_Cases_Signed_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday,spec_group, Patient.Setting), No_Cases_Signed = n())
-  
-  Cytology_Patient_Metric_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
-  
-  Cytology_Patient_Metric_Not_Weekday <- dcast(Cytology_Patient_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
-}
-
-#Calculate % Receive to result TAT within target
-Cytology_Lab_Metric_Weekday <-summarise(group_by(Cytology_Weekday,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
-
-
-Cytology_Lab_Metric_Weekday <- dcast(Cytology_Lab_Metric_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
-
-if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
-  Cytology_Lab_Metric_Not_Weekday <- NULL
-} else {
-  Cytology_Lab_Metric_Not_Weekday <- summarise(group_by(Cytology_Not_Weekday,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
-
-  Cytology_Lab_Metric_Not_Weekday <- dcast(Cytology_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
-}
-
-
-#here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
-
-#Cytology Weekday table
-Cytology_Table_Weekday <- left_join(full_join(Cytology_Cases_Signed, Cytology_Lab_Metric_Weekday), Cytology_Patient_Metric_Weekday, by = c("spec_group", "Patient.Setting"))
-
-#Cytology Not-Weekday table
-if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
-  Cytology_Table_Not_Weekday <- NULL
-} else{
-  Cytology_Table_Not_Weekday <- left_join(full_join(Cytology_Cases_Signed_Not_Weekday, Cytology_Lab_Metric_Not_Weekday), Cytology_Patient_Metric_Not_Weekday, by = c("spec_group", "Patient.Setting"))
-}
-
-#To add all the missing rows and columns to the Cytology weekday table
-#first step is merging the table template with the cytology table and this will include all of the missing columns.
-
-Cytology_Table_Weekday_New <- merge(x = Table_Template_Cyto, y= Cytology_Table_Weekday, all.y=TRUE)
-
-#second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
-Cytology_Table_Weekday_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
-
-#Rearrange the columns based on their names
-
-columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
-
-Cytology_Table_Weekday_New2 <- Cytology_Table_Weekday_New2[, columns_order]
-Cytology_Table_Weekday_New2[,4:21] <- lapply(Cytology_Table_Weekday_New2[,4:21], as.numeric)
-Cytology_Table_Weekday_New2[,4:12] <- lapply(Cytology_Table_Weekday_New2[,4:12],percent)
-
-#steps for conditional formatting:
-
-Cytology_Table_Weekday_New3 <- melt(Cytology_Table_Weekday_New2, id = c("spec_group","Patient.Setting","No_Cases_Signed","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y"))
-
-
-Cytology_Table_Weekday_New3 <- Cytology_Table_Weekday_New3 %>%
-  mutate(value = ifelse(value > 0.9, cell_spec(value, "html", background  = "lightgreen"),
-                   ifelse(value < 0.8, cell_spec(value, "html", background = "red"),
-                          ifelse(is.na(value), cell_spec(value, "html", color = "grey"), cell_spec(value, "html", background = "yellow")))))
-
-
-Cytology_Table_Weekday_New3 <- dcast(Cytology_Table_Weekday_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
-
-columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
-
-Cytology_Table_Weekday_New3 <- Cytology_Table_Weekday_New3[, columns_order]
-
-#To add all the missing rows and columns to the Cytology not weekday table
-
-if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
-  Cytology_Table_Not_Weekday_New <- NULL
-  Cytology_Table_Not_Weekday_New2 <- NULL
-} else {
-  #first step is merging the table template with the cytology table and this will include all of the missing columns.
-  Cytology_Table_Not_Weekday_New <- merge(x = Table_Template_Cyto, y= Cytology_Table_Not_Weekday, all.y=TRUE)
-  
-  #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
-  Cytology_Table_Not_Weekday_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_Not_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
-  
-  #Rearrange the columns based on their names
-  
-  Cytology_Table_Not_Weekday_New2 <- Cytology_Table_Not_Weekday_New2[, columns_order]
-  Cytology_Table_Not_Weekday_New2[,4:21] <- lapply(Cytology_Table_Not_Weekday_New2[,4:21], as.numeric)
-}
-
-
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 #Cytology backlog Calculation
 
 #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
@@ -306,26 +299,22 @@ Cytology_Backlog_PS <- merge(x=Cytology_Backlog, y=Patient_Setting, all.x = TRUE
 Cytology_Backlog_PS_Target <- merge(x=Cytology_Backlog_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
 
 #Keep the cyto gyn and cyto non-gyn
-Cytology_Backlog_Weekday <- Cytology_Backlog_PS_Target[which(Cytology_Backlog_PS_Target$spec_group=="CYTO NONGYN" | Cytology_Backlog_PS_Target$spec_group=="CYTO GYN"),]
+Cytology_Backlog <- Cytology_Backlog_PS_Target[which(Cytology_Backlog_PS_Target$spec_group=="CYTO NONGYN" | Cytology_Backlog_PS_Target$spec_group=="CYTO GYN"),]
 
 #Change all Dates into POSIXct format to start the calculations
-Cytology_Backlog_Weekday$Case_created_date <- as.POSIXct(Cytology_Backlog_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
-Cytology_Backlog_Weekday$Collection_Date <- as.POSIXct(Cytology_Backlog_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
-Cytology_Backlog_Weekday$Received_Date <- as.POSIXct(Cytology_Backlog_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
+Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, format='%m/%d/%y %I:%M %p')
 
 #Backlog Calculations: Date now - case created date
 #without weekends and holidays
-Cytology_Backlog_Weekday$Backlog <- bizdays(Cytology_Backlog_Weekday$Case_created_date, Today)
+Cytology_Backlog$Backlog <- bizdays(Cytology_Backlog$Case_created_date, Today)
 
 #Case Volume
-Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog_Weekday,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days.),2)))
-
+Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days.),2)))
 
 #Days of work
 Cytology_case_Volume_DOW <- as.numeric(Cytology_Backlog_Volume$GYN_Backlog)/80
 
 ```
-
 
 
 ```{r, echo=FALSE}
@@ -342,160 +331,25 @@ Cytology_Table_Weekday_New3 %>%
   column_spec(1:3, color = "grey", include_thead = TRUE) %>%
   add_header_above(c(" "= 3, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
   add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
-  add_header_above(c("Cytology Efficiency Indicator"=21))
+  add_header_above(c("Cytology Efficiency Indicator (Weekday)"=21))
 
-```
-
-
-
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
-#Surgical Pathology
-
-#Merge the exclusion/inclusion cloumn into the modified powerpath Dataset for weekdays and not weekdays
-
-PP_Weekday_Excl <- merge(x = PP_Weekday_PS_Target, y= GI_Codes, all.x = TRUE)
-Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group=="GI") &(PP_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Weekday_Excl$spec_group=="Breast"),]
-
-PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday_PS_Target, y= GI_Codes, all.x = TRUE)
-Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
-
-#If there are any N/A in the dates, remove that sample
-Surgical_Pathology_Weekday <- Surgical_Pathology_Weekday[!(is.na(Surgical_Pathology_Weekday$Case_created_date)|is.na(Surgical_Pathology_Weekday$Collection_Date) | is.na(Surgical_Pathology_Weekday$Received_Date) | is.na(Surgical_Pathology_Weekday$signed_out_date)),]
-Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday[!(is.na(Surgical_Pathology_Not_Weekday$Case_created_date)|is.na(Surgical_Pathology_Not_Weekday$Collection_Date) | is.na(Surgical_Pathology_Not_Weekday$Received_Date) | is.na(Surgical_Pathology_Not_Weekday$signed_out_date)),]
-
-#Change all Dates into POSIXct format to start the calculations
-
-Surgical_Pathology_Weekday$Case_created_date <- as.POSIXct(Surgical_Pathology_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
-Surgical_Pathology_Weekday$Collection_Date <- as.POSIXct(Surgical_Pathology_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
-Surgical_Pathology_Weekday$Received_Date <- as.POSIXct(Surgical_Pathology_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
-Surgical_Pathology_Weekday$signed_out_date <- as.POSIXct(Surgical_Pathology_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
-
-if (is.null(PP_Not_Weekday)){
-  Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday
-} else {
-  Surgical_Pathology_Not_Weekday$Case_created_date <- as.POSIXct(Surgical_Pathology_Not_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
-  Surgical_Pathology_Not_Weekday$Collection_Date <- as.POSIXct(Surgical_Pathology_Not_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
-  Surgical_Pathology_Not_Weekday$Received_Date <- as.POSIXct(Surgical_Pathology_Not_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
-  Surgical_Pathology_Not_Weekday$signed_out_date <- as.POSIXct(Surgical_Pathology_Not_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
-}
-
-#add columns for calculations: collection to signed out and received to signed out
-#Collection to signed out
-#All days in the calendar
-Surgical_Pathology_Weekday$Collection_to_signed_out <- as.numeric(difftime(Surgical_Pathology_Weekday$signed_out_date, Surgical_Pathology_Weekday$Collection_Date, units = "days"))
-
-if (is.null(PP_Not_Weekday)){
-  Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday
-} else {
-  Surgical_Pathology_Not_Weekday$Collection_to_signed_out <- as.numeric(difftime(Surgical_Pathology_Not_Weekday$signed_out_date, Surgical_Pathology_Not_Weekday$Collection_Date, units = "days"))
-}
-
-#recieve to signed out
-#without weekends and holidays
-Surgical_Pathology_Weekday$Received_to_signed_out <- bizdays(Surgical_Pathology_Weekday$Received_Date, Surgical_Pathology_Weekday$signed_out_date)
-
-if (is.null(PP_Not_Weekday)){
-  Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday
-} else {
-  Surgical_Pathology_Not_Weekday$Received_to_signed_out <- bizdays(Surgical_Pathology_Not_Weekday$Received_Date, Surgical_Pathology_Not_Weekday$signed_out_date)
-}
-
-#find any negative calculation and remove them
-Surgical_Pathology_Weekday <- Surgical_Pathology_Weekday[!(Surgical_Pathology_Weekday$Collection_to_signed_out<=0 | Surgical_Pathology_Weekday$Received_to_signed_out<=0),]
-if (is.null(PP_Not_Weekday)){
-  Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday
-} else {
-  Surgical_Pathology_Not_Weekday <- Surgical_Pathology_Not_Weekday[!(Surgical_Pathology_Not_Weekday$Collection_to_signed_out<=0 | Surgical_Pathology_Not_Weekday$Received_to_signed_out<=0),]
-}
-
-#Calculate Average for Collection to signed out
-
-Surgical_Pathology_Cases_Signed_Weekday <- summarise(group_by(Surgical_Pathology_Weekday,spec_group, Patient.Setting), No_Cases_Signed = n())
-
-Surgical_Pathology_Patient_Metric_Weekday <- summarise(group_by(Surgical_Pathology_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
-
-Surgical_Pathology_Patient_Metric_Weekday <- dcast(Surgical_Pathology_Patient_Metric_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
-
-if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
-  Surgical_Pathology_Patient_Metric_Not_Weekday <- NULL
-  Surgical_Pathology_Cases_Signed_Not_Weekday <- NULL
-} else {
-  Surgical_Pathology_Cases_Signed_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday,spec_group, Patient.Setting), No_Cases_Signed = n())
-  
-  Surgical_Pathology_Patient_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out),2)))
-  
-  Surgical_Pathology_Patient_Metric_Not_Weekday <- dcast(Surgical_Pathology_Patient_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
-}
-
-#Calculate % Receive to result TAT within target
-Surgical_Pathology_Lab_Metric_Weekday <- summarise(group_by(Surgical_Pathology_Weekday,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
-Surgical_Pathology_Lab_Metric_Weekday <- dcast(Surgical_Pathology_Lab_Metric_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
-
-if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
-  Surgical_Pathology_Lab_Metric_Not_Weekday <- NULL
-} else {
-  Surgical_Pathology_Lab_Metric_Not_Weekday <- summarise(group_by(Surgical_Pathology_Not_Weekday,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days.)/sum(Received_to_signed_out >= 0),2)))
-  Surgical_Pathology_Lab_Metric_Not_Weekday <- dcast(Surgical_Pathology_Lab_Metric_Not_Weekday, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
-}
-
-#here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
-
-#Pathology Weekday table
-Pathology_Table_Weekday <- left_join(full_join(Surgical_Pathology_Cases_Signed_Weekday, Surgical_Pathology_Lab_Metric_Weekday), Surgical_Pathology_Patient_Metric_Weekday, by = c("spec_group", "Patient.Setting"))
-
-#Pathology Not-Weekday table
-if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
-  Pathology_Table_Not_Weekday <- NULL
+if (is.null(Cytology_Table_Not_Weekday_New3)){
+  Cytology_Table_Not_Weekday_New3 <- NULL
 } else{
-  Pathology_Table_Not_Weekday <- left_join(full_join(Surgical_Pathology_Cases_Signed_Not_Weekday, Surgical_Pathology_Lab_Metric_Not_Weekday), Surgical_Pathology_Patient_Metric_Not_Weekday, by = c("spec_group", "Patient.Setting"))
-}
-
-#To add all the missing rows and columns to the pathology weekday table
-#first step is merging the table template 2 with the pathology table and this will include all of the missing columns.
-
-Pathology_Table_Weekday_New <- merge(x = Table_Template_Patho, y= Pathology_Table_Weekday, all.y=TRUE)
-
-#second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
-Pathology_Table_Weekday_New2 <- merge(x = Table_Template_Patho[c(1,2)], y= Pathology_Table_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
-
-#Rearrange the columns based on their names
-
-Pathology_Table_Weekday_New2 <- Pathology_Table_Weekday_New2[, columns_order]
-Pathology_Table_Weekday_New2[,4:21] <- lapply(Pathology_Table_Weekday_New2[,4:21], as.numeric)
-Pathology_Table_Weekday_New2[,4:12] <- lapply(Pathology_Table_Weekday_New2[,4:12],percent)
-
-Pathology_Table_Weekday_New3 <- melt(Pathology_Table_Weekday_New2, id = c("spec_group","Patient.Setting","No_Cases_Signed","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y"))
-
-
-Pathology_Table_Weekday_New3 <- Pathology_Table_Weekday_New3 %>%
-  mutate(value = ifelse(value > 0.9, cell_spec(value, "html", background  = "lightgreen"),
-                   ifelse(value < 0.8, cell_spec(value, "html", background = "red"),
-                          ifelse(is.na(value), cell_spec(value, "html", color = "grey"), cell_spec(value, "html", background = "yellow")))))
-
-
-Pathology_Table_Weekday_New3 <- dcast(Pathology_Table_Weekday_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
-
-columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
-
-Pathology_Table_Weekday_New3 <- Pathology_Table_Weekday_New3[, columns_order]
-
-
-#To add all the missing rows and columns to the Pathology not weekday table
-
-if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
-  Pathology_Table_Not_Weekday_New <- NULL
-  Pathology_Table_Not_Weekday_New2 <- NULL
-} else {
-  #first step is merging the table template with the cytology table and this will include all of the missing columns.
-  Pathology_Table_Not_Weekday_New <- merge(x = Table_Template_Patho, y= Pathology_Table_Not_Weekday, all.y=TRUE)
-  
-  #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
-  Pathology_Table_Not_Weekday_New2 <- merge(x = Table_Template_Patho[c(1,2)], y= Pathology_Table_Not_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
-  
-  #Rearrange the columns based on their names
-  
-  Pathology_Table_Not_Weekday_New2 <- Pathology_Table_Not_Weekday_New2[, columns_order]
-  Pathology_Table_Not_Weekday_New2[,4:21] <- lapply(Pathology_Table_Not_Weekday_New2[,4:21], as.numeric)
+  Cytology_Table_Not_Weekday_New3 %>%
+    select(everything()) %>%
+    kable(escape = F, col.names = c("Case Type","Setting","No. Cases Signed","MSH", "BIMC","MSQ", "MSS","NYEE","PACC","R","SL", "KH","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")) %>%
+    kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
+    column_spec(4:12, background = "#00B9F2",include_thead = TRUE)%>%
+    row_spec(1:6, background = "white")%>%
+    column_spec(13:21, background = "#221F72", include_thead = TRUE)%>%
+    row_spec(1:6, background = "white")%>%
+    row_spec(0, color = "white") %>%
+    collapse_rows(columns = 1)%>%
+    column_spec(1:3, color = "grey", include_thead = TRUE) %>%
+    add_header_above(c(" "= 3, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
+    add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=21))%>%
+    add_header_above(c("Cytology Efficiency Indicator (Weekend)"=21))
 }
 
 ```
@@ -503,7 +357,7 @@ if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
 
 
 ```{r, echo=FALSE}
-Pathology_Table_Weekday_New3 %>%
+Surgical_Pathology_Table_Weekday_New3 %>%
   select(everything()) %>%
   kable(escape = F, col.names = c("Case Type","Setting","No. Cases Signed","MSH", "BIMC","MSQ", "MSS","NYEE","PACC","R","SL", "KH","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")) %>%
   kable_styling(c("hover","condensed","responsive","bordered"), full_width = FALSE, position = "left", font_size = 12) %>%
