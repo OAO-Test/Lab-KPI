@@ -59,6 +59,10 @@ MSHS_Holiday <- NYSE_Holidays[GoodFriday != NYSE_Holidays]
 #This function determines whether yesterday was a holiday/weekend or no
 Holiday_Det <- isHoliday(Yesterday, holidays = MSHS_Holiday)
 
+#Set up a default calendar for collect to received TAT calculations
+create.calendar("MSHS_working_days", MSHS_Holiday, weekdays=c("saturday","sunday"))
+bizdays.options$set(default.calendar="MSHS_working_days")
+
 #------------------------------Read Excel sheets------------------------------#
 #The if-statement below helps in determining how many excel files are required
 
@@ -103,12 +107,27 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
 Cytology_Backlog <- read_excel(choose.files(caption = "Select Cytology Backlog Report"),skip =1 , 1)
 Cytology_Backlog <- data.frame(Cytology_Backlog[-nrow(Cytology_Backlog),], stringsAsFactors = FALSE)
 
-#------------------------------Data Pre-Processing------------------------------#
-
+#-----------Patient Setting Excel File-----------#
 #Using Rev Center to determine patient setting
 Patient_Setting <- data.frame(read_excel(choose.files(caption = "Select Patient Setting Dataframe"), sheet = "final"), stringsAsFactors = FALSE)
 
+#-----------Anatomic Pathology Targets Excel File-----------#
 TAT_Targets <- data.frame(read_excel(choose.files(caption = "AP TAT Targets"), 1), stringsAsFactors = FALSE)
+
+#-----------GI Codes Excel File-----------#
+#Upload the exclusion vs inclusion criteria associated with the GI codes
+GI_Codes <- data.frame(read_excel(choose.files(caption = "Select GI Codes dataframe"), 1), stringsAsFactors = FALSE)
+
+#-----------import table template-----------#
+#Cyto
+Table_Template_Cyto <- read_excel(choose.files(caption = "Select Table Dataframe"), sheet = "Cyto") 
+names(Table_Template) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+
+#Patho
+Table_Template_Patho <- read_excel(choose.files(caption = "Select Table Dataframe"), sheet = "Patho") 
+names(Table_Template_Patho) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+
+#------------------------------Data Pre-Processing------------------------------#
 
 #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
 PP_Weekday_PS <- merge(x=PP_Weekday, y=Patient_Setting, all.x = TRUE ) 
@@ -122,10 +141,6 @@ if (is.null(PP_Not_Weekday)){
   PP_Not_Weekday_PS_Target <- merge(x=PP_Not_Weekday_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
 }
 
-
-#Set up a default calendar for collect to received TAT calculations
-create.calendar("MSHS_working_days", MSHS_Holiday, weekdays=c("saturday","sunday"))
-bizdays.options$set(default.calendar="MSHS_working_days")
 
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
@@ -142,10 +157,6 @@ Cytology_Not_Weekday <- Cytology_Not_Weekday[!(is.na(Cytology_Not_Weekday$Case_c
 
 Cytology_Weekday[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Cytology_Weekday[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, format='%m/%d/%y %I:%M %p')
 
-#Cytology_Weekday$Case_created_date <- as.POSIXct(Cytology_Weekday$Case_created_date,format='%m/%d/%y %I:%M %p')
-#Cytology_Weekday$Collection_Date <- as.POSIXct(Cytology_Weekday$Collection_Date,format='%m/%d/%y %I:%M %p')
-#Cytology_Weekday$Received_Date <- as.POSIXct(Cytology_Weekday$Received_Date,format='%m/%d/%y %I:%M %p')
-#Cytology_Weekday$signed_out_date <- as.POSIXct(Cytology_Weekday$signed_out_date,format='%m/%d/%y %I:%M %p')
 
 if (is.null(PP_Not_Weekday)){
   Cytology_Not_Weekday <- Cytology_Not_Weekday
@@ -237,14 +248,10 @@ if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
 #To add all the missing rows and columns to the Cytology weekday table
 #first step is merging the table template with the cytology table and this will include all of the missing columns.
 
-#import table template
-Table_Template <- read_excel(choose.files(caption = "Select Table Dataframe"), sheet = "Cyto") 
-names(Table_Template) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
-
-Cytology_Table_Weekday_New <- merge(x = Table_Template, y= Cytology_Table_Weekday, all.y=TRUE)
+Cytology_Table_Weekday_New <- merge(x = Table_Template_Cyto, y= Cytology_Table_Weekday, all.y=TRUE)
 
 #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
-Cytology_Table_Weekday_New2 <- merge(x = Table_Template[c(1,2)], y= Cytology_Table_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+Cytology_Table_Weekday_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
 
 #Rearrange the columns based on their names
 
@@ -278,10 +285,10 @@ if (is.null(PP_Not_Weekday)||nrow(Cytology_Not_Weekday)==0){
   Cytology_Table_Not_Weekday_New2 <- NULL
 } else {
   #first step is merging the table template with the cytology table and this will include all of the missing columns.
-  Cytology_Table_Not_Weekday_New <- merge(x = Table_Template, y= Cytology_Table_Not_Weekday, all.y=TRUE)
+  Cytology_Table_Not_Weekday_New <- merge(x = Table_Template_Cyto, y= Cytology_Table_Not_Weekday, all.y=TRUE)
   
   #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
-  Cytology_Table_Not_Weekday_New2 <- merge(x = Table_Template[c(1,2)], y= Cytology_Table_Not_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+  Cytology_Table_Not_Weekday_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_Not_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
   
   #Rearrange the columns based on their names
   
@@ -343,9 +350,6 @@ Cytology_Table_Weekday_New3 %>%
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 #Surgical Pathology
-
-#Upload the exclusion vs inclusion criteria associated with the GI codes
-GI_Codes <- data.frame(read_excel(choose.files(caption = "Select GI Codes dataframe"), 1), stringsAsFactors = FALSE)
 
 #Merge the exclusion/inclusion cloumn into the modified powerpath Dataset for weekdays and not weekdays
 
@@ -449,14 +453,10 @@ if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
 #To add all the missing rows and columns to the pathology weekday table
 #first step is merging the table template 2 with the pathology table and this will include all of the missing columns.
 
-#import table template
-Table_Template_2 <- read_excel(choose.files(caption = "Select Table Dataframe"), sheet = "Patho") 
-names(Table_Template_2) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
-
-Pathology_Table_Weekday_New <- merge(x = Table_Template_2, y= Pathology_Table_Weekday, all.y=TRUE)
+Pathology_Table_Weekday_New <- merge(x = Table_Template_Patho, y= Pathology_Table_Weekday, all.y=TRUE)
 
 #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
-Pathology_Table_Weekday_New2 <- merge(x = Table_Template_2[c(1,2)], y= Pathology_Table_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+Pathology_Table_Weekday_New2 <- merge(x = Table_Template_Patho[c(1,2)], y= Pathology_Table_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
 
 #Rearrange the columns based on their names
 
@@ -487,10 +487,10 @@ if (is.null(PP_Not_Weekday)||nrow(Surgical_Pathology_Not_Weekday==0)){
   Pathology_Table_Not_Weekday_New2 <- NULL
 } else {
   #first step is merging the table template with the cytology table and this will include all of the missing columns.
-  Pathology_Table_Not_Weekday_New <- merge(x = Table_Template_2, y= Pathology_Table_Not_Weekday, all.y=TRUE)
+  Pathology_Table_Not_Weekday_New <- merge(x = Table_Template_Patho, y= Pathology_Table_Not_Weekday, all.y=TRUE)
   
   #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
-  Pathology_Table_Not_Weekday_New2 <- merge(x = Table_Template_2[c(1,2)], y= Pathology_Table_Not_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+  Pathology_Table_Not_Weekday_New2 <- merge(x = Table_Template_Patho[c(1,2)], y= Pathology_Table_Not_Weekday_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
   
   #Rearrange the columns based on their names
   
