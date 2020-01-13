@@ -2,6 +2,10 @@
 title: "MSHS Laboratory KPI Dashboard"
 output: html_document
 ---
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+
 ```{r include = FALSE}
 #Install packages only the first time you run the code
 #install.packages("timeDate")
@@ -26,7 +30,9 @@ library(kableExtra)
 library(formattable)
 ```
 
-```{r Determine date, warning = FALSE, echo = FALSE}
+```{r Determine date, warning = FALSE, message = FALSE, echo = FALSE}
+#Clear existing history
+rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 
 #Determine if yesterday was a holiday/weekend 
@@ -98,7 +104,7 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
 }
 ```
 
-```{r Reference Data, echo = FALSE}
+```{r Reference Data, warning = FALSE, message = FALSE, echo = FALSE}
 # CP and Micro --------------------------------
 # Import analysis reference data starting with test codes for SCC and Sunquest
 reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2019-12-02.xlsx"
@@ -124,11 +130,12 @@ cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu
 site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
+dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
 ```
 
-```{r Preprocessing Function, echo = FALSE}
+```{r Preprocessing Function, warning = FALSE, message = FALSE, echo = FALSE}
 preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # SCC DATA PROCESSING --------------------------
   # SCC lookup references ----------------------------------------------
@@ -171,9 +178,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
   raw_scc$AdjPriority <- ifelse(raw_scc$MasterSetting == "ED" | raw_scc$MasterSetting == "ICU" | raw_scc$PRIORITY == "S", "Stat", "Routine")
   raw_scc$DashboardPriority <- ifelse(tat_targets$Priority[match(raw_scc$Test, tat_targets$Test)] == "All", "All", raw_scc$AdjPriority)
-  raw_scc$TestAndPriority <- paste(raw_scc$Test, "-", raw_scc$DashboardPriority, "Labs")
-  raw_scc$TestAndPriority <- as.factor(raw_scc$TestAndPriority)
-  
+
   # Calculate turnaround times
   raw_scc$CollectToReceive <- raw_scc$RECEIVE_DATE - raw_scc$COLLECTION_DATE
   raw_scc$ReceiveToResult <- raw_scc$VERIFIED_DATE - raw_scc$RECEIVE_DATE
@@ -217,7 +222,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                    "TEST_NAME", "Test", "Division", "PRIORITY", 
                                    "Site", "ICU", "CLINIC_TYPE", 
                                    "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
-                                   "AdjPriority", "DashboardPriority", "TestAndPriority",
+                                   "AdjPriority", "DashboardPriority",
                                    "ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE", 
                                    "CollectToReceive", "ReceiveToResult", "CollectToResult", 
                                    "AddOnMaster", "MissingCollect", 
@@ -229,7 +234,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                  "TestName", "Test", "Division", "OrderPriority", 
                                  "Site", "ICU", "LocType", 
                                  "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
-                                 "AdjPriority", "DashboardPriority", "TestAndPriority", 
+                                 "AdjPriority", "DashboardPriority",
                                  "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
                                  "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
                                  "AddOnMaster", "MissingCollect", 
@@ -283,9 +288,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_sun$AdjPriority <- ifelse(raw_sun$MasterSetting != "ED" & raw_sun$MasterSetting != "ICU" & is.na(raw_sun$SpecimenPriority), "Routine",
                                  ifelse(raw_sun$MasterSetting == "ED" | raw_sun$MasterSetting == "ICU" | raw_sun$SpecimenPriority == "S", "Stat", "Routine"))
   raw_sun$DashboardPriority <- ifelse(tat_targets$Priority[match(raw_sun$Test, tat_targets$Test)] == "All", "All", raw_sun$AdjPriority)
-  raw_sun$TestAndPriority <- paste(raw_sun$Test, "-", raw_sun$DashboardPriority, "Labs")
-  raw_sun$TestAndPriority <- as.factor(raw_sun$TestAndPriority)
-  
+
   # Calculate turnaround times
   raw_sun$CollectToReceive <- raw_sun$ReceiveDateTime - raw_sun$CollectDateTime
   raw_sun$ReceiveToResult <- raw_sun$ResultDateTime - raw_sun$ReceiveDateTime
@@ -331,7 +334,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                   "TSTName", "Test", "Division", "SpecimenPriority", 
                                   "Site", "ICU", "LocType",               
                                   "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
-                                  "AdjPriority", "DashboardPriority", "TestAndPriority", 
+                                  "AdjPriority", "DashboardPriority", 
                                   "OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime", 
                                   "CollecttoReceive", "ReceivetoResult", "CollecttoResult", 
                                   "AddOnMaster", "MissingCollect", 
@@ -344,7 +347,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                  "TestName", "Test", "Division", "OrderPriority", 
                                  "Site", "ICU", "LocType", 
                                  "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
-                                 "AdjPriority", "DashboardPriority", "TestAndPriority",
+                                 "AdjPriority", "DashboardPriority",
                                  "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
                                  "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
                                  "AddOnMaster", "MissingCollect", 
@@ -376,30 +379,58 @@ sun_wday <- scc_sun_wday_list[[2]]
 scc_sun_wday_master <- scc_sun_wday_list[[3]]
 ```
 
-## *Chemistry KPI*
+### *Chemistry KPI*
+<h4>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <90%,
+<span style = "color:green">Green:</span> >=90%</h4>
 ```{r Chemistry Dashboard Tables, warning = FALSE, message = FALSE, echo = FALSE}
+
+# Manipulate and reshape SCC and Sunquest data -----------------------------------------------
+# Begin by subsetting Chemistry data to be included in TAT analysis
+chem_sub <- scc_sun_wday_master[scc_sun_wday_master$Division == "Chemistry" & scc_sun_wday_master$TATInclude == TRUE, ]
+
+# Update factors for Micro data to remove unnecessary combinations
+chem_sub$Test <- factor(chem_sub$Test, unique(test_code$Test[test_code$Division == "Chemistry"]))
+chem_sub$DashboardSetting <- factor(chem_sub$DashboardSetting, dashboard_pt_setting)
+chem_sub$DashboardPriority <- droplevels(chem_sub$DashboardPriority)
+
 # Manipulate and reshape SCC and Sunquest data -----------------------------------------------
 # Start summarizing data
-chemistry <- scc_sun_wday_master[scc_sun_wday_master$Division == "Chemistry" & scc_sun_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, DashboardPriority, TestAndPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget) %>%
+chemistry <- chem_sub %>%
+  group_by(Test, Site, DashboardPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget, .drop = FALSE) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3), CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3))
 
-# Format target turnaround times for table
-chemistry[c("ReceiveResultTarget", "CollectResultTarget")] <- lapply(chemistry[c("ReceiveResultTarget", "CollectResultTarget")], function(x) as.factor(paste0("<=", x, " min")))
+# Manually remove unused combinations
+chemistry2 <- chemistry[!(((chemistry$Test == "Troponin" | chemistry$Test == "Lactate WB") & (chemistry$DashboardPriority != "All" | chemistry$DashboardSetting == "Amb")) | (chemistry$Test == "BUN" & chemistry$DashboardPriority == "All") | (chemistry$DashboardPriority == "Routine" & chemistry$DashboardSetting == "ED & ICU")),]
 
-chemistry[c("ReceiveResultPercent", "CollectResultPercent")] <- lapply(chemistry[c("ReceiveResultPercent", "CollectResultPercent")], percent, digits = 0)
+# Create a custom function to clean up summarized data
+clean_summarized_data <- function(x) {
+  # Replace NaN TAT percentages with NA
+  x[is.finite(x$ReceiveResultPercent) == FALSE, "ReceiveResultPercent"] <- NA
+  x[is.finite(x$CollectResultPercent) == FALSE, "CollectResultPercent"] <- NA
+  # Look up target TAT for sites with 0 resulted labs
+  dummy_df <- unique(x[is.na(x$ReceiveResultTarget) != TRUE | is.na(x$CollectResultTarget) != TRUE, c(1,3:6)])
+  x$ReceiveResultTarget <- dummy_df$ReceiveResultTarget[match(paste(x$Test, x$DashboardPriority,  x$DashboardSetting), paste(dummy_df$Test, dummy_df$DashboardPriority, dummy_df$DashboardSetting))]
+  x$CollectResultTarget <- dummy_df$CollectResultTarget[match(paste(x$Test, x$DashboardPriority,  x$DashboardSetting), paste(dummy_df$Test, dummy_df$DashboardPriority, dummy_df$DashboardSetting))]
+  # Format target TAT for tables
+  x[c("ReceiveResultTarget", "CollectResultTarget")] <- lapply(x[c("ReceiveResultTarget", "CollectResultTarget")], function(y) ifelse(is.na(y), y, paste0("<=", y, " min")))
+  x[c("ReceiveResultPercent", "CollectResultPercent")] <- lapply(x[c("ReceiveResultPercent", "CollectResultPercent")], percent, digits = 0)
+  x$TestAndPriority <- paste(x$Test, "-", x$DashboardPriority, "Labs")
+  x
+}
 
-chemistry_dashboard <- melt(chemistry, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+chemistry2 <- clean_summarized_data(chemistry2)
 
-chemistry_dashboard_2 <- chemistry_dashboard %>%
+
+chemistry_dashboard <- melt(chemistry2, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+
+chemistry_dashboard <- chemistry_dashboard %>%
   mutate(value = cell_spec(value, "html", color = ifelse(is.na(value), "black",
                                                          ifelse(value >= 0.95, "green",
                                                                 ifelse(value >=0.8 &  value < 0.95, "orange", "red")))))
 
-chemistry_dashboard_2 <- chemistry_dashboard_2[!((chemistry_dashboard_2$Test == "Troponin" | chemistry_dashboard_2$Test == "Lactate WB") & chemistry_dashboard_2$DashboardSetting == "Amb"), ]
-
-chemistry_summary <- dcast(chemistry_dashboard_2, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value")
+chemistry_summary <- dcast(chemistry_dashboard, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value")
 
 # chemistry_summary <- chemistry_summary[rowSums(is.na(chemistry_summary[7:ncol(chemistry_summary)])) !=
 # (ncol(chemistry_summary)-7+1), ]
@@ -424,36 +455,48 @@ chem_table %>%
   collapse_rows(columns = c(1, 2, 10))
 ```
 
-## *Hematology KPI*
+### *Hematology KPI*
+<h4>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <90%,
+<span style = "color:green">Green:</span> >=90%</h4>
 ```{r Hematology Dashboard Tables, warning = FALSE, message = FALSE, echo = FALSE}
 # Manipulate and reshape SCC and Sunquest data -----------------------------------------------
+# Begin by subsetting Hematology data to be included in TAT analysis
+hem_sub <- scc_sun_wday_master[scc_sun_wday_master$Division == "Hematology" & scc_sun_wday_master$TATInclude == TRUE, ]
+
+# Update factors for Micro data to remove unnecessary combinations
+hem_sub$Test <- factor(hem_sub$Test, unique(test_code$Test[test_code$Division == "Hematology"]))
+hem_sub$DashboardSetting <- factor(hem_sub$DashboardSetting, dashboard_pt_setting)
+hem_sub$DashboardPriority <- droplevels(hem_sub$DashboardPriority)
+
+# Manipulate and reshape SCC and Sunquest data -----------------------------------------------
 # Start summarizing data
-hematology <- scc_sun_wday_master[scc_sun_wday_master$Division == "Hematology" & scc_sun_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Test, Site, DashboardPriority, TestAndPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget) %>%
+hematology <- hem_sub %>%
+  group_by(Test, Site, DashboardPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget, .drop = FALSE) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3), CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3))
 
-# Format target turnaround times for table
-hematology[c("ReceiveResultTarget", "CollectResultTarget")] <- lapply(hematology[c("ReceiveResultTarget", "CollectResultTarget")], function(x) as.factor(paste0("<=", x, " min")))
 
-hematology[c("ReceiveResultPercent", "CollectResultPercent")] <- lapply(hematology[c("ReceiveResultPercent", "CollectResultPercent")], percent, digits = 0)
+# Manually remove unused combinations
+hematology2 <- hematology[!(hematology$DashboardPriority == "Routine" & hematology$DashboardSetting == "ED & ICU"),]
 
-hematology_dashboard <- melt(hematology, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+hematology2 <- clean_summarized_data(hematology2)
 
-hematology_dashboard_2 <- hematology_dashboard %>%
+# Melt Hematology data into simpler data frame
+hematology_dashboard <- melt(hematology2, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
+
+# Apply conditional formatting to percentage of TAT within target
+hematology_dashboard <- hematology_dashboard %>%
   mutate(value = cell_spec(value, "html", color = ifelse(is.na(value), "black",
                                                          ifelse(value >= 0.95, "green",
                                                                 ifelse(value >=0.8 &  value < 0.95, "orange", "red")))))
 
-hematology_summary <- dcast(hematology_dashboard_2, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value")
-
-# hematology_summary <- hematology_summary[rowSums(is.na(hematology_summary[7:ncol(hematology_summary)])) !=
-# (ncol(hematology_summary)-7+1), ]
+# Cast formatted data
+hematology_summary <- dcast(hematology_dashboard, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value")
 
 hematology_summary <- hematology_summary[ , c(1:3, 5, 4, 7:12, 6, 4, 13:18)]
 
 hem_table <- hematology_summary[ , 3:ncol(hematology_summary)]
-# names(hem_table)[2:9] <- cell_spec(names(hem_table)[2:9], background = "#00AEEF", color = "white")
 
 hem_table %>%
   kable(format = "html", escape = FALSE, align = "c", 
@@ -470,63 +513,40 @@ hem_table %>%
   collapse_rows(columns = c(1, 2, 10))
 ```
 
+### *Microbiology RRL KPI*
+<h4>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <90%,
+<span style = "color:green">Green:</span> >=90%</h4>
 ```{r Microbiology Dashboard Tables, warning = FALSE, message = FALSE, echo = FALSE}
 # Manipulate and reshape SCC and Sunquest data -----------------------------------------------
-# Start summarizing data
+# Begin by subsetting Micro data to be included in TAT analysis
 micro_sub <- scc_sun_wday_master[scc_sun_wday_master$Division == "Microbiology RRL" & scc_sun_wday_master$TATInclude == TRUE, ]
-micro_sub[c("Test","DashboardPriority", "TestAndPriority")] <- lapply(micro_sub[c("Test","DashboardPriority")], droplevels)
-micro_sub$DashboardSetting <- factor(micro_sub$DashboardSetting, c("ED & ICU", "IP Non-ICU", "Amb"))
 
+# Update factors for Micro data to remove unnecessary combinations
+micro_sub$Test <- factor(micro_sub$Test, unique(test_code$Test[test_code$Division == "Microbiology RRL"]))
+micro_sub$DashboardSetting <- factor(micro_sub$DashboardSetting, dashboard_pt_setting)
+micro_sub$DashboardPriority <- droplevels(micro_sub$DashboardPriority)
 
+# Summarize Micro data and determine percentage of Micro labs within target
 micro_rrl <- micro_sub %>%
   group_by(Test, Site, DashboardPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget, .drop = FALSE) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3), CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3))
 
-# micro_rrl[is.finite(micro_rrl$ReceiveResultPercent) == FALSE, "ReceiveResultPercent"] <- NA
-# micro_rrl[is.finite(micro_rrl$CollectResultPercent) == FALSE, "CollectResultPercent"] <- NA
-# 
-# a <- micro_rrl[is.na(micro_rrl$ReceiveResultTarget), 1:6]
-# b <- micro_rrl[!is.na(micro_rrl$ReceiveResultTarget), 1:6]
-# 
-# u <- unique(micro_rrl[is.na(micro_rrl$ReceiveResultTarget) != TRUE | is.na(micro_rrl$CollectResultTarget) != TRUE, c(1,3:6)])
-# 
-# a$ReceiveResultTarget <- u[match(paste(a$Test, a$DashboardPriority, a$DashboardSetting), paste(u$Test, u$DashboardPriority, u$DashboardSetting)), "ReceiveResultTarget"]
-# 
-# micro_rrl$ReceiveResultTarget <- u$ReceiveResultTarget[match(paste(micro_rrl$Test, micro_rrl$DashboardPriority, micro_rrl$DashboardSetting), paste(u$Test, u$DashboardPriority, u$DashboardSetting))]
-# 
-# micro_rrl$CollectResultTarget <- u$CollectResultTarget[match(paste(micro_rrl$Test, micro_rrl$DashboardPriority, micro_rrl$DashboardSetting), paste(u$Test, u$DashboardPriority, u$DashboardSetting))]
-
-
-
-
-
-clean_summarized_data <- function(x) {
-  # Replace NaN TAT percentages with NA
-  x[is.finite(x$ReceiveResultPercent) == FALSE, "ReceiveResultPercent"] <- NA
-  x[is.finite(x$CollectResultPercent) == FALSE, "CollectResultPercent"] <- NA
-  # Look up target TAT for sites with 0 resulted labs
-  dummy_df <- unique(x[is.na(x$ReceiveResultTarget) != TRUE | is.na(x$CollectResultTarget) != TRUE, c(1,3:6)])
-  x$ReceiveResultTarget <- dummy_df$ReceiveResultTarget[match(paste(x$Test, x$DashboardPriority,  x$DashboardSetting), paste(dummy_df$Test, dummy_df$DashboardPriority, dummy_df$DashboardSetting))]
-  x$CollectResultTarget <- dummy_df$CollectResultTarget[match(paste(x$Test, x$DashboardPriority,  x$DashboardSetting), paste(dummy_df$Test, dummy_df$DashboardPriority, dummy_df$DashboardSetting))]
-  # Format target TAT for tables
-  x[c("ReceiveResultTarget", "CollectResultTarget")] <- lapply(x[c("ReceiveResultTarget", "CollectResultTarget")], function(y) ifelse(is.na(y), y, paste0("<=", y, " min")))
-  x[c("ReceiveResultPercent", "CollectResultPercent")] <- lapply(x[c("ReceiveResultPercent", "CollectResultPercent")], percent, digits = 0)
-  x$TestAndPriority <- paste(x$Test, "-", x$DashboardPriority, "Labs")
-  x
-}
 
 micro_rrl2 <- clean_summarized_data(micro_rrl)
 
+# Melt Micro data into simpler data frame
 micro_rrl_tat_dashboard <- melt(micro_rrl2, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
 
-micro_rrl_tat_dashboard_2 <- micro_rrl_tat_dashboard %>%
+# Apply conditional formatting to percentage of TAT within target
+micro_rrl_tat_dashboard <- micro_rrl_tat_dashboard %>%
   mutate(value = cell_spec(value, "html", color = ifelse(is.na(value), "grey",
                                                          ifelse(value >= 0.95, "green",
                                                                 ifelse(value >=0.8 &  value < 0.95, "orange", "red")))))
 
-
-micro_rrl_tat_summary <- dcast(micro_rrl_tat_dashboard_2, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value")
+# Cast formatted data
+micro_rrl_tat_summary <- dcast(micro_rrl_tat_dashboard, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value")
 
 # Manually remove Ambulatory C. diff TAT from table
 micro_rrl_tat_summary <- micro_rrl_tat_summary[!(micro_rrl_tat_summary$Test == "C. diff" & micro_rrl_tat_summary$DashboardSetting == "Amb"), ]
@@ -548,21 +568,58 @@ micro_table %>%
   column_spec(column = c(3, 11), width_min = "100px", include_thead = TRUE) %>%
   row_spec(row = 0, font_size = 13) %>%
   collapse_rows(columns = c(1, 2, 10))
+```
+
+### *Missing Collection Times*
+<h4>Status Definitions: <span style = "color:red">Red:</span> >15%, 
+<span style = "color:orange">Yellow:</span> <=15% & >5%,
+<span style = "color:green">Green:</span> <=5%</h4>
+```{r Missing Collection Times Tables, warning = FALSE, message = FALSE, echo = FALSE}
+# # Determine percentage of labs with missing collection times -------------------------------
+missing_collect <- scc_sun_wday_master[scc_sun_wday_master$TATInclude == TRUE, ] %>%
+  group_by(Site, .drop = FALSE) %>%
+  summarize(ResultedVolume = n(), MissingCollection = sum(MissingCollect, na.rm = TRUE), Percent = MissingCollection/ResultedVolume)
+
+# Format percentage of labs with missing collection times as percentage
+missing_collect$Percent <- percent(missing_collect$Percent, digits = 0)
+
+# Apply conditional formatting to percentage of labs with missing collection times
+missing_collect <- missing_collect %>%
+  mutate(Percent = cell_spec(Percent, "html", color = ifelse(is.na(Percent), "grey",
+                                                         ifelse(Percent <= 0.05, "green",
+                                                                ifelse(Percent >0.05 &  Percent <= 0.15, "orange", "red")))))
 
 
-# 
-# # # Determine percentage of labs with missing collection times -------------------------------
-# missing_collect <- scc_sun_wday_master %>%
-#   group_by(Site) %>%
-#   summarize(ResultedVolume = n(), MissingCollection = sum(MissingCollect, na.rm = TRUE), Percent = round(MissingCollection/ResultedVolume*100, digits = 1))
-# 
-# missing_collect_table <- dcast(missing_collect, "Percent Specimens Missing Collection" ~ Site, value.var = "Percent")
-# 
-# # Determine number of add-on orders stratified by test and site ------------------------------
-# add_on_volume <- scc_sun_wday_master %>%
-#   group_by(Test, Site) %>%
-#   summarize(AddOnVolume = sum(AddOnMaster == "AddOn", na.rm = TRUE))
-# 
-# add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
+missing_collect_table <- dcast(missing_collect, "Percentage of Specimens" ~ Site, value.var = "Percent")
+
+missing_collect_table %>%
+  kable(format = "html", escape = FALSE, align = "c", 
+        col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11) %>%
+  add_header_above(c(" " = 1, "Percentage of Labs with Missing Collect Times" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
+  column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
+  column_spec(column = c(2:ncol(missing_collect_table)), background = "#00AEEF", color = "white", include_thead = TRUE) %>%
+  column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
+  row_spec(row = 0, font_size =13)
+```
+
+### *Add On Order Volume*
+```{r Add On Order Volume, , warning = FALSE, message = FALSE, echo = FALSE}
+# Determine number of add-on orders stratified by test and site ------------------------------
+add_on_volume <- scc_sun_wday_master %>%
+  group_by(Test, Site, .drop = FALSE) %>%
+  summarize(AddOnVolume = sum(AddOnMaster == "AddOn", na.rm = TRUE))
+
+add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
+
+add_on_table %>%
+  kable(format = "html", escape = FALSE, align = "c", 
+        col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11) %>%
+  add_header_above(c(" " = 1, "Volume of Add On Labs" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
+  column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
+  column_spec(column = c(2:ncol(missing_collect_table)), background = "#00AEEF", color = "white", include_thead = TRUE) %>%
+  column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
+  row_spec(row = 0, font_size =13)
 ```
 
