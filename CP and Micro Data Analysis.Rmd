@@ -39,7 +39,7 @@ rm(list = ls())
 
 #get yesterday's DOW
 # Yesterday_Day <- weekdays(as.Date(Sys.Date()-1))
-Yest <- as.Date("11/25/2019", format = "%m/%d/%Y")
+Yest <- as.Date("11/28/2019", format = "%m/%d/%Y")
 Yesterday_Day <- weekdays(Yest) #Rename as Yest_DOW
 #Change the format for the date into timeDate format to be ready for the next function
 Yesterday <- as.timeDate(Yest)
@@ -48,7 +48,7 @@ Yesterday <- as.timeDate(Yest)
 Yesterday_Day <- dayOfWeek(Yesterday)
 
 #Excludes Good Friday from the NYSE Holidays
-NYSE_Holidays <- as.Date(holidayNYSE())
+NYSE_Holidays <- as.Date(holidayNYSE(year = c(2019, 2020)))
 GoodFriday <- as.Date(GoodFriday())
 MSHS_Holiday <- NYSE_Holidays[GoodFriday != NYSE_Holidays]
 
@@ -381,14 +381,16 @@ sun_wday <- scc_sun_wday_list[[2]]
 scc_sun_wday_master <- scc_sun_wday_list[[3]]
 
 if (is.null(SQ_Not_Weekday) & is.null(SQ_Not_Weekday)) {
+  include_not_wkday <- FALSE
   scc_sun_not_wkday_list <- NULL
   scc_not_wkday <- NULL
   sun_not_wkday <- NULL
   scc_sun_not_wkday_master <- NULL
 } else {
-  scc_sun_not_wday_list <- preprocess_scc_sun(SCC_Not_Weekday, SUN_Not_Weekday)
+  include_not_wkday <- TRUE
+  scc_sun_not_wday_list <- preprocess_scc_sun(SCC_Not_Weekday, SQ_Not_Weekday)
   scc_not_wkday <- scc_sun_not_wday_list[[1]]
-  sun_not_wkday <- sun_sun_not_wday_list[[2]]
+  sun_not_wkday <- scc_sun_not_wday_list[[2]]
   scc_sun_not_wkday_master <- scc_sun_not_wday_list[[3]]
 }
 ```
@@ -438,11 +440,6 @@ micro_rrl <- micro_sub %>%
   group_by(Test, Site, DashboardPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget, .drop = FALSE) %>%
   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3), CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3))
-
-
-
-
-
 
 # Create a custom function to clean up summarized data
 clean_summarized_data <- function(x) {
@@ -529,36 +526,8 @@ chem_table %>%
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h4>
 ```{r Hematology Dashboard Tables, warning = FALSE, message = FALSE, echo = FALSE}
-# Manipulate and reshape SCC and Sunquest data -----------------------------------------------
-# Begin by subsetting Hematology data to be included in TAT analysis
-# hem_sub <- scc_sun_wday_master[scc_sun_wday_master$Division == "Hematology" & scc_sun_wday_master$TATInclude == TRUE, ]
-# 
-# # Update factors for Micro data to remove unnecessary combinations
-# hem_sub$Test <- factor(hem_sub$Test, unique(test_code$Test[test_code$Division == "Hematology"]))
-# hem_sub$DashboardSetting <- factor(hem_sub$DashboardSetting, dashboard_pt_setting)
-# hem_sub$DashboardPriority <- droplevels(hem_sub$DashboardPriority)
-# 
-# # Manipulate and reshape SCC and Sunquest data -----------------------------------------------
-# # Start summarizing data
-# hematology <- hem_sub %>%
-#   group_by(Test, Site, DashboardPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget, .drop = FALSE) %>%
-#   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-#             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3), CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3))
-# 
-# 
-# # Manually remove unused combinations
-# hematology2 <- hematology[!(hematology$DashboardPriority == "Routine" & hematology$DashboardSetting == "ED & ICU"),]
-# 
-# hematology2 <- clean_summarized_data(hematology2)
-
 # Melt Hematology data into simpler data frame
 hematology_dashboard <- melt(hematology2, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
-
-# Apply conditional formatting to percentage of TAT within target
-# hematology_dashboard <- hematology_dashboard %>%
-#   mutate(value = cell_spec(value, "html", color = ifelse(is.na(value), "black",
-#                                                          ifelse(value >= 0.95, "green",
-#                                                                 ifelse(value >=0.8 &  value < 0.95, "orange", "red")))))
 
 # Cast formatted data
 hematology_summary <- dcast(hematology_dashboard, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value")
@@ -571,7 +540,7 @@ hem_table %>%
   kable(format = "html", escape = FALSE, align = "c", 
         col.names = c("Test & Priority", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
   kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
-  add_header_above(c(" " = 1, "Receive to Result Within Target" = (ncol(chem_table)-1)/2, "Collect to Result Within Target" = (ncol(chem_table)-1)/2), background = c("white", "#00AEEF", "#221f72"), color = "white", line = FALSE, font_size = 13) %>%
+  add_header_above(c(" " = 1, "Receive to Result Within Target" = (ncol(hem_table)-1)/2, "Collect to Result Within Target" = (ncol(hem_table)-1)/2), background = c("white", "#00AEEF", "#221f72"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, 9, 17), border_right = "thin solid lightgray") %>%
   column_spec(column = 2:9, background = "#00AEEF", color = "white", include_thead = TRUE) %>%
   column_spec(column = 10:17, background = "#221f72", color = "white", include_thead = TRUE) %>%
@@ -587,32 +556,8 @@ hem_table %>%
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h4>
 ```{r Microbiology Dashboard Tables, warning = FALSE, message = FALSE, echo = FALSE}
-# Manipulate and reshape SCC and Sunquest data -----------------------------------------------
-# Begin by subsetting Micro data to be included in TAT analysis
-# micro_sub <- scc_sun_wday_master[scc_sun_wday_master$Division == "Microbiology RRL" & scc_sun_wday_master$TATInclude == TRUE, ]
-# 
-# # Update factors for Micro data to remove unnecessary combinations
-# micro_sub$Test <- factor(micro_sub$Test, unique(test_code$Test[test_code$Division == "Microbiology RRL"]))
-# micro_sub$DashboardSetting <- factor(micro_sub$DashboardSetting, dashboard_pt_setting)
-# micro_sub$DashboardPriority <- droplevels(micro_sub$DashboardPriority)
-# 
-# # Summarize Micro data and determine percentage of Micro labs within target
-# micro_rrl <- micro_sub %>%
-#   group_by(Test, Site, DashboardPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget, .drop = FALSE) %>%
-#   summarize(ResultedVolume = n(), ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-#             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume, digits = 3), CollectResultPercent = round(CollectResultInTarget/ResultedVolume, digits = 3))
-# 
-# 
-# micro_rrl2 <- clean_summarized_data(micro_rrl)
-
 # Melt Micro data into simpler data frame
 micro_rrl_tat_dashboard <- melt(micro2, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = c("ReceiveResultPercent", "CollectResultPercent"))
-
-# # Apply conditional formatting to percentage of TAT within target
-# micro_rrl_tat_dashboard <- micro_rrl_tat_dashboard %>%
-#   mutate(value = cell_spec(value, "html", color = ifelse(is.na(value), "grey",
-#                                                          ifelse(value >= 0.95, "green",
-#                                                                 ifelse(value >=0.8 &  value < 0.95, "orange", "red")))))
 
 # Cast formatted data
 micro_rrl_tat_summary <- dcast(micro_rrl_tat_dashboard, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value")
@@ -628,7 +573,7 @@ micro_table %>%
   kable(format = "html", escape = FALSE, align = "c",
         col.names = c("Test & Priority", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
   kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
-  add_header_above(c(" " = 1, "Receive to Result Within Target" = (ncol(chem_table)-1)/2, "Collect to Result Within Target" = (ncol(chem_table)-1)/2), background = c("white", "#00AEEF", "#221f72"), color = "white", line = FALSE, font_size = 13) %>%
+  add_header_above(c(" " = 1, "Receive to Result Within Target" = (ncol(micro_table)-1)/2, "Collect to Result Within Target" = (ncol(micro_table)-1)/2), background = c("white", "#00AEEF", "#221f72"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, 9, 17), border_right = "thin solid lightgray") %>%
   column_spec(column = 2:9, background = "#00AEEF", color = "white", include_thead = TRUE) %>%
   column_spec(column = 10:17, background = "#221f72", color = "white", include_thead = TRUE) %>%
@@ -637,6 +582,42 @@ micro_table %>%
   column_spec(column = c(3, 11), width_min = "100px", include_thead = TRUE) %>%
   row_spec(row = 0, font_size = 13) %>%
   collapse_rows(columns = c(1, 2, 10))
+
+micro_rrl_volume <- melt(micro2, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = "ResultedVolume")
+
+micro_rrl_volume_summary <- dcast(micro_rrl_volume, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value") 
+
+micro_rrl_volume_summary[c("ReceiveResultTarget", "CollectResultTarget")] <- "Resulted Volume"
+original_length <- ncol(micro_rrl_volume_summary)
+
+micro_rrl_volume_summary <- micro_rrl_volume_summary[ ,c(1:ncol(micro_rrl_volume_summary), (ncol(micro_rrl_volume_summary)-(6-1)):ncol(micro_rrl_volume_summary))]
+
+micro_rrl_volume_summary <- micro_rrl_volume_summary[ , c(1:3, 5, 4, 7:12, 6, 4, 13:18)]
+colnames(micro_rrl_volume_summary) <- colnames(micro_rrl_tat_summary)
+
+micro_rrl_volume_summary[ , (original_length):ncol(micro_rrl_volume_summary)] <- " "
+
+micro_rrl_comb <- rbind(micro_rrl_tat_summary, micro_rrl_volume_summary)
+
+micro_rrl_comb2 <- micro_rrl_comb[order(micro_rrl_comb$Test, micro_rrl_comb$ReceiveResultTarget), ]
+row.names(micro_rrl_comb2) <- 1:nrow(micro_rrl_comb2)
+
+micro_table2 <- micro_rrl_comb2[ , 3:ncol(micro_rrl_comb2)]
+
+micro_table2 %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Test & Priority", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
+  kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
+  add_header_above(c(" " = 1, "Receive to Result Within Target" = (ncol(micro_table2)-1)/2, "Collect to Result Within Target" = (ncol(micro_table2)-1)/2), background = c("white", "#00AEEF", "#221f72"), color = "white", line = FALSE, font_size = 13) %>%
+  column_spec(column = c(1, 9, 17), border_right = "thin solid lightgray") %>%
+  column_spec(column = 2:9, background = "#00AEEF", color = "white", include_thead = TRUE) %>%
+  column_spec(column = 10:17, background = "#221f72", color = "white", include_thead = TRUE) %>%
+  column_spec(column = 2:17, background = "inherit", color = "inherit") %>%
+  column_spec(column = 1, width_min = "125px", include_thead = TRUE) %>%
+  column_spec(column = c(3, 11), width_min = "100px", include_thead = TRUE) %>%
+  row_spec(row = 0, font_size = 13) %>%
+  collapse_rows(columns = c(1, 2, 10))
+
 ```
 
 ### *Missing Collection Times*
@@ -657,7 +638,6 @@ missing_collect <- missing_collect %>%
   mutate(Percent = cell_spec(Percent, "html", color = ifelse(is.na(Percent), "grey",
                                                          ifelse(Percent <= 0.05, "green",
                                                                 ifelse(Percent >0.05 &  Percent <= 0.15, "orange", "red")))))
-
 
 missing_collect_table <- dcast(missing_collect, "Percentage of Specimens" ~ Site, value.var = "Percent")
 
@@ -690,4 +670,8 @@ add_on_table %>%
   column_spec(column = c(2:ncol(missing_collect_table)), background = "#00AEEF", color = "white", include_thead = TRUE) %>%
   column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
   row_spec(row = 0, font_size =13)
+```
+
+```{r Conditional Block for Weekends, eval = include_not_wkday}
+
 ```
