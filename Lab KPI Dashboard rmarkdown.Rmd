@@ -1,7 +1,5 @@
 ---
-title: "Lab KPI Dashboard"
-author: "Asala Erekat"
-date: "12/5/2019"
+title: "MSHS Laboratory Daily Status Report"
 output: html_document
 ---
 
@@ -286,7 +284,7 @@ Conditional_Formatting <- function(Table_New2){
     columns_order <- c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","MSH.x", "MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")
     rows_order <- factor(rownames(Table_New3),levels = c(2,1,4,3))
     Table_New3 <- Table_New3[order(rows_order), columns_order]
-    Table_New3$Received.to.signed.out.target..Days.<- paste("<= ", Table_New3$Received.to.signed.out.target..Days., "mins")
+    Table_New3$Received.to.signed.out.target..Days.<- paste("<= ", Table_New3$Received.to.signed.out.target..Days., "days")
     row.names(Table_New3) <- NULL
   }
   return(Table_New3)
@@ -302,81 +300,46 @@ Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting(Surgical_Pat
 
 
 ```{r, echo=FALSE}
-Cytology_Table_Weekday_New3 %>%
-  select(everything()) %>%
-  kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
-  kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-  column_spec(5:13, background = "#00B9F2",include_thead = TRUE)%>%
-  row_spec(1:4, background = "white")%>%
-  column_spec(14:22, background = "#221F72", include_thead = TRUE)%>%
-  row_spec(1:4, background = "white")%>%
-  row_spec(0, color = "white") %>%
-  collapse_rows(columns = c(1,2))%>%
-  column_spec(1:4, color = "grey", include_thead = TRUE)%>%
-  add_header_above(c(" "= 4, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
-  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=22))%>%
-  add_header_above(c("Cytology Efficiency Indicator (Weekday)"=22))
-
-if (is.null(Cytology_Table_Not_Weekday_New3)){
-  Cytology_Table_Not_Weekday_New3 <- NULL
-} else{
-  Cytology_Table_Not_Weekday_New3 %>%
-  select(everything()) %>%
-  kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
-  kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-  column_spec(5:13, background = "#00B9F2",include_thead = TRUE)%>%
-  row_spec(1:4, background = "white")%>%
-  column_spec(14:22, background = "#221F72", include_thead = TRUE)%>%
-  row_spec(1:4, background = "white")%>%
-  row_spec(0, color = "white") %>%
-  collapse_rows(columns = c(1,2))%>%
-  column_spec(1:4, color = "grey", include_thead = TRUE)%>%
-  add_header_above(c(" "= 4, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
-  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=22))%>%
-  add_header_above(c("Cytology Efficiency Indicator (Weekend and/or Holiday)"=22))
-}
-
-```
-
-
-
-```{r, echo=FALSE}
-Surgical_Pathology_Table_Weekday_New3 %>%
-  select(everything()) %>%
-  kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
-  kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-  column_spec(5:13, background = "#00B9F2",include_thead = TRUE)%>%
-  row_spec(1:4, background = "white")%>%
-  column_spec(14:22, background = "#221F72", include_thead = TRUE)%>%
-  row_spec(1:4, background = "white")%>%
-  row_spec(0, color = "white") %>%
-  collapse_rows(columns = c(1,2))%>%
-  column_spec(1:4, color = "grey", include_thead = TRUE)%>%
-  add_header_above(c(" "= 4, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
-  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=22))%>%
-  add_header_above(c("Anatomic Pathology Efficiency Indicator (Weekday)"=22))
-
-if (is.null(Surgical_Pathology_Table_Not_Weekday_New3)){
-  Surgical_Pathology_Table_Not_Weekday_New3 <- NULL
-} else{
-  Surgical_Pathology_Table_Not_Weekday_New3 %>%
-  select(everything()) %>%
-  kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
-  kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-  column_spec(5:13, background = "#00B9F2",include_thead = TRUE)%>%
-  row_spec(1:4, background = "white")%>%
-  column_spec(14:22, background = "#221F72", include_thead = TRUE)%>%
-  row_spec(1:4, background = "white")%>%
-  row_spec(0, color = "white") %>%
-  collapse_rows(columns = c(1,2))%>%
-  column_spec(1:4, color = "grey", include_thead = TRUE)%>%
-  add_header_above(c(" "= 4, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
-  add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=22))%>%
-  add_header_above(c("Anatomic Pathology Efficiency Indicator (Weekend and/or Holiday)"=22))
+Table_Formatting <- function (Table_New3){
+  if (is.null(Table_New3)){
+    Table_New3 <- NULL
+  } else { 
+    Table_New3%>%
+    select(everything()) %>%
+    kable(escape = F, align = "c",caption = paste("Report Creation Date:", Today), color = "black", col.names = c("Case Type","Target","Setting","No. Cases Signed","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
+    kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    column_spec(5:13, background = "#00B9F2",include_thead = TRUE)%>%
+    row_spec(1:4, background = "white")%>%
+    column_spec(14:22, background = "#221F72", include_thead = TRUE)%>%
+    row_spec(1:4, background = "white")%>%
+    row_spec(0, color = "white") %>%
+    collapse_rows(columns = c(1,2))%>%
+    column_spec(1:4, color = "grey", include_thead = TRUE)%>%
+    add_header_above(c(" "= 4, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
+    add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=22))
+  }
 }
 ```
 
+#### Cytology Efficiency Indicator (Weekday)
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting(Cytology_Table_Weekday_New3)
+```
 
+#### Surgical Pathology Efficiency Indicator (Weekday)
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
+```
+
+#### Cytology Efficiency Indicator (Weekend or/and Holiday)
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting(Cytology_Table_Not_Weekday_New3)
+```
+
+#### Surgical Pathology Efficiency Indicator (Weekend or/and Holiday)
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting(Surgical_Pathology_Table_Not_Weekday_New3)
+```
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 #Cytology backlog Calculation
