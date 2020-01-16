@@ -807,7 +807,6 @@ missing_collect_not_wday <- missing_collect_not_wday %>%
 
 missing_collect_table_not_wday <- dcast(missing_collect_not_wday, "Percentage of Specimens" ~ Site, value.var = "Percent")
 
-print("Missing Collections Table for Weekends/Holidays")
 missing_collect_table_not_wday %>%
   kable(format = "html", escape = FALSE, align = "c",  
         col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
@@ -824,7 +823,6 @@ add_on_volume_not_wday <- scc_sun_not_wday_master %>%
 
 add_on_table_not_wday <- dcast(add_on_volume_not_wday, Test ~ Site, value.var = "AddOnVolume")
 
-print("Add On Volume for Weekends/Holidays")
 add_on_table_not_wday %>%
   kable(format = "html", escape = FALSE, align = "c",
         col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL"), color = "gray") %>%
