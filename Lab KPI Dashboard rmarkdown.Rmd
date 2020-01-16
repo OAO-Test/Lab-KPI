@@ -415,6 +415,9 @@ asis_output(paste('<h4> Cytology Efficiency Indicator (Labs Resulted Between the
 Table_Formatting(Cytology_Table_Not_Weekday_New3)
 ```
 
+```{r Test block}
+# Test code
+```
 
 
 
