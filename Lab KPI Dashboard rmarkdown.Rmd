@@ -26,6 +26,8 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("kableExtra")
 #install.packages("formattable")
 
+#Clear the Enviroment before running the code
+rm(list = ls())
 #-------------------------------Required packages-------------------------------#
 
 #Required packages: run these everytime you run the code
@@ -45,7 +47,7 @@ Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
 #Determine if yesterday was a holiday/weekend 
 
 #Change the format for the date into timeDate format to be ready for the next function
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(format(Sys.Date()-4,"%m/%d/%Y"))
 
 #get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -70,7 +72,7 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 #Also I made sure to remove the last line
 if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){
   PP_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select PowerPath Holiday Report"), skip = 1, 1)
-  PP_Holiday_Monday_or_Friday  <- PP_Holiday_Monday[-nrow(PP_Holiday_Monday_or_Friday),]
+  PP_Holiday_Monday_or_Friday  <- PP_Holiday_Monday_or_Friday[-nrow(PP_Holiday_Monday_or_Friday),]
   PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Sunday Report"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
   PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Saturday Report"), skip = 1, 1)
@@ -148,6 +150,20 @@ Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group
 PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday, y= GI_Codes, all.x = TRUE)
 Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
 
+#-----------Reporting Dates-----------#
+#1. Weekday Date
+Report_Date_Weekday <- unique(as.timeDate(format(PP_Weekday$signed_out_date, "%m/%d/%Y")))
+Report_Date_Weekday_Day <- unique(dayOfWeek(Report_Date_Weekday))
+
+#2. Weekend/Holiday Dates
+if (is.null(PP_Not_Weekday)){
+  Report_Date_Weekend <- NULL
+  Report_Date_Weekend_Day <- NULL
+}else {
+  Report_Date_Weekend <- unique(as.timeDate(format(PP_Not_Weekday$signed_out_date, "%m/%d/%Y")))
+  Report_Date_Weekend_Day <- unique(dayOfWeek(Report_Date_Weekend))
+}
+
 #------------------------------Data Pre-Processing------------------------------#
 ############Create a function for Data pre-processing############
 
@@ -168,7 +184,7 @@ pre_processing <- function(Raw_Data){
     Raw_Data_New <- merge(x=Raw_Data_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
     
     #If there are any N/A in the dates, remove the sample
-#    Raw_Data_New <- Raw_Data_PS_Target[!(is.na(Raw_Data_PS_Target$Case_created_date)|is.na(Raw_Data_PS_Target$Collection_Date) | is.na(Raw_Data_PS_Target$Received_Date) | is.na(Raw_Data_PS_Target$signed_out_date)),]
+#    Raw_Data_New <- Raw_Data_PS_Target[!(is.na(Raw_Data_PS_Target$Case_created_date)|is.na(Raw_Data_PS_Target$Collection_Date) | is.na(Raw_Data_PS_Target$Received_Date) | is.na(Raw_Data_PSv_Target$signed_out_date)),]
     
     #Change all Dates into POSIXct format to start the calculations
     
@@ -277,7 +293,7 @@ Conditional_Formatting <- function(Table_New2){
     Table_New3 <- Table_New3 %>%
       mutate(value = ifelse(value > 0.9, cell_spec(value, "html", color  = "green"),
                        ifelse(value < 0.8, cell_spec(value, "html", color = "red"),
-                              ifelse(is.na(value), cell_spec(value, "html", color = "light gray"), cell_spec(value, "html", color = "orange")))))
+                              ifelse(is.na(value), cell_spec(value, "html", color = "grey"), cell_spec(value, "html", color = "orange")))))
     
     
     Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
@@ -339,7 +355,6 @@ Cytology_Accessioned_Vol3 <- merge(x= Cytology_Accessioned_Vol1, y= Cytology_Acc
 Cytology_Accessioned_Vol3$Total_Accessioned_Volume <- Cytology_Accessioned_Vol3$Cyto_Acc_Vol1 + Cytology_Accessioned_Vol3$Cyto_Acc_Vol2
 Cytology_Accessioned_Vol3$Cyto_Acc_Vol1 <- NULL
 Cytology_Accessioned_Vol3$Cyto_Acc_Vol2 <- NULL
-
 Backlog_Accessioned_Table <- merge(Cytology_Accessioned_Vol3, Cytology_Backlog_Volume)
 
 ```
@@ -352,7 +367,7 @@ Table_Formatting <- function (Table_New3){
   } else { 
     Table_New3%>%
     select(everything()) %>%
-    kable(escape = F, align = "c",caption = paste("Report Creation Date:", Today), color = "black", col.names = c("Case Type","Target","Setting","No. Cases Signed","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
+    kable(escape = F, align = "c",caption = paste("Report Creation Date:", Today), col.names = c("Case Type","Target","Setting","No. Cases Signed","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
     kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
     column_spec(5:13, background = "#00B9F2",include_thead = TRUE)%>%
     row_spec(1:4, background = "white")%>%
@@ -360,7 +375,7 @@ Table_Formatting <- function (Table_New3){
     row_spec(1:4, background = "white")%>%
     row_spec(0, color = "white") %>%
     collapse_rows(columns = c(1,2))%>%
-    column_spec(1:4, color = "grey", include_thead = TRUE)%>%
+    column_spec(1:4, color = "black", include_thead = TRUE)%>%
     add_header_above(c(" "= 4, "Receive to Result TAT within Target"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")%>%
     add_header_above(c("Status Definitions: Green >= 90%, Yellow >= 80% & < 90%, Red < 80%"=22))
   }
@@ -368,11 +383,11 @@ Table_Formatting <- function (Table_New3){
 ```
 
 
-#### Surgical Pathology Efficiency Indicator (Weekday)
+#### Surgical Pathology Efficiency Indicator (Labs Resulted on `r Report_Date_Weekday_Day` `r Report_Date_Weekday`)
 ```{r Surgical Pathology Efficiency Indicator Weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
 ```
-#### Cytology Efficiency Indicator (Weekday)
+#### Cytology Efficiency Indicator (Labs Resulted on `r Report_Date_Weekday_Day` `r Report_Date_Weekday`)
 ```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting(Cytology_Table_Weekday_New3)
 ```
@@ -380,23 +395,23 @@ Table_Formatting(Cytology_Table_Weekday_New3)
 #### Cytology Accessioned and Backlog Volume
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
 Backlog_Accessioned_Table %>%
-kable(escape = F, align = "c",caption = paste("Report Creation Date:", Today), color = "black", col.names = c("Case Type","Cases Accessioned","Backlog Volume")) %>%
+kable(escape = F, align = "c",caption = paste("Report Creation Date:", Today), col.names = c("Case Type","Cases Accessioned","Backlog Volume")) %>%
     kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "left", row_label_position = "c", font_size = 11) %>%
     column_spec(2, background = "#00B9F2",include_thead = TRUE)%>%
     row_spec(1:2, background = "white")%>%
     column_spec(3, background = "#221F72", include_thead = TRUE)%>%
     row_spec(1:2, background = "white")%>%
     row_spec(0, color = "white") %>%
-    column_spec(1, color = "grey", include_thead = TRUE)
+    column_spec(1, color = "black", include_thead = TRUE)
 ```
 
-```{r Surgical Pathology Efficiency Indicators Weekend/Holiday, echo=FALSE, warning=FALSE, message=FALSE, eval = !is.null(Surgical_Pathology_Table_Not_Weekday_New3)}
-asis_output("#### Surgical Pathology Efficiency Indicator (Weekend or/and Holiday)")
+```{r Surgical Pathology Efficiency Indicators Weekend/Holiday, echo=FALSE, warning=FALSE, message=FALSE, eval = (!is.null(Surgical_Pathology_Table_Not_Weekday_New3))}
+asis_output(paste('<h4> Surgical Pathology Efficiency Indicator (Labs Resulted Between the Period', Report_Date_Weekend_Day[length(Report_Date_Weekend_Day)], Report_Date_Weekend[length(Report_Date_Weekend)], '<h4> to', Report_Date_Weekend_Day[1], Report_Date_Weekend[1],')'))
 Table_Formatting(Surgical_Pathology_Table_Not_Weekday_New3)
 ```
 
-```{r Cytology Efficiency Indicators Weekend/Holiday, echo=FALSE, warning=FALSE, message=FALSE, eval = !is.null(Cytology_Table_Not_Weekday_New3)}
-asis_output("#### Cytology Efficiency Indicator (Weekend or/and Holiday)")
+```{r Cytology Efficiency Indicators Weekend/Holiday, echo=FALSE, warning=FALSE, message=FALSE, eval = (!is.null(Cytology_Table_Not_Weekday_New3))}
+asis_output(paste('<h4> Cytology Efficiency Indicator (Labs Resulted Between the Period', Report_Date_Weekend_Day[length(Report_Date_Weekend_Day)], Report_Date_Weekend[length(Report_Date_Weekend)], '<h4> to', Report_Date_Weekend_Day[1], Report_Date_Weekend[1],')'))
 Table_Formatting(Cytology_Table_Not_Weekday_New3)
 ```
 
