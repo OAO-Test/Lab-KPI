@@ -177,7 +177,7 @@ Cytology_Backlog_Raw <- data.frame(Cytology_Backlog_Raw[-nrow(Cytology_Backlog_R
 ```{r Reference Data, warning = TRUE, message = FALSE, echo = FALSE}
 # CP and Micro --------------------------------
 # Import analysis reference data starting with test codes for SCC and Sunquest
-reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
+reference_file <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
 test_code <- read_excel(reference_file, sheet = "TestNames")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
@@ -557,7 +557,7 @@ pre_processing_pp <- function(Raw_Data){
     
     #Change all Dates into POSIXct format to start the calculations
     
-    Raw_Data_New[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Raw_Data_New[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, format='%m/%d/%y %I:%M %p')
+    Raw_Data_New[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Raw_Data_New[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct,tz="", format='%m/%d/%y %I:%M %p')
     
     #add columns for calculations: collection to signed out and received to signed out
     #collection to signed out
@@ -609,7 +609,7 @@ Cytology_Backlog_PS_Target <- merge(x=Cytology_Backlog_PS, y=TAT_Targets, all.x 
 Cytology_Backlog <- Cytology_Backlog_PS_Target[which(Cytology_Backlog_PS_Target$spec_group=="CYTO NONGYN" | Cytology_Backlog_PS_Target$spec_group=="CYTO GYN"),]
 
 #Change all Dates into POSIXct format to start the calculations
-Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, format='%m/%d/%y %I:%M %p')
+Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, tz="" ,format='%m/%d/%y %I:%M %p')
 
 #Backlog Calculations: Date now - case created date
 #without weekends and holidays
@@ -893,21 +893,21 @@ Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting(Surgical_Pat
 Table_Formatting <- function (Table_New3){
   if (is.null(Table_New3)){
     Table_New3 <- NULL
-  } else { 
+  } else {
     Table_New3%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
+    kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-    column_spec(5:13, background = "#00B9F2",include_thead = TRUE)%>%
-    # row_spec(1:4, background = "white")%>%
-    column_spec(14:22, background = "#221F72", include_thead = TRUE)%>%
-    # row_spec(1:4, background = "white")%>%
-    # row_spec(0, color = "white") %>%
-    collapse_rows(columns = c(1,2))%>%
-    column_spec(1:4, color = "black", include_thead = TRUE)%>%
-    add_header_above(c(" "= 4, "Receive to Result within Target (Business Days)"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white")
+    add_header_above(c(" "= 4, "Receive to Result within Target (Business Days)"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
+    column_spec(2:13, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
+    column_spec(14:22, background = "#221F72", color = "white", include_thead = TRUE)%>%
+    column_spec(2:22, background = "inherit", color = "inherit")%>%
+    row_spec(row = 0, font_size = 13)%>%
+    collapse_rows(columns = c(1,2))
   }
 }
+
+
 ```
 ## **Weekday Efficiency Indicators** {.tabset}
 ### Chemistry       
