@@ -83,87 +83,87 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 
 if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){ # Scenario 1: Mon Holiday or Friday Holiday (Need to select 4 files)
   # Import SCC data
-  SCC_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select SCC Mon/Fri Holiday Report"), sheet = 1, col_names = TRUE)
-  SCC_Sunday <- read_excel(choose.files(caption = "Select SCC Sunday Report"), sheet = 1, col_names = TRUE)
-  SCC_Saturday <- read_excel(choose.files(caption = "Select SCC Saturday Report"), sheet = 1, col_names = TRUE)
+  SCC_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on a Holiday"), sheet = 1, col_names = TRUE)
+  SCC_Sunday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
+  SCC_Saturday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
   SCC_Not_Weekday <- rbind(SCC_Holiday_Monday_or_Friday, SCC_Sunday, SCC_Saturday)
-  SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Weekday Report"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   # 
   # Import Sunquest data
-  SQ_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select Sunquest Mon/Fri Holiday Report"), sheet = 1, col_names = TRUE)
-  SQ_Sunday <- read_excel(choose.files(caption = "Select Sunquest Sunday Report"), sheet = 1, col_names = TRUE)
-  SQ_Saturday <- read_excel(choose.files(caption = "Select Sunquest Saturday Report"), sheet = 1, col_names = TRUE)
+  SQ_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select Sunquest Report for Labs Resulted on a Holiday"), sheet = 1, col_names = TRUE)
+  SQ_Sunday <- read_excel(choose.files(caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
+  SQ_Saturday <- read_excel(choose.files(caption = "Select Sunquest Report for Labs Resulted on a Saturday"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
   SQ_Not_Weekday <- rbind(SQ_Holiday_Monday_or_Friday, SQ_Sunday, SQ_Saturday)
-  SQ_Weekday <- read_excel(choose.files(caption = "Select Sunquest Weekday Report"), sheet = 1, col_names = TRUE)
+  SQ_Weekday <- read_excel(choose.files(caption = "Select Sunquest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   #
   # Import Powerpath data
-  PP_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select PowerPath Holiday Report"), skip = 1, 1)
+  PP_Holiday_Monday_or_Friday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on a Holiday"), skip = 1, 1)
   PP_Holiday_Monday_or_Friday  <- PP_Holiday_Monday_or_Friday[-nrow(PP_Holiday_Monday_or_Friday),]
-  PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Sunday Report"), skip = 1, 1)
+  PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on Sunday"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Saturday Report"), skip = 1, 1)
+  PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on Saturday"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
   PP_Not_Weekday <- data.frame(rbind(PP_Holiday_Monday_or_Friday ,PP_Sunday,PP_Saturday),stringsAsFactors = FALSE)
-  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on a Weekday"), skip = 1, 1)
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),],stringsAsFactors = FALSE)
 } else if ((Holiday_Det) & (Yesterday_Day =="Sun")){ # Scenario 2: Regular Monday (Need to select 3 files)
   #
   # Import SCC data
-  SCC_Sunday <- read_excel(choose.files(caption = "Select SCC Sunday Report"), sheet = 1, col_names = TRUE)
-  SCC_Saturday <- read_excel(choose.files(caption = "Select SCC Saturday Report"), sheet = 1, col_names = TRUE)
+  SCC_Sunday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
+  SCC_Saturday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
   SCC_Not_Weekday <- rbind(SCC_Sunday,SCC_Saturday)
-  SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Weekday Report"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   #
   # Import Sunquest data
-  SQ_Sunday <- read_excel(choose.files(caption = "Select Sunquest Sunday Report"), sheet = 1, col_names = TRUE)
-  SQ_Saturday <- read_excel(choose.files(caption = "Select Sunquest Saturday Report"), sheet = 1, col_names = TRUE)
+  SQ_Sunday <- read_excel(choose.files(caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
+  SQ_Saturday <- read_excel(choose.files(caption = "Select Sunquest Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
   SQ_Not_Weekday <- rbind(SQ_Sunday,SQ_Saturday)
-  SQ_Weekday <- read_excel(choose.files(caption = "Select Sunquest Weekday Report"), sheet = 1, col_names = TRUE)
+  SQ_Weekday <- read_excel(choose.files(caption = "Select Sunquest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   #
   # Import Powerpath data
-  PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Sunday Report"), skip = 1, 1)
+  PP_Sunday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on Sunday"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Saturday Report"), skip = 1, 1)
+  PP_Saturday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on Saturday"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
   PP_Not_Weekday <- data.frame(rbind(PP_Sunday,PP_Saturday),stringsAsFactors = FALSE)
-  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on a Weekday"), skip = 1, 1)
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 } else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sun"))){ #Scenario 3: Midweek holiday (Need to select 2 files)
   #
   # Import SCC data
-  SCC_Holiday_Weekday <- read_excel(choose.files(caption = "Select SCC Holiday Report"), sheet = 1, col_names = TRUE)
+  SCC_Holiday_Weekday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on a Holiday"), sheet = 1, col_names = TRUE)
   SCC_Not_Weekday <- SCC_Holiday_Weekday
-  SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Weekday Report"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   #
   # Import Sunquest data
-  SQ_Holiday_Weekday <- read_excel(choose.files(caption = "Select Sunquest Holiday Report"), sheet = 1, col_names = TRUE)
+  SQ_Holiday_Weekday <- read_excel(choose.files(caption = "Select Sunquest Report for Labs Resulted on a Holiday"), sheet = 1, col_names = TRUE)
   SQ_Not_Weekday <- SQ_Holiday_Weekday
-  SQ_Weekday <- read_excel(choose.files(caption = "Select Sunquest Weekday Report"), sheet = 1, col_names = TRUE)
+  SQ_Weekday <- read_excel(choose.files(caption = "Select Sunquest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   #
   # Import Powerpath data
-  PP_Holiday_Weekday <- read_excel(choose.files(caption = "Select PowerPath Holiday Report"), skip = 1, 1)
+  PP_Holiday_Weekday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on a Holiday"), skip = 1, 1)
   PP_Holiday_Weekday <- PP_Holiday_Weekday[-nrow(PP_Holiday_Weekday),]
   PP_Not_Weekday <- data.frame(PP_Holiday_Weekday, stringsAsFactors = FALSE)
-  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on a Weekday"), skip = 1, 1)
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 } else { #Scenario 4: Tue-Fri without holidays (Need to select 1 file)
   #
   # Import SCC data
-  SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Weekday Report"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(choose.files(caption = "Select SCC Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   SCC_Not_Weekday <- NULL
   #
   # Import Sunquest data
-  SQ_Weekday <- read_excel(choose.files(caption = "Select Sunquest Weekday Report"), sheet = 1, col_names = TRUE)
+  SQ_Weekday <- read_excel(choose.files(caption = "Select SunQuest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   SQ_Not_Weekday <- NULL
   #
   # Import Powerpath data
-  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Weekday Report"), skip = 1, 1)
+  PP_Weekday <- read_excel(choose.files(caption = "Select PowerPath Report for Labs Resulted on a Weekday"), skip = 1, 1)
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
   PP_Not_Weekday <- NULL
 }
@@ -612,8 +612,8 @@ Cytology_Backlog <- Cytology_Backlog_PS_Target[which(Cytology_Backlog_PS_Target$
 Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, tz="" ,format='%m/%d/%y %I:%M %p')
 
 #Backlog Calculations: Date now - case created date
-#without weekends and holidays
-Cytology_Backlog$Backlog <- bizdays(Cytology_Backlog$Case_created_date, Today)
+#without weekends and holidays, subtract one so we don't include today's date
+Cytology_Backlog$Backlog <- bizdays(Cytology_Backlog$Case_created_date, Today)-1
 
 #Case Volume
 Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days., na.rm = TRUE),2)))
@@ -762,7 +762,7 @@ chem_hem_micro_kable <- function(data) {
 }
 ```
 
-```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = FALSE, message = FALSE, echo = FALSE}
 
 # Chemistry
 chem_sub_output <-lab_sub_summarize(scc_sun_wday_master, LabDivision = "Chemistry")
@@ -801,7 +801,7 @@ micro_table <- micro_dashboard2[ , 3:ncol(micro_dashboard2)]
 ```
 
 
-```{r Custom functions for formatting Cytology dashboard tables, echo = FALSE, warning = TRUE, message = FALSE}
+```{r Custom functions for formatting Cytology dashboard tables, echo = FALSE, warning = FALSE, message = FALSE}
 
 
 ############Create a function for Table standardization for cyto and patho############
@@ -889,7 +889,7 @@ Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting(Surgical_Pat
 
 ```
 
-```{r Custom function for Anatomic Pathology kable formatting, echo=FALSE, warning = TRUE, message = FALSE}
+```{r Custom function for Anatomic Pathology kable formatting, echo=FALSE, warning = FALSE, message = FALSE}
 Table_Formatting <- function (Table_New3){
   if (is.null(Table_New3)){
     Table_New3 <- NULL
@@ -915,7 +915,7 @@ Table_Formatting <- function (Table_New3){
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <95%,
 <span style = "color:green">Green:</span> >=95%</h5>
-```{r Chemistry dashboard table, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Chemistry dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
 chem_hem_micro_kable(chem_table)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
@@ -926,12 +926,12 @@ chem_hem_micro_kable(chem_table)
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <95%,
 <span style = "color:green">Green:</span> >=95%</h5>
-```{r Hematology dashboard table, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Hematology dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
 chem_hem_micro_kable(hem_table)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
-```{r Microbiology RRL volume and TAT table creation, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Microbiology RRL volume and TAT table creation, warning = FALSE, message = FALSE, echo = FALSE}
 # chem_hem_micro_kable(micro_table)
 
 micro_volume_dashboard1 <- melt(micro_summary, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = "ResultedVolume")
@@ -963,7 +963,7 @@ micro_tat_vol_table <- micro_tat_vol_comb[ , 3:ncol(micro_tat_vol_comb)]
 <h5>Status Definitions: <span style = "color:red">Red:</span> <90%, 
 <span style = "color:orange">Yellow:</span> >=90% & <100%,
 <span style = "color:green">Green:</span> =100%</h5>
-```{r Create Micro RRL TAT and Volume Table, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Create Micro RRL TAT and Volume Table, warning = FALSE, message = FALSE, echo = FALSE}
 chem_hem_micro_kable(micro_tat_vol_table)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
@@ -973,7 +973,7 @@ chem_hem_micro_kable(micro_tat_vol_table)
 <h5>Status Definitions: <span style = "color:red">Red:</span> >15%, 
 <span style = "color:orange">Yellow:</span> <=15% & >5%,
 <span style = "color:green">Green:</span> <=5%</h5>
-```{r Missing Collection Times Tables, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Missing Collection Times Tables, warning = FALSE, message = FALSE, echo = FALSE}
 # # Determine percentage of labs with missing collection times -------------------------------
 missing_collect <- scc_sun_wday_master[scc_sun_wday_master$TATInclude == TRUE, ] %>%
   group_by(Site, .drop = FALSE) %>%
@@ -1024,7 +1024,7 @@ add_on_table %>%
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
-```{r Surgical Pathology Efficiency Indicator Weekday, echo=FALSE, warning=TRUE, message=FALSE}
+```{r Surgical Pathology Efficiency Indicator Weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
 ```
 <h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>
@@ -1035,14 +1035,14 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
-```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=TRUE, message=FALSE}
+```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting(Cytology_Table_Weekday_New3)
 ```
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
 ## **Weekday 24-Hour Volume Lookback** {.tabset}
 
-```{r Custom function for 24 hour volume lookbacks for Chemistry, Hematology, and Micro RRL, echo = FALSE, warning = TRUE, message = FALSE}
+```{r Custom function for 24 hour volume lookbacks for Chemistry, Hematology, and Micro RRL, echo = FALSE, warning = FALSE, message = FALSE}
 
 lab_volume_summarize <- function(x, LabDivision) {
   # Subset data for relevant division
@@ -1087,7 +1087,7 @@ lab_vol_kable_format <- function(table_data) {
 
 ### Chemistry
 #### *Chemistry Resulted Lab Volume (Labs Resulted on `r wday_result_date`)*
-```{r Chemistry: 24 hour volume lookback, echo = FALSE, warning = TRUE, message = FALSE}
+```{r Chemistry: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
 chem_vol_wday_output <- lab_volume_summarize(scc_sun_wday_master, LabDivision = "Chemistry")
 chem_vol_wday_df <- chem_vol_wday_output[[1]]
 chem_vol_wday_summary <- chem_vol_wday_output[[2]]
@@ -1105,7 +1105,7 @@ lab_vol_kable_format(chem_vol_wday_table2)
 
 ### Hematology
 #### *Hematology Resulted Lab Volume (Labs Resulted on `r wday_result_date`)*
-```{r Hematology: 24 hour volume lookback, echo = FALSE, warning = TRUE, message = FALSE}
+```{r Hematology: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
 hem_vol_wday_output <- lab_volume_summarize(scc_sun_wday_master, LabDivision = "Hematology")
 hem_vol_wday_df <- hem_vol_wday_output[[1]]
 hem_vol_wday_summary <- hem_vol_wday_output[[2]]
@@ -1119,7 +1119,7 @@ lab_vol_kable_format(hem_vol_wday_table)
 
 ### Cytology   
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
-```{r Cytology Backlog and Accessioned, echo=FALSE, warning=TRUE, message=FALSE}
+```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
 Backlog_Accessioned_Table %>% 
   kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume")) %>%
   kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "left", row_label_position = "c", font_size = 11) %>%
@@ -1131,7 +1131,7 @@ Backlog_Accessioned_Table %>%
   column_spec(1, color = "black", include_thead = TRUE)
 ```
 
-```{r Conditional Block for Weekends, eval = include_not_wday, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Conditional Block for Weekends, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 
 # Chemistry
 chem_sub_output_not_wday <-lab_sub_summarize(scc_sun_not_wday_master, LabDivision = "Chemistry")
@@ -1169,7 +1169,7 @@ row.names(micro_dashboard2_not_wday) <- 1:nrow(micro_dashboard2_not_wday)
 micro_table_not_wday <- micro_dashboard2_not_wday[ , 3:ncol(micro_dashboard2_not_wday)]
 ```
 
-```{r Chemistry dashboard table for weekends and holidays, eval = include_not_wday, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Chemistry dashboard table for weekends and holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 asis_output('<h3>   </h3>')
 asis_output(paste('<h4> *Chemistry KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
 asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <95%, <span style = "color:green">Green:</span> >=95%</h5>')
@@ -1177,7 +1177,7 @@ chem_hem_micro_kable(chem_table_not_wday)
 asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
 ```
 
-```{r Hematology dashboard table for weekends/holidays, eval = include_not_wday, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Hematology dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 asis_output('<h3>   </h3>')
 asis_output(paste('<h4> *Hematology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
 asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <95%, <span style = "color:green">Green:</span> >=95%</h5>')
@@ -1185,7 +1185,7 @@ chem_hem_micro_kable(hem_table_not_wday)
 asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
 ```
 
-```{r Microbiology RRL volume and TAT table creation for weekends/holidays, eval = include_not_wday, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Microbiology RRL volume and TAT table creation for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 
 micro_volume_dashboard1_not_wday <- melt(micro_summary_not_wday, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = "ResultedVolume")
 
@@ -1211,7 +1211,7 @@ row.names(micro_tat_vol_comb_not_wday) <- 1:nrow(micro_tat_vol_comb_not_wday)
 micro_tat_vol_table_not_wday <- micro_tat_vol_comb_not_wday[ , 3:ncol(micro_tat_vol_comb_not_wday)]
 ```
 
-```{r Microbiology RRL dashboard table for weekends/holidays, eval = include_not_wday, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Microbiology RRL dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 asis_output('<h3>   </h3>')
 asis_output(paste('<h4> *Microbiology RRL KPI (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
 asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <90%, <span style = "color:orange">Yellow:</span> >=90% & <100%, <span style = "color:green">Green:</span> =100%</h5>')
@@ -1219,7 +1219,7 @@ chem_hem_micro_kable(micro_tat_vol_table_not_wday)
 asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
 ```
 
-```{r Missing Collection Times Tables for weekends/holidays, eval = include_not_wday, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Missing Collection Times Tables for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 asis_output('<h3>   </h3>')
 asis_output(paste('<h4>*Missing Collection Times and Add On Order Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
 asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> >15%, <span style = "color:orange">Yellow:</span> <=15% & >5%, <span style = "color:green">Green:</span> <=5%</h5>')
@@ -1271,7 +1271,7 @@ asis_output('<h6>*Missing collection time analysis only includes labs represente
 ```
 
 
-```{r Surgical Pathology efficiency indicators for weekends/holidays, eval = include_not_wday, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Surgical Pathology efficiency indicators for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 asis_output('<h3>   </h3>')
 asis_output(paste('<h4> *Surgical Pathology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
 asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
@@ -1279,7 +1279,7 @@ Table_Formatting(Surgical_Pathology_Table_Not_Weekday_New3)
 asis_output('<h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>')
 ```
 
-```{r Cytology efficiency indicators for weekends/holidays, eval = include_not_wday, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Cytology efficiency indicators for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 asis_output('<h3>   </h3>')
 asis_output(paste('<h4> *Cytology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
 asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
