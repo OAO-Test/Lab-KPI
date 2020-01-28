@@ -218,11 +218,17 @@ GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAs
 
 #-----------Create table template for Cyto/Path-----------#
 columns <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+columns_V2 <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_Out_within_target","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")
 #Cyto
 Table_Template_Cyto <- data.frame(matrix(ncol=21, nrow = 4)) 
 colnames(Table_Template_Cyto) <- columns
 Table_Template_Cyto[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto[2] <- c('IP', 'Amb')
+
+Table_Template_Cyto_V2 <- data.frame(matrix(ncol=13, nrow = 4)) 
+colnames(Table_Template_Cyto_V2) <- columns_V2
+Table_Template_Cyto_V2[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
+Table_Template_Cyto_V2[2] <- c('IP', 'Amb')
 
 #Patho
 Table_Template_Patho <- data.frame(matrix(ncol=21, nrow = 4)) 
@@ -547,7 +553,10 @@ pre_processing_pp <- function(Raw_Data){
     Raw_Data_New_Cases_Signed <- NULL
     Raw_Data_New_Patient_Metric <- NULL
     Raw_Data_New_Lab_Metric <- NULL
+    Raw_Data_New_Lab_Metric_V2 <- NULL
+    Processed_Data_Table_V2 <-NULL
     Processed_Data_Table <- NULL
+    Return_Tables <- NULL
   } else {
     #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
     Raw_Data_PS <- merge(x=Raw_Data, y=Patient_Setting, all.x = TRUE ) 
@@ -581,19 +590,26 @@ pre_processing_pp <- function(Raw_Data){
     
     Raw_Data_New_Lab_Metric <- dcast(Raw_Data_New_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
     
+    Raw_Data_New_Lab_Metric_V2 <- summarise(group_by(Raw_Data_New,spec_group,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)))
+    
     #here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
     
     #Cytology Weekday table
     Processed_Data_Table <- left_join(full_join(Raw_Data_New_Cases_Signed, Raw_Data_New_Lab_Metric), Raw_Data_New_Patient_Metric, by = c("spec_group", "Patient.Setting"))
     Processed_Data_Table <- Processed_Data_Table[!(Processed_Data_Table$Patient.Setting == "Other"),]
+    Processed_Data_Table_V2 <- left_join(full_join(Raw_Data_New_Cases_Signed, Raw_Data_New_Lab_Metric_V2), Raw_Data_New_Patient_Metric, by = c("spec_group", "Patient.Setting"))
+    Processed_Data_Table_V2 <- Processed_Data_Table_V2[!(Processed_Data_Table_V2$Patient.Setting == "Other"),]
+    Return_Tables <- list(Processed_Data_Table, Processed_Data_Table_V2) 
   }
-  return(Processed_Data_Table)
+  return(Return_Tables)
 }
 
-Cytology_Table_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)
-Cytology_Table_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)
-Surgical_Pathology_Table_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)
-Surgical_Pathology_Table_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)
+Cytology_Table_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[1]]
+Cytology_Table_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[1]]
+Cytology_Table_Weekday_V2 <- pre_processing_pp(Cytology_Weekday_Raw)[[2]]
+Cytology_Table_Not_Weekday_V2 <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[2]]
+Surgical_Pathology_Table_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[1]]
+Surgical_Pathology_Table_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[1]]
 ```
 
 ```{r Cytology backlog preprocessing and analysis, echo=FALSE, warning=TRUE, message=FALSE}
@@ -803,10 +819,12 @@ micro_table <- micro_dashboard2[ , 3:ncol(micro_dashboard2)]
 
 ```{r Custom functions for formatting Cytology dashboard tables, echo = FALSE, warning = FALSE, message = FALSE}
 
-
 ############Create a function for Table standardization for cyto and patho############
 #To add all the missing rows and columns
-columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")
+columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")
+
+columns_order_V2 <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
+
 #Cytology table
 Table_Merging_Cyto <- function(Cytology_Table){
   if (is.null(Cytology_Table)){
@@ -816,18 +834,33 @@ Table_Merging_Cyto <- function(Cytology_Table){
     #first step is merging the table template with the cytology table and this will include all of the missing columns.
 
     Cytology_Table_New <- merge(x = Table_Template_Cyto, y= Cytology_Table, all.y=TRUE)
-    
     #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
     Cytology_Table_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
-
     rows_order_Cyto <- factor(rownames(Cytology_Table_New2),levels = c(2,1,4,3))
     Cytology_Table_New2 <- Cytology_Table_New2[order(rows_order_Cyto), columns_order]
   }
   return(Cytology_Table_New2)
 }
 
+Table_Merging_Cyto_V2 <- function(Cytology_Table_V2){
+  if (is.null(Cytology_Table_V2)){
+    Cytology_Table_New_V2 <- NULL
+    Cytology_Table_New2_V2 <- NULL
+  } else {
+    #first step is merging the table template with the cytology table and this will include all of the missing columns.
+    Cytology_Table_New_V2 <- merge(x = Table_Template_Cyto_V2, y= Cytology_Table_V2, all.y=TRUE)
+    #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
+    Cytology_Table_New2_V2 <- merge(x = Table_Template_Cyto_V2[c(1,2)], y= Cytology_Table_New_V2, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+    rows_order_Cyto_V2 <- factor(rownames(Cytology_Table_New2_V2),levels = c(2,1,4,3))
+    Cytology_Table_New2_V2 <- Cytology_Table_New2_V2[order(rows_order_Cyto_V2), columns_order_V2]
+  }
+  return(Cytology_Table_New2_V2)
+}
+
 Cytology_Table_Weekday_New2 <- Table_Merging_Cyto(Cytology_Table_Weekday)
 Cytology_Table_Not_Weekday_New2 <- Table_Merging_Cyto(Cytology_Table_Not_Weekday)
+Cytology_Table_Weekday_New2_V2 <- Table_Merging_Cyto_V2(Cytology_Table_Weekday_V2)
+Cytology_Table_Not_Weekday_New2_V2 <- Table_Merging_Cyto_V2(Cytology_Table_Not_Weekday_V2)
 
 #Pathology table
 Table_Merging_Patho <- function(Surgical_Pathology_Table){
@@ -882,8 +915,34 @@ Conditional_Formatting <- function(Table_New2){
   return(Table_New3)
 }
 
+Conditional_Formatting_V2 <- function(Table_New2_V2){
+  if (is.null(Table_New2_V2)){
+    Table_New3_V2 <- NULL
+  } else {
+    
+    Table_New2_V2[4] <- lapply(Table_New2_V2[4], as.numeric)
+    Table_New2_V2[4] <- lapply(Table_New2_V2[4],percent, d=0)
+    
+    #steps for conditional formatting:
+    
+    Table_New3_V2 <- Table_New2_V2 %>%
+      mutate(Received_to_Signed_out_within_target = ifelse(is.na(Received_to_Signed_out_within_target), cell_spec(Received_to_Signed_out_within_target, "html", color = "lightgray"), 
+                            ifelse(Received_to_Signed_out_within_target > 0.9, cell_spec(Received_to_Signed_out_within_target, "html", color  = "green"),
+                                   ifelse(Received_to_Signed_out_within_target < 0.8, cell_spec(Received_to_Signed_out_within_target, "html", color = "red"), cell_spec(Received_to_Signed_out_within_target, "html", color = "orange")))))
+    Table_New3_V2 <- merge(x=Table_New3_V2, y=TAT_Targets[1:3])
+    columns_order_V2 <- c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
+    rows_order_V2 <- factor(rownames(Table_New3_V2),levels = c(2,1,4,3))
+    Table_New3_V2 <- Table_New3_V2[order(rows_order_V2), columns_order_V2]
+    Table_New3_V2$Received.to.signed.out.target..Days.<- paste("<= ", Table_New3_V2$Received.to.signed.out.target..Days., "days")
+    row.names(Table_New3_V2) <- NULL
+  }
+  return(Table_New3_V2)
+}
+
 Cytology_Table_Weekday_New3 <- Conditional_Formatting(Cytology_Table_Weekday_New2)
 Cytology_Table_Not_Weekday_New3 <- Conditional_Formatting(Cytology_Table_Not_Weekday_New2)
+Cytology_Table_Weekday_New3_V2 <- Conditional_Formatting_V2(Cytology_Table_Weekday_New2_V2)
+Cytology_Table_Not_Weekday_New3_V2 <- Conditional_Formatting_V2(Cytology_Table_Not_Weekday_New2_V2)
 Surgical_Pathology_Table_Weekday_New3 <- Conditional_Formatting(Surgical_Pathology_Table_Weekday_New2)
 Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting(Surgical_Pathology_Table_Not_Weekday_New2)
 
@@ -907,6 +966,23 @@ Table_Formatting <- function (Table_New3){
   }
 }
 
+
+Table_Formatting_V2 <- function (Table_New3_V2){
+  if (is.null(Table_New3_V2)){
+    Table_New3_V2 <- NULL
+  } else {
+    Table_New3_V2%>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","Centralized Lab","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    add_header_above(c(" "= 4, "Receive to Result within Target (Business Days)"= 1, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
+    column_spec(2:5, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
+    column_spec(6:14, background = "#221F72", color = "white", include_thead = TRUE)%>%
+    column_spec(2:14, background = "inherit", color = "inherit")%>%
+    row_spec(row = 0, font_size = 13)%>%
+    collapse_rows(columns = c(1,2))
+  }
+}
 
 ```
 ## **Weekday Efficiency Indicators** {.tabset}
@@ -1037,6 +1113,7 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
 <span style = "color:green">Green:</span> >=90%</h5>
 ```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting(Cytology_Table_Weekday_New3)
+Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 ```
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
