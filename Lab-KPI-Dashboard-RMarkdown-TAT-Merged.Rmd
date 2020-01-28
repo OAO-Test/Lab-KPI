@@ -219,6 +219,8 @@ GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAs
 #-----------Create table template for Cyto/Path-----------#
 columns <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
 columns_V2 <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_Out_within_target","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")
+columns_V3 <- c("spec_group","Patient.Setting","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")
+
 #Cyto
 Table_Template_Cyto <- data.frame(matrix(ncol=21, nrow = 4)) 
 colnames(Table_Template_Cyto) <- columns
@@ -235,6 +237,11 @@ Table_Template_Patho <- data.frame(matrix(ncol=21, nrow = 4))
 colnames(Table_Template_Patho) <- columns
 Table_Template_Patho[1] <- c('Breast','Breast','GI', 'GI')
 Table_Template_Patho[2] <- c('IP', 'Amb')
+
+Table_Template_Patho_Vol <- data.frame(matrix(ncol=11, nrow = 4)) 
+colnames(Table_Template_Patho_Vol) <- columns_V3
+Table_Template_Patho_Vol[1] <- c('Breast','Breast','GI', 'GI')
+Table_Template_Patho_Vol[2] <- c('IP', 'Amb')
 ```
 
 
@@ -551,6 +558,7 @@ pre_processing_pp <- function(Raw_Data){
     #Raw_Data_PS_Target <- NULL
     Raw_Data_New <- NULL
     Raw_Data_New_Cases_Signed <- NULL
+    Raw_Data_New_Cases_Signed_Stratified <- NULL
     Raw_Data_New_Patient_Metric <- NULL
     Raw_Data_New_Lab_Metric <- NULL
     Raw_Data_New_Lab_Metric_V2 <- NULL
@@ -580,10 +588,14 @@ pre_processing_pp <- function(Raw_Data){
     #Calculate Average for Collection to signed out and number of cases signed
     
     Raw_Data_New_Cases_Signed <- summarise(group_by(Raw_Data_New,spec_group, Patient.Setting), No_Cases_Signed = n())
-    
+
+    Raw_Data_New_Cases_Signed_Stratified <- summarise(group_by(Raw_Data_New,spec_group, Facility, Patient.Setting), No_Cases_Signed = n())    
+    Raw_Data_New_Cases_Signed_Stratified <- dcast(Raw_Data_New_Cases_Signed_Stratified, spec_group + Patient.Setting ~ Facility, value.var = "No_Cases_Signed" )
+        
     Raw_Data_New_Patient_Metric <- summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out, na.rm = TRUE),2)))
     
     Raw_Data_New_Patient_Metric <- dcast(Raw_Data_New_Patient_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
+    
     
     #Calculate % Receive to result TAT within target
     Raw_Data_New_Lab_Metric <-summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)))
@@ -594,12 +606,11 @@ pre_processing_pp <- function(Raw_Data){
     
     #here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
     
-    #Cytology Weekday table
     Processed_Data_Table <- left_join(full_join(Raw_Data_New_Cases_Signed, Raw_Data_New_Lab_Metric), Raw_Data_New_Patient_Metric, by = c("spec_group", "Patient.Setting"))
     Processed_Data_Table <- Processed_Data_Table[!(Processed_Data_Table$Patient.Setting == "Other"),]
     Processed_Data_Table_V2 <- left_join(full_join(Raw_Data_New_Cases_Signed, Raw_Data_New_Lab_Metric_V2), Raw_Data_New_Patient_Metric, by = c("spec_group", "Patient.Setting"))
     Processed_Data_Table_V2 <- Processed_Data_Table_V2[!(Processed_Data_Table_V2$Patient.Setting == "Other"),]
-    Return_Tables <- list(Processed_Data_Table, Processed_Data_Table_V2) 
+    Return_Tables <- list(Processed_Data_Table, Processed_Data_Table_V2,Raw_Data_New_Cases_Signed_Stratified) 
   }
   return(Return_Tables)
 }
@@ -610,6 +621,9 @@ Cytology_Table_Weekday_V2 <- pre_processing_pp(Cytology_Weekday_Raw)[[2]]
 Cytology_Table_Not_Weekday_V2 <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[2]]
 Surgical_Pathology_Table_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[1]]
 Surgical_Pathology_Table_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[1]]
+Surgical_Pathology_Stratified_Vol_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[3]]
+Surgical_Pathology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[3]]
+
 ```
 
 ```{r Cytology backlog preprocessing and analysis, echo=FALSE, warning=TRUE, message=FALSE}
@@ -825,6 +839,8 @@ columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSS
 
 columns_order_V2 <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
 
+columns_order_V3 <- c("spec_group","Patient.Setting","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
+
 #Cytology table
 Table_Merging_Cyto <- function(Cytology_Table){
   if (is.null(Cytology_Table)){
@@ -883,6 +899,27 @@ Table_Merging_Patho <- function(Surgical_Pathology_Table){
 Surgical_Pathology_Table_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Weekday)
 Surgical_Pathology_Table_Not_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Not_Weekday)
 
+Table_Merging_Patho_Volume <- function(Surgical_Pathology_Vol_Table){
+  if (is.null(Surgical_Pathology_Vol_Table)){
+    Surgical_Pathology_Vol_Table_New <- NULL
+    Surgical_Pathology_Vol_Table_New2 <- NULL
+  } else {
+    #first step is merging the table template with the cytology table and this will include all of the missing columns.
+
+    Surgical_Pathology_Vol_Table_New <- merge(x = Table_Template_Patho_Vol, y= Surgical_Pathology_Vol_Table, all.y=TRUE)
+    
+    #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
+    Surgical_Pathology_Vol_Table_New2 <- merge(x = Table_Template_Patho_Vol[c(1,2)], y= Surgical_Pathology_Vol_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+    rows_order_Patho_Vol <- factor(rownames(Surgical_Pathology_Vol_Table_New2),levels = c(2,1,4,3))
+    Surgical_Pathology_Vol_Table_New2 <- Surgical_Pathology_Vol_Table_New2[order(rows_order_Patho_Vol), columns_order_V3]
+    row.names(Surgical_Pathology_Vol_Table_New2) <- NULL
+  }
+  return(Surgical_Pathology_Vol_Table_New2)
+}
+
+
+Surgical_Pathology_Stratified_Vol_Weekday_New2 <- Table_Merging_Patho_Volume(Surgical_Pathology_Stratified_Vol_Weekday)
+Surgical_Pathology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Patho_Volume(Surgical_Pathology_Stratified_Vol_Not_Weekday)
 
 ############Create a function for conditional formatting############
 Conditional_Formatting <- function(Table_New2){
@@ -983,6 +1020,23 @@ Table_Formatting_V2 <- function (Table_New3_V2){
     collapse_rows(columns = c(1,2))
   }
 }
+
+#Volume table formatting
+Table_Formatting_Volume <- function (Volume_Table){
+  if (is.null(Volume_Table)){
+    Volume_Table <- NULL
+  } else {
+    Volume_Table%>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Case Type","Setting","MSH", "MSSM", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL", "NYEE")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    column_spec(3:11, background = "gray",color ="white", include_thead = TRUE)%>%
+    column_spec(3:11, background = "inherit", color = "inherit")%>%
+    row_spec(row = 0, font_size = 13)%>%
+    collapse_rows(columns = 1)
+  }
+}
+
 
 ```
 ## **Weekday Efficiency Indicators** {.tabset}
@@ -1194,6 +1248,11 @@ rownames(hem_vol_wday_table) <- 1:nrow(hem_vol_wday_table)
 lab_vol_kable_format(hem_vol_wday_table)
 ```
 
+### Surgical Pathology   
+#### *Surgical Pathology Accessioned Cases Volume (As of `r wday_result_date`)*
+```{r Surgical Pathology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2)
+```
 ### Cytology   
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
