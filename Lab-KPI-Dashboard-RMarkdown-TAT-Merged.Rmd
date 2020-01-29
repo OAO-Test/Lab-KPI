@@ -17,6 +17,7 @@ output:
 #install.packages("formattable")
 # install.packages("bizdays")
 #install.packages("rmarkdown")
+# install.packages("stringr")
 #install.packages("tinytex")
 
 
@@ -33,6 +34,7 @@ library(knitr)
 library(kableExtra)
 library(formattable)
 library(rmarkdown)
+library(stringr)
 # library(tinytex)
 
 
@@ -177,7 +179,9 @@ Cytology_Backlog_Raw <- data.frame(Cytology_Backlog_Raw[-nrow(Cytology_Backlog_R
 ```{r Reference Data, warning = TRUE, message = FALSE, echo = FALSE}
 # CP and Micro --------------------------------
 # Import analysis reference data starting with test codes for SCC and Sunquest
-reference_file <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
+# reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
+reference_file <- choose.files(caption = "Select analysis reference file")
+
 test_code <- read_excel(reference_file, sheet = "TestNames")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
@@ -274,6 +278,10 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                                                               "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", "Test",
                                                                               "COLLECT_CENTER_ID", "SITE", "Site",
                                                                               "CLINIC_TYPE", "Setting", "SettingRollUp")], as.factor)
+  
+  # Fix any timestamps that weren't imported correctly and then format as date/time
+  raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")] <- lapply(raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")], function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
+  
   raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")] <- lapply(raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")],
                                                                                              as.POSIXlt, tz = "", format = "%Y-%m-%d %H:%M:%OS", options(digits.sec = 1))
   
@@ -380,6 +388,9 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                                                                              "ReceiveTech", "ResultTech", "PerformingLabCode",
                                                                                              "Test", "LocandName", "Setting", "SettingRollUp", "Site")], as.factor)
   
+  # Fix any timestamps that weren't imported correctly and then format as date/time
+  raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- lapply(raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")], function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
+
   raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- lapply(raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")], 
                                                                                                  as.POSIXlt, tz = "", format = "%m/%d/%Y %H:%M:%S")
   
