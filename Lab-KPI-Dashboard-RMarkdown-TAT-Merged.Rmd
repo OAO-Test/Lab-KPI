@@ -1423,6 +1423,33 @@ Table_Formatting(Cytology_Table_Not_Weekday_New3)
 asis_output('<h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>')
 ```
 
+```{r Lab KPI Form for Qualitative Indicators, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+#read the excel sheet that is generated from office form responses
+KPI_Form <- data.frame(read_excel(choose.files(caption = "Select the KPI form generated today"), 1), stringsAsFactors = FALSE)
+KPI_Form$Completion_Date <- as.Date(as.POSIXct(KPI_Form$Completion.time,tz="",format='%m/%d/%y %I:%M %p'))
+List_of_Dates <-unique(KPI_Form$Completion_Date)
+Ordered_Dates <- List_of_Dates[rev(order(List_of_Dates))]
+#pick only the newest responses
+KPI_Form_Today <- KPI_Form[which(KPI_Form$Completion_Date == Ordered_Dates[1]),]
+
+#split the data into 4 datasets
+#CP/AP/CPA/4LABS
+Clinical_Labs_Ops_Ind <- KPI_Form_Today[which((KPI_Form_Today$Select.your.branch.facility!="Blood Bank")&(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)")),c(6:7,9:17,19)]
+
+Blood_Bank_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility=="Blood Bank"),c(8,9:16,19)]
+
+LIS_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility == "Laboratory Information System (LIS)"),c(6,22:24)]
+
+Never_Events <- select(KPI_Form_Today, c(6:8, 19, 20:21))
+
+#Blood Bank Table with colors
+Blood_Bank_Melt <- melt(Blood_Bank_Ops_Ind, id =c("Blood.Banks", "IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event"))
+
+Blood_Bank_colored <-formattable(Blood_Bank_Melt, `value` = formatter("span", style = ~ style(color = ifelse("Green (No issues)","green",ifelse("Yellow (Delays)","orange", "red")))))
+
+
+
+```
 
 
 
