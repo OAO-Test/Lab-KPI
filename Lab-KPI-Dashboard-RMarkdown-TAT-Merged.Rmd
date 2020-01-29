@@ -653,12 +653,12 @@ Cytology_case_Volume_DOW <- as.numeric(Cytology_Backlog_Volume$Cyto_Backlog[1])/
 
 #accessioned volume
 #1. Find the date that we need to report --> the date of the last weekday
-Accessioned_Date <- as.Date(Cytology_Weekday_Raw$signed_out_date[1], "%m/%d/%Y")
+Accessioned_Date <- as.Date(Cytology_Weekday_Raw$signed_out_date[1])
 #2. count the accessioned volume that was accessioned on that date from the cytology report
-Cytology_Weekday_Raw$Accessioned_Date_Only <- as.Date(Cytology_Weekday_Raw$Case_created_date, "%m/%d/%Y")
+Cytology_Weekday_Raw$Accessioned_Date_Only <- as.Date(Cytology_Weekday_Raw$Received_Date)
 Cytology_Accessioned_Vol1 <- summarise(group_by(Cytology_Weekday_Raw,spec_group), Cyto_Acc_Vol1 = as.numeric(sum(Accessioned_Date == Accessioned_Date_Only, na.rm = TRUE)))
 #3. count the accessioned volume that was accessioned on that date from the backlog report
-Cytology_Backlog_Raw$Accessioned_Date_Only <- as.Date(Cytology_Backlog_Raw$Case_created_date, "%m/%d/%Y")
+Cytology_Backlog_Raw$Accessioned_Date_Only <- as.Date(Cytology_Backlog_Raw$Received_Date)
 Cytology_Accessioned_Vol2 <- summarise(group_by(Cytology_Backlog_Raw,spec_group), Cyto_Acc_Vol2 = as.numeric(sum(Accessioned_Date == Accessioned_Date_Only, na.rm = TRUE)))
 #4. sum the two counts
 Cytology_Accessioned_Vol3 <- merge(x= Cytology_Accessioned_Vol1, y= Cytology_Accessioned_Vol2)
