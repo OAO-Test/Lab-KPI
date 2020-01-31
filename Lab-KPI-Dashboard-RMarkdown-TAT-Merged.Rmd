@@ -1203,7 +1203,7 @@ lab_volume_summarize <- function(x, LabDivision) {
   group_by(Site, Test, DashboardPriority, MasterSetting, .drop = FALSE) %>%
   summarize(ResultedLabs = n())
   # Add column concatenating Test and Priority
-  lab_vol_summary$TestPriority <- paste(lab_vol_summary$Test, "-", lab_vol_summary$DashboardPriority)
+  lab_vol_summary$TestPriority <- paste(lab_vol_summary$Test, "-", lab_vol_summary$DashboardPriority, "Labs")
   
   # Remove unused combinations (ie, Routine ED & ICU labs)
   lab_vol_summary <- lab_vol_summary[!((lab_vol_summary$MasterSetting == "ED" | lab_vol_summary$MasterSetting == "ICU")&(lab_vol_summary$DashboardPriority == "Routine")), ]
