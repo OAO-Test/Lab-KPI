@@ -50,13 +50,13 @@ knitr::opts_chunk$set(echo=FALSE, warning=TRUE, message=FALSE)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-
+# Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+Today <- as.timeDate(as.Date("01/27/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-# Yesterday <- as.timeDate(as.Date("11/24/2019", format = "%m/%d/%Y"))
+# Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("01/26/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -1161,7 +1161,7 @@ add_on_table %>%
 <h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
 
 ### Surgical Pathology
-#### *Surgical Pathology KPI (Labs Resulted on `r wday_result_date`)*
+#### *Surgical Pathology KPI (Specimens Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
@@ -1172,7 +1172,7 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
 
 
 ### Cytology
-#### *Cytology KPI (Labs Resulted on `r wday_result_date`)*
+#### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
@@ -1182,9 +1182,13 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 ```
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
+<!-- End tabset -->
+## {-}
+
+<!-- Create new tabset -->
 ## **Weekday 24-Hour Volume Lookback** {.tabset}
 
-```{r Custom function for 24 hour volume lookbacks for Chemistry, Hematology, and Micro RRL, echo = FALSE, warning = FALSE, message = FALSE}
+```{r Custom function for 24 hour volume lookbacks for Chemistry and Hematology, echo = FALSE, warning = FALSE, message = FALSE}
 
 lab_volume_summarize <- function(x, LabDivision) {
   # Subset data for relevant division
@@ -1264,6 +1268,7 @@ lab_vol_kable_format(hem_vol_wday_table)
 ```{r Surgical Pathology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2)
 ```
+
 ### Cytology   
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
@@ -1277,6 +1282,11 @@ Backlog_Accessioned_Table %>%
   row_spec(0, color = "white") %>%
   column_spec(1, color = "black", include_thead = TRUE)
 ```
+
+<!-- End tabset -->
+## {-}
+
+`r if (include_not_wday != TRUE) {"<!--"}`
 
 ```{r Conditional Block for Weekends, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 
@@ -1316,21 +1326,35 @@ row.names(micro_dashboard2_not_wday) <- 1:nrow(micro_dashboard2_not_wday)
 micro_table_not_wday <- micro_dashboard2_not_wday[ , 3:ncol(micro_dashboard2_not_wday)]
 ```
 
-```{r Chemistry dashboard table for weekends and holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-asis_output('<h3>   </h3>')
-asis_output(paste('<h4> *Chemistry KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
-asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <95%, <span style = "color:green">Green:</span> >=95%</h5>')
-chem_hem_micro_kable(chem_table_not_wday)
-asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
-```
+<!-- Begin weekend/holiday dashboard visualizations -->
 
-```{r Hematology dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-asis_output('<h3>   </h3>')
-asis_output(paste('<h4> *Hematology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
-asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <95%, <span style = "color:green">Green:</span> >=95%</h5>')
-chem_hem_micro_kable(hem_table_not_wday)
-asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
+## **Weekend/Holiday Efficiency Indicators** {.tabset}
+### Chemistry
+#### *Chemistry KPI (Labs Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <95%, 
+<span style = "color:green">Green:</span> >=95%</h5>'
+```{r Chemistry dashboard table for weekends and holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+# asis_output(paste('<h4> *Chemistry KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
+# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <95%, <span style = "color:green">Green:</span> >=95%</h5>')
+chem_hem_micro_kable(chem_table_not_wday)
+# asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
 ```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>'
+
+### Hematology
+#### *Hematology KPI (Labs Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <95%, 
+<span style = "color:green">Green:</span> >=95%</h5>
+```{r Hematology dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+# asis_output('<h3> Hematology </h3>')
+# asis_output(paste('<h4> *Hematology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
+# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <95%, <span style = "color:green">Green:</span> >=95%</h5>')
+chem_hem_micro_kable(hem_table_not_wday)
+# asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
+```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
 ```{r Microbiology RRL volume and TAT table creation for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 
@@ -1358,18 +1382,29 @@ row.names(micro_tat_vol_comb_not_wday) <- 1:nrow(micro_tat_vol_comb_not_wday)
 micro_tat_vol_table_not_wday <- micro_tat_vol_comb_not_wday[ , 3:ncol(micro_tat_vol_comb_not_wday)]
 ```
 
+### Microbiology RRL
+#### *Microbiology RRL (Labs Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <90%, 
+<span style = "color:orange">Yellow:</span> >=90% & <100%, 
+<span style = "color:green">Green:</span> =100%</h5>
 ```{r Microbiology RRL dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-asis_output('<h3>   </h3>')
-asis_output(paste('<h4> *Microbiology RRL KPI (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
-asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <90%, <span style = "color:orange">Yellow:</span> >=90% & <100%, <span style = "color:green">Green:</span> =100%</h5>')
+# asis_output('<h3> Microbiology RRL  </h3>')
+# asis_output(paste('<h4> *Microbiology RRL KPI (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
+# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <90%, <span style = "color:orange">Yellow:</span> >=90% & <100%, <span style = "color:green">Green:</span> =100%</h5>')
 chem_hem_micro_kable(micro_tat_vol_table_not_wday) 
-asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
+# asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
 ```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
+### Missing Collections & Add Ons
+#### *Missing Collection Times and Add On Order Volume (Labs Resulted on 'r wkend_holiday_result_date`)*
+<h5> Missing Collection Status Definitions: <span style = "color:red">Red:</span> >15%, 
+<span style = "color:orange">Yellow:</span> <=15% & >5%, 
+<span style = "color:green">Green:</span> <=5%</h5>
 ```{r Missing Collection Times Tables for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-asis_output('<h3>   </h3>')
-asis_output(paste('<h4>*Missing Collection Times and Add On Order Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
-asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> >15%, <span style = "color:orange">Yellow:</span> <=15% & >5%, <span style = "color:green">Green:</span> <=5%</h5>')
+# asis_output('<h3> Missing Collections & Add On Orders </h3>')
+# asis_output(paste('<h4>*Missing Collection Times and Add On Order Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
+# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> >15%, <span style = "color:orange">Yellow:</span> <=15% & >5%, <span style = "color:green">Green:</span> <=5%</h5>')
 
 # Determine percentage of labs with missing collection times -------------------------------
 missing_collect_not_wday <- scc_sun_not_wday_master[scc_sun_not_wday_master$TATInclude == TRUE, ] %>%
@@ -1413,47 +1448,93 @@ add_on_table_not_wday %>%
   column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
   row_spec(row = 0, font_size =13)
 
-asis_output('<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
-')
+# asis_output('<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
+# ')
 ```
+<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
 
-
+### Surgical Pathology
+#### *Surgical Pathology KPI (Specimens Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <90%, 
+<span style = "color:green">Green:</span> >=90%</h5>
 ```{r Surgical Pathology efficiency indicators for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-asis_output('<h3>   </h3>')
-asis_output(paste('<h4> *Surgical Pathology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
-asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
+# asis_output('<h3> Surgical Pathology  </h3>')
+# asis_output(paste('<h4> *Surgical Pathology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
+# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
 Table_Formatting(Surgical_Pathology_Table_Not_Weekday_New3)
-asis_output('<h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>')
+# asis_output('<h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>')
 ```
+<h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>
 
+### Cytology
+#### *Cytology KPI (Specimens Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <90%, 
+<span style = "color:green">Green:</span> >=90%</h5>
 ```{r Cytology efficiency indicators for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-asis_output('<h3>   </h3>')
-asis_output(paste('<h4> *Cytology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
-asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
+# asis_output('<h3> Cytology</h3>')
+# asis_output(paste('<h4> *Cytology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
+# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
 Table_Formatting(Cytology_Table_Not_Weekday_New3)
-asis_output('<h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>')
+# asis_output('<h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>')
+```
+<h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
+
+<!-- End tabset -->
+## {-}
+
+<!-- Start new tabset for weekend/holiday volume lookback -->
+## **Weekend/Holiday Volume Lookback** {.tabset}
+
+### Chemistry
+#### *Chemistry Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
+```{r Chemistry Weekend/Holiday: volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+# asis_output('<h3> Chemistry </h3>')
+# asis_output(paste('<h4> *Chemistry Resulted Lab Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
+chem_vol_not_wday_output <- lab_volume_summarize(scc_sun_not_wday_master, LabDivision = "Chemistry")
+chem_vol_not_wday_df <- chem_vol_not_wday_output[[1]]
+chem_vol_not_wday_summary <- chem_vol_not_wday_output[[2]]
+chem_vol_not_wday_table <- chem_vol_not_wday_output[[3]]
+
+# Manually remove unused combinations (ie. Troponin & Lactate w/o "All" as priority, BUN with "All" priority)
+chem_vol_not_wday_table2 <- chem_vol_not_wday_table[!(((chem_vol_not_wday_table$Test == "Troponin" | chem_vol_not_wday_table$Test == "Lactate WB")&(chem_vol_not_wday_table$DashboardPriority != "All")) | (chem_vol_not_wday_table$Test == "BUN" & chem_vol_not_wday_table$DashboardPriority == "All")), ]
+
+chem_vol_not_wday_table2 <- chem_vol_not_wday_table2[ , 3:ncol(chem_vol_not_wday_table2)]
+rownames(chem_vol_not_wday_table2) <- 1:nrow(chem_vol_not_wday_table2)
+
+lab_vol_kable_format(chem_vol_not_wday_table2)
 ```
 
+### Hematology
+#### *Hematology Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
+```{r Hematology Weekend/Holiday: volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+# asis_output('<h3> Hematology </h3>')
+# asis_output(paste('<h4> *Hematology Resulted Lab Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
 
+hem_vol_not_wday_output <- lab_volume_summarize(scc_sun_not_wday_master, LabDivision = "Hematology")
+hem_vol_not_wday_df <- hem_vol_not_wday_output[[1]]
+hem_vol_not_wday_summary <- hem_vol_not_wday_output[[2]]
+hem_vol_not_wday_table <- hem_vol_not_wday_output[[3]]
 
+hem_vol_not_wday_table <- hem_vol_not_wday_table[ , 3:ncol(hem_vol_not_wday_table)]
+rownames(hem_vol_not_wday_table) <- 1:nrow(hem_vol_not_wday_table)
 
+lab_vol_kable_format(hem_vol_not_wday_table)
+```
 
+### Surgical Pathology   
+#### *Surgical Pathology Accessioned Cases Volume (As of `r wkend_holiday_result_date`)*
+```{r Surgical Pathology Weekend/Holiday: volume lookback, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Not_Weekday_New2)
+```
 
+<!-- End tabset -->
+## {-}
 
+`r if (include_not_wday != TRUE) {"-->"}`
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+<h6> *End of report.* </h6>
 
 
 
