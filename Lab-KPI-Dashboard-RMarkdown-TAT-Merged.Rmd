@@ -1556,6 +1556,7 @@ Formatted_Clinical_Labs_Melt_New2%>%
     kable(escape = F, align = "c", col.names = c("Facility","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing", "CPA Reference Labs", "Comments")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
+#Blood_Bank_Melt$symbol <- formattable(Blood_Bank_Melt, align = c("c","c","c"), list("value" = formatter("span", style = x ~ style(color = ifelse(x =="Green (No issues)","green",ifelse((x == "Yellow (Safe/Under Stress)")| (x=="Yellow (Delays)") | (x== "Yellow (Delays in pickup/delivery)") | (x=="Yellow (Shortage with no/minimal significant impact)") | (x == "Yellow (Minor issues/Coordinating with Reference Labs)"),"orange", "red"))), x ~ icontext(ifelse(x =="Green (No issues)","thumbs-up","thumbs-down")))))
 
 Formatted_Blood_Bank_Melt_New2%>%
     select(everything()) %>%
@@ -1578,7 +1579,7 @@ Formatted_LIS_New2%>%
 
 #Blood_Bank_Melt$symbol <- icontext(ifelse(Blood_Bank_Melt$value =="Green (No issues)","thumbs-up","thumbs-down"))
 
-#Blood_Bank_Melt$symbol <- formattable(Blood_Bank_Melt, align = c("c","c","c"), list("value" = formatter("span", style = x ~ style(color = ifelse(x =="Green (No issues)","green",ifelse((x == "Yellow (Safe/Under Stress)")| (x=="Yellow (Delays)") | (x== "Yellow (Delays in pickup/delivery)") | (x=="Yellow (Shortage with no/minimal significant impact)") | (x == "Yellow (Minor issues/Coordinating with Reference Labs)"),"orange", "red"))), x ~ icontext(ifelse(x =="Green (No issues)","thumbs-up","thumbs-down")))))
+
 
 #load.fontawesome()
 
