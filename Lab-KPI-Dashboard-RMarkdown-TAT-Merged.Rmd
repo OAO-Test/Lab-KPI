@@ -1436,30 +1436,34 @@ Ordered_Dates <- List_of_Dates[rev(order(List_of_Dates))]
 #pick only the newest responses
 KPI_Form_Today <- KPI_Form[which(KPI_Form$Completion_Date == Ordered_Dates[1]),]
 
-#split the data into 4 datasets
+#split the data into 5 datasets
 
 # the first dataset representes the following: CP/AP/CPA/4LABS
 
-Clinical_Labs_Ops_Ind <- KPI_Form_Today[which((KPI_Form_Today$Select.your.branch.facility!="Blood Bank")&(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)")),c(6:7,9:17,19)]
+Clinical_Labs_Ops_Ind <- KPI_Form_Today[which((KPI_Form_Today$Select.your.branch.facility!="Blood Bank")&(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)")),c(6:7,9:17)]
 
 # the second dataset represents the blood banks
-Blood_Bank_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility=="Blood Bank"),c(8,9:16,19)]
+Blood_Bank_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility=="Blood Bank"),c(8,9:16)]
 
 # the third dataset represents the LIS indicators
 LIS_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility == "Laboratory Information System (LIS)"),c(6,22:24)]
 
-# the fourth and last dataset is the never events dataset
+#the fourth dataset is the comments
+Comments <-KPI_Form_Today[, c(6:8, 19)]
+
+# the fifth and last dataset is the never events dataset
 Never_Events <- select(KPI_Form_Today, c(6:8,20:21))
+
 
 ####### Start creating and formatting the tables
 
 #first melt the tables to get the values needed in one column:
 
 #1. Clinical labs table
-Clinical_Labs_Melt <- melt(Clinical_Labs_Ops_Ind, id =c( "Select.your.branch.facility","Clinical.Pathology.Facility", "IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event"))
+Clinical_Labs_Melt <- melt(Clinical_Labs_Ops_Ind, id =c( "Select.your.branch.facility","Clinical.Pathology.Facility"))
 
 #2. Blood bank table
-Blood_Bank_Melt <- melt(Blood_Bank_Ops_Ind, id =c("Blood.Banks", "IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event"))
+Blood_Bank_Melt <- melt(Blood_Bank_Ops_Ind, id =c("Blood.Banks"))
 
 #3. LIS table
 LIS_Melt <- melt(LIS_Ops_Ind, id =c("Select.your.branch.facility", "LIS...Unplanned.Service.Changes", "LIS.Preplanned.Downtime...If.Applicable."))
@@ -1496,9 +1500,9 @@ Formatted_Clinical_Labs_Melt_New <- Conditional_Formatting_Kpi_Form(Clinical_Lab
 Formatted_Blood_Bank_Melt_New <- Conditional_Formatting_Kpi_Form(Blood_Bank_Melt_New)
 Formatted_LIS_New <- Conditional_Formatting_Kpi_Form(LIS_Melt_New)
 
-#Now decast the melted clinical table to get them in the right shape
+###### --------------- Now decast the melted clinical table --------------- ######
 
-Formatted_Clinical_Labs_Melt_New2 <- dcast(Formatted_Clinical_Labs_Melt_New,  Select.your.branch.facility + Clinical.Pathology.Facility + IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event ~ variable)
+Formatted_Clinical_Labs_Melt_New2 <- dcast(Formatted_Clinical_Labs_Melt_New,  Select.your.branch.facility + Clinical.Pathology.Facility ~ variable)
 
 #for the clinical labs merge reformat the first two columns into one (Facility)
 Formatted_Clinical_Labs_Melt_New2$Facility <- paste(Formatted_Clinical_Labs_Melt_New2$Select.your.branch.facility, Formatted_Clinical_Labs_Melt_New2$Clinical.Pathology.Facility) 
@@ -1507,59 +1511,74 @@ Formatted_Clinical_Labs_Melt_New2$Clinical.Pathology.Facility <- NULL
 
 #Change the order of the columns in the table
 
-Columns_Order_Form_Clinical <- c("Facility", "LabCorp...Consumables", "Vendor.Services..LabLogistics..HealthEx..Other.Vendors.", "Environment", "Equipment.Issues..Lab.Equipment..Pneumatic.Tube.System..Others.", "IT.Issues", "Service.Changes", "Acute.Volume.Increase", "Staffing.Issues","MSH.CPA..Reference.Labs.Related.Issues", "IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event")
+Columns_Order_Form_Clinical <- c("Facility", "LabCorp...Consumables", "Vendor.Services..LabLogistics..HealthEx..Other.Vendors.", "Environment", "Equipment.Issues..Lab.Equipment..Pneumatic.Tube.System..Others.", "IT.Issues", "Service.Changes", "Acute.Volume.Increase", "Staffing.Issues","MSH.CPA..Reference.Labs.Related.Issues")
 
 Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[,Columns_Order_Form_Clinical]
 
 #Change the order of the rows in the table
 
-Rows_Order_Form_Clinical <- factor(rownames(Formatted_Clinical_Labs_Melt_New2),levels = c(12,4, 7,1,2,3,9, 5, 6,8, 10, 11))
+Rows_Order_Form_Clinical <- factor(rownames(Formatted_Clinical_Labs_Melt_New2),levels = c(12,4, 7,1,2,3,8, 6, 5,9, 10, 11))
 Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[Rows_Order_Form_Clinical,]
 rownames(Formatted_Clinical_Labs_Melt_New2) <- NULL
 
 #Change the names in the Facility columns to be standardized
 
-rownames(Formatted_Clinical_Labs_Melt_New2) <- c("Clinical Pathology - MSH Chemistry/Hematology", "Clinical Pathology - MSH Microbiology", "Clinical Pathology - MSQ", "Clinical Pathology - MSBI", "Clinical Pathology - MSSL", "Clinical Pathology - MSW", "Clinical Pathology - MSB", "Clinical Pathology - NYEE", "Clinical Pathology - MSSN", "Anatomic Pathology (Centralized) - MSH", "Central Processiong & Accessioning - MSH", "Client Services - 4LABS")
+rownames(Formatted_Clinical_Labs_Melt_New2) <- c("Chemistry/Hematology - MSH", "Microbiology - MSH Microbiology", "Clinical Pathology - MSQ", "Clinical Pathology - MSBI", "Clinical Pathology - MSW", "Clinical Pathology - MSSL", "Clinical Pathology - MSB", "Clinical Pathology - MSSN", "Clinical Pathology - NYEE", "Anatomic Pathology (Centralized) - MSH", "Central Processiong & Accessioning - MSH", "Client Services - 4LABS")
 
 Formatted_Clinical_Labs_Melt_New2$Facility <- rownames(Formatted_Clinical_Labs_Melt_New2)
 rownames(Formatted_Clinical_Labs_Melt_New2) <- NULL
 
 
-#Now decast the melted blood bank table to get them in the right shape
+###### ---------------Now decast the melted blood bank table --------------- ######
 
-Formatted_Blood_Bank_Melt_New2 <- dcast(Formatted_Blood_Bank_Melt_New,  Blood.Banks + IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event ~ variable)
+Formatted_Blood_Bank_Melt_New2 <- dcast(Formatted_Blood_Bank_Melt_New,  Blood.Banks ~ variable)
 
 #Change the order of the columns in the table
 
-Columns_Order_Form_Blood_Bank <- c("Blood.Banks", "LabCorp...Consumables", "Vendor.Services..LabLogistics..HealthEx..Other.Vendors.", "Environment", "Equipment.Issues..Lab.Equipment..Pneumatic.Tube.System..Others.", "IT.Issues", "Service.Changes", "Acute.Volume.Increase", "Staffing.Issues", "IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event")
+Columns_Order_Form_Blood_Bank <- c("Blood.Banks", "LabCorp...Consumables", "Vendor.Services..LabLogistics..HealthEx..Other.Vendors.", "Environment", "Equipment.Issues..Lab.Equipment..Pneumatic.Tube.System..Others.", "IT.Issues", "Service.Changes", "Acute.Volume.Increase", "Staffing.Issues")
 
 Formatted_Blood_Bank_Melt_New2 <- Formatted_Blood_Bank_Melt_New2[,Columns_Order_Form_Blood_Bank]
 
 #Change the order of the rows in the table
 
-Rows_Order_Form_Blood_Bank <- factor(rownames(Formatted_Blood_Bank_Melt_New2),levels = c(3,6,1,2,8,4,5,7))
+Rows_Order_Form_Blood_Bank <- factor(rownames(Formatted_Blood_Bank_Melt_New2),levels = c(3,6,1,2,7,5,4,8))
 Formatted_Blood_Bank_Melt_New2 <- Formatted_Blood_Bank_Melt_New2[Rows_Order_Form_Blood_Bank,]
 rownames(Formatted_Blood_Bank_Melt_New2) <- NULL
-rownames(Formatted_Blood_Bank_Melt_New2) <- c("MSH", "MSQ", "MSBI","MSSL", "MSW", "MSB", "NYEE", "MSSN")
+rownames(Formatted_Blood_Bank_Melt_New2) <- c("MSH", "MSQ", "MSBI","MSW", "MSSL", "MSB", "MSSN", "NYEE")
 Formatted_Blood_Bank_Melt_New2$Blood.Banks <- rownames(Formatted_Blood_Bank_Melt_New2)
 rownames(Formatted_Blood_Bank_Melt_New2) <- NULL
 
-#now decast the LIS  table
+###### --------------- now decast the LIS  table --------------- ######
 Formatted_LIS_New2 <- dcast(Formatted_LIS_New, Select.your.branch.facility + LIS...Unplanned.Service.Changes + LIS.Preplanned.Downtime...If.Applicable. ~ variable)
 Columns_Order_Form_LIS <- c("Select.your.branch.facility","LIS...Staffing.Issues", "LIS...Unplanned.Service.Changes", "LIS.Preplanned.Downtime...If.Applicable.")
 Formatted_LIS_New2 <- Formatted_LIS_New2[,Columns_Order_Form_LIS]
 rownames(Formatted_LIS_New2) <- NULL
 
+###### --------------- Formatting Comments Table --------------- ######
+Comments$Facility <- paste(Comments$Select.your.branch.facility, Comments$Clinical.Pathology.Facility, Comments$Blood.Banks)
+Comments$Select.your.branch.facility <- NULL
+Comments$Clinical.Pathology.Facility<- NULL
+Comments$Blood.Banks <- NULL
+
+Comments <- Comments[,c("Facility","IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event")]
+
+rownames(Comments) <- c("Chemistry/Hematology - MSH", "Microbiology - MSH Microbiology", "Clinical Pathology - MSQ", "Clinical Pathology - MSBI", "Clinical Pathology - MSW", "Clinical Pathology - MSSL", "Clinical Pathology - MSB", "Clinical Pathology - MSSN", "Clinical Pathology - NYEE", "Blood Bank - MSH", "Blood Bank - MSQ", "Blood Bank - MSBI","Blood Bank - MSW", "Blood Bank - MSSL", "Blood Bank - MSB", "Blood Bank - MSSN", "Blood Bank - NYEE", "Anatomic Pathology (Centralized) - MSH", "Central Processiong & Accessioning - MSH", "Client Services - 4LABS", "Laboratory Information System (LIS)")
+
+Comments$Facility <- rownames(Comments)
+rownames(Comments) <- NULL
+
+Comments[is.na(Comments)] <- "No Issues Reported (Safe)"
+
 ###### build the kable table
 Formatted_Clinical_Labs_Melt_New2%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Facility","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing", "CPA Reference Labs", "Comments")) %>%
+    kable(escape = F, align = "c", col.names = c("Facility","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing", "CPA Reference Labs")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
 
 Formatted_Blood_Bank_Melt_New2%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Blood Banks","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing", "Comments")) %>%
+    kable(escape = F, align = "c", col.names = c("Blood Banks","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
 Formatted_LIS_New2%>%
@@ -1567,7 +1586,10 @@ Formatted_LIS_New2%>%
     kable(escape = F, align = "c", col.names = c("","Staffing","Service Change", "Preplanned Downtime")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
-
+Comments%>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility","Comments if Under Stress or Not Safe Selected")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
 
 
