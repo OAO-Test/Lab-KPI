@@ -1575,7 +1575,6 @@ Formatted_Clinical_Labs_Melt_New2%>%
     kable(escape = F, align = "c", col.names = c("Facility","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing", "CPA Reference Labs")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
-
 Formatted_Blood_Bank_Melt_New2%>%
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("Blood Banks","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing")) %>%
