@@ -41,22 +41,22 @@ library(stringr)
 ```
 
 ```{r global_options, echo=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=TRUE, message=FALSE)
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 ```
 
 
-```{r Determine date, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Determine date, warning = FALSE, message = FALSE, echo = FALSE}
 #Clear existing history
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 # Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-Today <- as.timeDate(as.Date("01/31/2020", format = "%m/%d/%Y"))
+Today <- as.timeDate(as.Date("01/28/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
 # Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("01/30/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("01/27/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -76,9 +76,10 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 
 #### *Dashboard Creation Date: `r format(Today, "%m/%d/%Y")`*
 
-```{r Import all data, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Import all data, warning = FALSE, message = FALSE, echo = FALSE}
 # Select file/folder path for easier file selection and navigation
-user_wd <- choose.dir(caption = "Select your working directory")
+# user_wd <- choose.dir(caption = "Select your working directory")
+user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 user_path <- paste0(user_wd, "\\*.*")
 
 
@@ -95,12 +96,12 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   SCC_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   # 
   # Import Sunquest data
-  SQ_Holiday_Monday_or_Friday <- read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Holiday"), sheet = 1, col_names = TRUE)
-  SQ_Sunday <- read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
-  SQ_Saturday <- read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Saturday"), sheet = 1, col_names = TRUE)
+  SQ_Holiday_Monday_or_Friday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Holiday"), sheet = 1, col_names = TRUE))
+  SQ_Sunday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE))
+  SQ_Saturday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Saturday"), sheet = 1, col_names = TRUE))
   #Merge the weekend data with the holiday data in one data frame
   SQ_Not_Weekday <- rbind(SQ_Holiday_Monday_or_Friday, SQ_Sunday, SQ_Saturday)
-  SQ_Weekday <- read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
+  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE))
   #
   # Import Powerpath data
   PP_Holiday_Monday_or_Friday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Labs Resulted on a Holiday"), skip = 1, 1)
@@ -123,11 +124,11 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   SCC_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   #
   # Import Sunquest data
-  SQ_Sunday <- read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
-  SQ_Saturday <- read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
+  SQ_Sunday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE))
+  SQ_Saturday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE))
   #Merge the weekend data with the holiday data in one data frame
   SQ_Not_Weekday <- rbind(SQ_Sunday,SQ_Saturday)
-  SQ_Weekday <- read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
+  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE))
   #
   # Import Powerpath data
   PP_Sunday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Labs Resulted on Sunday"), skip = 1, 1)
@@ -146,9 +147,9 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   SCC_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
   #
   # Import Sunquest data
-  SQ_Holiday_Weekday <- read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Holiday"), sheet = 1, col_names = TRUE)
+  SQ_Holiday_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Holiday"), sheet = 1, col_names = TRUE))
   SQ_Not_Weekday <- SQ_Holiday_Weekday
-  SQ_Weekday <- read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
+  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE))
   #
   # Import Powerpath data
   PP_Holiday_Weekday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Labs Resulted on a Holiday"), skip = 1, 1)
@@ -163,7 +164,7 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   SCC_Not_Weekday <- NULL
   #
   # Import Sunquest data
-  SQ_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SunQuest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE)
+  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select SunQuest Report for Labs Resulted on a Weekday"), sheet = 1, col_names = TRUE))
   SQ_Not_Weekday <- NULL
   #
   # Import Powerpath data
@@ -178,7 +179,7 @@ Cytology_Backlog_Raw <- read_excel(choose.files(default = user_path, caption = "
 Cytology_Backlog_Raw <- data.frame(Cytology_Backlog_Raw[-nrow(Cytology_Backlog_Raw),], stringsAsFactors = FALSE)
 ```
 
-```{r Reference Data, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Reference Data, warning = FALSE, message = FALSE, echo = FALSE}
 # CP and Micro --------------------------------
 # Import analysis reference data starting with test codes for SCC and Sunquest
 # reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
@@ -251,7 +252,7 @@ Table_Template_Patho_Vol[2] <- c('IP', 'Amb')
 ```
 
 
-```{r Custom Function for preprocessing raw SCC and Sunquest data, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Custom Function for preprocessing raw SCC and Sunquest data, warning = FALSE, message = FALSE, echo = FALSE}
 preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # SCC DATA PROCESSING --------------------------
   # SCC lookup references ----------------------------------------------
@@ -495,7 +496,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
 }
 ```
 
-```{r Data Preprocessing and Merging for SCC and Sunquest data, message = FALSE, warning = TRUE, echo = FALSE}
+```{r Data Preprocessing and Merging for SCC and Sunquest data, message = FALSE, warning = FALSE, echo = FALSE}
 scc_sun_wday_list <- preprocess_scc_sun(SCC_Weekday, SQ_Weekday)
 scc_wday <- scc_sun_wday_list[[1]]
 sun_wday <- scc_sun_wday_list[[2]]
@@ -527,10 +528,12 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
   not_wday_dates_df$dates <- date(not_wday_dates_df$ResultTime)
   not_wday_result_date <- unique(date(not_wday_dates_df$ResultTime))
   wkend_holiday_result_date <- ifelse(length(not_wday_result_date) == 1, format(not_wday_result_date, format = "%a %m/%d/%y"), paste0(format(not_wday_result_date[length(not_wday_result_date)], format = "%a %m/%d/%y"), "-", format(not_wday_result_date[1], format = "%a %m/%d/%y")))
-} 
+} else {
+  wkend_holiday_result_date <- NULL
+}
 ```
 
-```{r Custom function for preprocessing raw Powerpath data and calling function, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Custom function for preprocessing raw Powerpath data and calling function, warning = FALSE, message = FALSE, echo = FALSE}
 #------------------------------Extract the Cytology GYN and NON-GYN Data Only------------------------------#
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
@@ -639,7 +642,7 @@ Surgical_Pathology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Surgical_Path
 
 ```
 
-```{r Cytology backlog preprocessing and analysis, echo=FALSE, warning=TRUE, message=FALSE}
+```{r Cytology backlog preprocessing and analysis, echo=FALSE, warning = FALSE, message=FALSE}
 #Cytology backlog Calculation
 
 #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
@@ -681,7 +684,7 @@ Cytology_Accessioned_Vol3$Cyto_Acc_Vol2 <- NULL
 Backlog_Accessioned_Table <- merge(Cytology_Accessioned_Vol3, Cytology_Backlog_Volume)
 ```
 
-```{r Custom Functions for subsetting and summarizing data for SCC and Sunquest dashboard tables, warning = TRUE, message = FALSE, echo = FALSE}
+```{r Custom Functions for subsetting and summarizing data for SCC and Sunquest dashboard tables, warning = FALSE, message = FALSE, echo = FALSE}
 # # Custom function to clean and format summarized data (used in "subsetting and summarizing function"lab_sub_summarize" function beflore)
 # clean_summarized_data <- function(x) {
 #   # Replace NaN TAT percentages with NA
@@ -1184,10 +1187,10 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 ```
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
-<!-- End tabset -->
-## {-}
 
-<!-- Create new tabset -->
+## {-} `r #End tabset`
+
+`r #Create new tabset`
 ## **Weekday 24-Hour Volume Lookback** {.tabset}
 
 ```{r Custom function for 24 hour volume lookbacks for Chemistry and Hematology, echo = FALSE, warning = FALSE, message = FALSE}
@@ -1285,7 +1288,8 @@ Backlog_Accessioned_Table %>%
   column_spec(1, color = "black", include_thead = TRUE)
 ```
 
-<!-- End tabset -->
+
+`r #End tabset`
 ## {-}
 
 `r if (include_not_wday != TRUE) {"<!--"}`
@@ -1328,7 +1332,7 @@ row.names(micro_dashboard2_not_wday) <- 1:nrow(micro_dashboard2_not_wday)
 micro_table_not_wday <- micro_dashboard2_not_wday[ , 3:ncol(micro_dashboard2_not_wday)]
 ```
 
-<!-- Begin weekend/holiday dashboard visualizations -->
+`r #Begin weekend/holiday dashboard visualizations`
 
 ## **Weekend/Holiday Efficiency Indicators** {.tabset}
 ### Chemistry
@@ -1483,10 +1487,10 @@ Table_Formatting(Cytology_Table_Not_Weekday_New3)
 ```
 <h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
-<!-- End tabset -->
+`r #End tabset`
 ## {-}
 
-<!-- Start new tabset for weekend/holiday volume lookback -->
+`r #Start new tabset for weekend/holiday volume lookback`
 ## **Weekend/Holiday Volume Lookback** {.tabset}
 
 ### Chemistry
@@ -1531,7 +1535,7 @@ lab_vol_kable_format(hem_vol_not_wday_table)
 Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Not_Weekday_New2)
 ```
 
-<!-- End tabset -->
+`r #End tabset`
 ## {-}
 
 `r if (include_not_wday != TRUE) {"-->"}`
