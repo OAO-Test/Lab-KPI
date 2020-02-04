@@ -1452,9 +1452,10 @@ LIS_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility =
 Comments <-KPI_Form_Today[, c(6:8, 19)]
 
 # the fifth and last dataset is the never events dataset
-Never_Events <- select(KPI_Form_Today, c(6:8,20:21))
+Never_Events <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)"), c(6:8,18, 20)]
 
-
+# good catch 
+Good_Catch <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)"), c(6:8,21)]
 ####### Start creating and formatting the tables
 
 #first melt the tables to get the values needed in one column:
@@ -1562,12 +1563,89 @@ Comments$Blood.Banks <- NULL
 
 Comments <- Comments[,c("Facility","IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event")]
 
+rownames(Comments) <- Comments$Facility
+
+Rows_Order_Comments <- factor(rownames(Comments),levels = c("Clinical Pathology/Facility MS Hospital - Chemistry/Hematology NA","Clinical Pathology/Facility MS Hospital - Microbiology NA", "Clinical Pathology/Facility MS Queens NA","Clinical Pathology/Facility MS Beth Israel NA","Clinical Pathology/Facility MS West NA","Clinical Pathology/Facility MS St. Luke's NA", "Clinical Pathology/Facility MS Brooklyn NA", "Clinical Pathology/Facility MS South Nassau NA", "Clinical Pathology/Facility New York Eye & Ear Infirmary of Mount Sinai NA", "Blood Bank NA MS Hospital", "Blood Bank NA MS Queens", "Blood Bank NA MS Beth Israel", "Blood Bank NA MS West", "Blood Bank NA MS St. Luke's", "Blood Bank NA MS Brooklyn", "Blood Bank NA MS South Nassau", "Blood Bank NA New York Eye & Ear Infirmary of Mount Sinai", "MSH - Anatomic Pathology (Centralized) NA NA", "MSH - Central Processing & Accessioning NA NA", "4LABS - Client Services NA NA", "Laboratory Information System (LIS) NA NA"))
+
 rownames(Comments) <- c("Chemistry/Hematology - MSH", "Microbiology - MSH Microbiology", "Clinical Pathology - MSQ", "Clinical Pathology - MSBI", "Clinical Pathology - MSW", "Clinical Pathology - MSSL", "Clinical Pathology - MSB", "Clinical Pathology - MSSN", "Clinical Pathology - NYEE", "Blood Bank - MSH", "Blood Bank - MSQ", "Blood Bank - MSBI","Blood Bank - MSW", "Blood Bank - MSSL", "Blood Bank - MSB", "Blood Bank - MSSN", "Blood Bank - NYEE", "Anatomic Pathology (Centralized) - MSH", "Central Processiong & Accessioning - MSH", "Client Services - 4LABS", "Laboratory Information System (LIS)")
 
 Comments$Facility <- rownames(Comments)
 rownames(Comments) <- NULL
 
 Comments[is.na(Comments)] <- "No Issues Reported (Safe)"
+
+###### --------------- Formatting Never Events Table --------------- ######
+
+# added 4 extra columns each one for different never event
+Never_Events["Specimen(s) Lost"] <- NA
+Never_Events["QNS - specimen that cannot be recollected"] <- NA
+Never_Events["Treatment based on mislabeled/misidentified specimen"] <- NA
+Never_Events["Treatment based on false positive/false negative results"] <- NA
+
+#because we have multiple never events in one cell i created a list with these by:
+Splitting_NE_Text <- sapply(Never_Events$NEVER.EVENTS, strsplit,'[;]')
+
+#created a nested for loop with nested if to determine which of these never events are listed
+for (i in 1:nrow(Never_Events)){
+  for (j in 1:length(Splitting_NE_Text[[i]])){
+    if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[6]){
+      Never_Events$`Specimen(s) Lost`[i] = 1
+    } else if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[7]){
+      Never_Events$`QNS - specimen that cannot be recollected`[i] = 1
+      } else if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[8]){
+        Never_Events$`Treatment based on mislabeled/misidentified specimen`[i] = 1
+        } else if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[9]){
+          Never_Events$`Treatment based on false positive/false negative results`[i] = 1
+        }
+  }
+}
+
+Never_Events$NEVER.EVENTS <- NULL
+
+# create the never event table  
+Never_Events$Facility <- paste(Never_Events$Select.your.branch.facility, Never_Events$Clinical.Pathology.Facility, Never_Events$Blood.Banks)
+Never_Events$Select.your.branch.facility <- NULL
+Never_Events$Clinical.Pathology.Facility<- NULL
+Never_Events$Blood.Banks <- NULL
+
+Never_Events_Column_Order_1 <- c("Facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results", "NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one...If.Applicable.")
+
+Never_Events <- Never_Events[,Never_Events_Column_Order_1]
+
+rownames(Never_Events) <- Never_Events$Facility
+
+Rows_Order_Never_Events <- factor(rownames(Never_Events),levels = c("Clinical Pathology/Facility MS Hospital - Chemistry/Hematology NA","Clinical Pathology/Facility MS Hospital - Microbiology NA", "Clinical Pathology/Facility MS Queens NA","Clinical Pathology/Facility MS Beth Israel NA","Clinical Pathology/Facility MS West NA","Clinical Pathology/Facility MS St. Luke's NA", "Clinical Pathology/Facility MS Brooklyn NA", "Clinical Pathology/Facility MS South Nassau NA", "Clinical Pathology/Facility New York Eye & Ear Infirmary of Mount Sinai NA", "Blood Bank NA MS Hospital", "Blood Bank NA MS Queens", "Blood Bank NA MS Beth Israel", "Blood Bank NA MS West", "Blood Bank NA MS St. Luke's", "Blood Bank NA MS Brooklyn", "Blood Bank NA MS South Nassau", "Blood Bank NA New York Eye & Ear Infirmary of Mount Sinai", "MSH - Anatomic Pathology (Centralized) NA NA", "MSH - Central Processing & Accessioning NA NA", "4LABS - Client Services NA NA"))
+
+rownames(Never_Events) <- c("Chemistry/Hematology - MSH", "Microbiology - MSH Microbiology", "Clinical Pathology - MSQ", "Clinical Pathology - MSBI", "Clinical Pathology - MSW", "Clinical Pathology - MSSL", "Clinical Pathology - MSB", "Clinical Pathology - MSSN", "Clinical Pathology - NYEE", "Blood Bank - MSH", "Blood Bank - MSQ", "Blood Bank - MSBI","Blood Bank - MSW", "Blood Bank - MSSL", "Blood Bank - MSB", "Blood Bank - MSSN", "Blood Bank - NYEE", "Anatomic Pathology (Centralized) - MSH", "Central Processiong & Accessioning - MSH", "Client Services - 4LABS")
+  
+Never_Events$Facility <- rownames(Never_Events)
+rownames(Never_Events) <- NULL
+
+#Split the table into two
+#table one is the comments only while table two is the details
+
+Never_Events_Comments <- Never_Events[,c(1,6)]
+Never_Events_Comments[is.na(Never_Events_Comments)] <- "No Issues Reported (Safe)"
+
+Never_Events_Only <- Never_Events[,c(1:5)]
+
+# change from 1 to "Not Safe" and NA to "Safe"
+Never_Events_Only[is.na(Never_Events_Only)] <- "Safe"
+Never_Events_Only[Never_Events_Only==1] <- "Not Safe"
+
+Never_Events_Melt <- melt(Never_Events_Only, id =c("Facility"))
+
+Formatted_Never_Events_Melt_New <- Conditional_Formatting_Kpi_Form(Never_Events_Melt)
+
+Formatted_Never_Events_Melt_New2 <- dcast(Formatted_Never_Events_Melt_New,  Facility ~ variable)
+
+rownames(Formatted_Never_Events_Melt_New2) <- Formatted_Never_Events_Melt_New2$Facility
+
+Never_Events_Column_Order <- c("Facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results")
+
+Formatted_Never_Events_Melt_New2 <- Formatted_Never_Events_Melt_New2[c("Chemistry/Hematology - MSH", "Microbiology - MSH Microbiology", "Clinical Pathology - MSQ", "Clinical Pathology - MSBI", "Clinical Pathology - MSW", "Clinical Pathology - MSSL", "Clinical Pathology - MSB", "Clinical Pathology - MSSN", "Clinical Pathology - NYEE", "Blood Bank - MSH", "Blood Bank - MSQ", "Blood Bank - MSBI","Blood Bank - MSW", "Blood Bank - MSSL", "Blood Bank - MSB", "Blood Bank - MSSN", "Blood Bank - NYEE", "Anatomic Pathology (Centralized) - MSH", "Central Processiong & Accessioning - MSH", "Client Services - 4LABS"),Never_Events_Column_Order]
+
+rownames(Formatted_Never_Events_Melt_New2) <- NULL
 
 ###### build the kable table
 Formatted_Clinical_Labs_Melt_New2%>%
@@ -1590,7 +1668,15 @@ Comments%>%
     kable(escape = F, align = "c", col.names = c("Facility","Comments if Under Stress or Not Safe Selected")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
+Formatted_Never_Events_Melt_New2 %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
+Never_Events_Comments %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility", "Comments if There is a Never Event")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
 
 
