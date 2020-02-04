@@ -1425,7 +1425,7 @@ Table_Formatting(Cytology_Table_Not_Weekday_New3)
 asis_output('<h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>')
 ```
 
-```{r Lab KPI Form for Qualitative Indicators, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Lab KPI Form for Qualitative Indicators, eval=include_not_wday, echo=, message=FALSE, warning=FALSE}
 #read the excel sheet that is generated from office form responses
 KPI_Form <- data.frame(read_excel(choose.files(caption = "Select the KPI form generated today"), 1), stringsAsFactors = FALSE)
 
@@ -1452,10 +1452,8 @@ LIS_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility =
 Comments <-KPI_Form_Today[, c(6:8, 19)]
 
 # the fifth and last dataset is the never events dataset
-Never_Events <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)"), c(6:8,18, 20)]
+Never_Events <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)"), c(6:8,18, 20:21)]
 
-# good catch 
-Good_Catch <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)"), c(6:8,21)]
 ####### Start creating and formatting the tables
 
 #first melt the tables to get the values needed in one column:
@@ -1608,7 +1606,7 @@ Never_Events$Select.your.branch.facility <- NULL
 Never_Events$Clinical.Pathology.Facility<- NULL
 Never_Events$Blood.Banks <- NULL
 
-Never_Events_Column_Order_1 <- c("Facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results", "NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one...If.Applicable.")
+Never_Events_Column_Order_1 <- c("Facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results", "NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one...If.Applicable.", "X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable.")
 
 Never_Events <- Never_Events[,Never_Events_Column_Order_1]
 
@@ -1621,11 +1619,16 @@ rownames(Never_Events) <- c("Chemistry/Hematology - MSH", "Microbiology - MSH Mi
 Never_Events$Facility <- rownames(Never_Events)
 rownames(Never_Events) <- NULL
 
-#Split the table into two
+#Split the table into three
 #table one is the comments only while table two is the details
+
+Good_Catch <- Never_Events[,c(1,7)]
+Good_Catch_New <- Good_Catch[which(!(is.na(Good_Catch$X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable.))),]
+rownames(Good_Catch_New) <- NULL
 
 Never_Events_Comments <- Never_Events[,c(1,6)]
 Never_Events_Comments[is.na(Never_Events_Comments)] <- "No Issues Reported (Safe)"
+rownames(Never_Events_Comments) <- NULL
 
 Never_Events_Only <- Never_Events[,c(1:5)]
 
@@ -1678,7 +1681,10 @@ Never_Events_Comments %>%
     kable(escape = F, align = "c", col.names = c("Facility", "Comments if There is a Never Event")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
-
+Good_Catch_New %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility", "Good Catch Comment")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
 
 
 
