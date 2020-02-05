@@ -1084,7 +1084,54 @@ Table_Formatting_Volume <- function (Volume_Table){
 
 
 ```
-## **Weekday Efficiency Indicators** {.tabset}
+
+
+```{r Custom function for 24 hour volume lookbacks for Chemistry and Hematology, echo = FALSE, warning = FALSE, message = FALSE}
+
+lab_volume_summarize <- function(x, LabDivision) {
+  # Subset data for relevant division
+  lab_vol_df <- x[x$Division == LabDivision, ]
+  # Update factors and format data
+  lab_vol_df$Test <- factor(lab_vol_df$Test, unique(test_code$Test[test_code$Division == LabDivision]))
+  lab_vol_df$MasterSetting <- factor(lab_vol_df$MasterSetting, pt_setting_order)
+  lab_vol_df$DashboardPriority <- droplevels(lab_vol_df$DashboardPriority)
+  
+  # Summarize data
+  lab_vol_summary <- lab_vol_df %>%
+  group_by(Site, Test, DashboardPriority, MasterSetting, .drop = FALSE) %>%
+  summarize(ResultedLabs = n())
+  # Add column concatenating Test and Priority
+  lab_vol_summary$TestPriority <- paste(lab_vol_summary$Test, "-", lab_vol_summary$DashboardPriority, "Labs")
+  
+  # Remove unused combinations (ie, Routine ED & ICU labs)
+  lab_vol_summary <- lab_vol_summary[!((lab_vol_summary$MasterSetting == "ED" | lab_vol_summary$MasterSetting == "ICU")&(lab_vol_summary$DashboardPriority == "Routine")), ]
+  
+  # Cast summary table
+  lab_vol_table <- dcast(lab_vol_summary, Test + DashboardPriority + TestPriority + MasterSetting ~ Site, value.var = "ResultedLabs")
+  
+  lab_vol_output <- list(lab_vol_df, lab_vol_summary, lab_vol_table)
+  return(lab_vol_output)
+}
+
+lab_vol_kable_format <- function(table_data) {
+  kable(table_data, format = "html", escape = FALSE, align = "c", 
+        col.names = c("Test & Priority", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
+  kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
+  column_spec(column = c(1, 8), border_right = "thin solid lightgray") %>%
+  add_header_above(c(" " = 1, "Resulted Lab Volume" = (ncol(table_data)-1)), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
+  column_spec(column = 2:8, background = "#00AEEF", color = "white", include_thead = TRUE) %>%
+  column_spec(column = 2:8, background = "inherit", color = "inherit") %>%
+  # column_spec(column = 1, width_min = "125px", include_thead = TRUE) %>%
+  # column_spec(column = c(3, 11), width_min = "100px", include_thead = TRUE) %>%
+  row_spec(row = 0, font_size = 13) %>%
+  collapse_rows(columns = c(1, 2))
+}
+
+```
+
+
+
+## **Weekday Performance Indicators** {.tabset}
 ### Chemistry       
 #### *Chemistry KPI (Labs Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
@@ -1095,6 +1142,21 @@ chem_hem_micro_kable(chem_table)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
+#### *Chemistry Resulted Lab Volume (Labs Resulted on `r wday_result_date`)*
+```{r Chemistry: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
+chem_vol_wday_output <- lab_volume_summarize(scc_sun_wday_master, LabDivision = "Chemistry")
+chem_vol_wday_df <- chem_vol_wday_output[[1]]
+chem_vol_wday_summary <- chem_vol_wday_output[[2]]
+chem_vol_wday_table <- chem_vol_wday_output[[3]]
+
+# Manually remove unused combinations (ie. Troponin & Lactate w/o "All" as priority, BUN with "All" priority)
+chem_vol_wday_table2 <- chem_vol_wday_table[!(((chem_vol_wday_table$Test == "Troponin" | chem_vol_wday_table$Test == "Lactate WB")&(chem_vol_wday_table$DashboardPriority != "All")) | (chem_vol_wday_table$Test == "BUN" & chem_vol_wday_table$DashboardPriority == "All")), ]
+
+chem_vol_wday_table2 <- chem_vol_wday_table2[ , 3:ncol(chem_vol_wday_table2)]
+rownames(chem_vol_wday_table2) <- 1:nrow(chem_vol_wday_table2)
+
+lab_vol_kable_format(chem_vol_wday_table2)
+```
 
 ### Hematology
 #### *Hematology KPI (Labs Resulted on `r wday_result_date`)*
@@ -1105,6 +1167,20 @@ chem_hem_micro_kable(chem_table)
 chem_hem_micro_kable(hem_table)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+
+#### *Hematology Resulted Lab Volume (Labs Resulted on `r wday_result_date`)*
+```{r Hematology: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
+hem_vol_wday_output <- lab_volume_summarize(scc_sun_wday_master, LabDivision = "Hematology")
+hem_vol_wday_df <- hem_vol_wday_output[[1]]
+hem_vol_wday_summary <- hem_vol_wday_output[[2]]
+hem_vol_wday_table <- hem_vol_wday_output[[3]]
+
+hem_vol_wday_table <- hem_vol_wday_table[ , 3:ncol(hem_vol_wday_table)]
+rownames(hem_vol_wday_table) <- 1:nrow(hem_vol_wday_table)
+
+lab_vol_kable_format(hem_vol_wday_table)
+```
+
 
 ```{r Microbiology RRL volume and TAT table creation, warning = FALSE, message = FALSE, echo = FALSE}
 # chem_hem_micro_kable(micro_table)
@@ -1204,6 +1280,11 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
 ```
 <h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>
 
+#### *Surgical Pathology Accessioned Cases Volume (As of `r wday_result_date`)*
+```{r Surgical Pathology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2)
+```
+
 
 ### Cytology
 #### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
@@ -1216,107 +1297,6 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 ```
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
-
-## {-} `r #End tabset`
-
-`r #Create new tabset placeholder for Ops & Quality indicators`
-## **Operational and Quality Indicators** _(Placeholder)_ {.tabset}
-### Clinical & Anatomic Pathology Operational Indicators
-#### _Clinical & Anatomic Pathology Ops Indicator Table Placeholder_
-### Blood Bank Operational Indicators
-#### _Blood Bank Ops Indicator Table Placeholder_
-### Quality Indicators
-#### _Good Catch Table Placeholder_
-### Never Events
-#### _Never Events Table Placeholder_
-
-## {-}
-
-`r #Create new tabset`
-## **Weekday 24-Hour Volume Lookback** {.tabset}
-
-```{r Custom function for 24 hour volume lookbacks for Chemistry and Hematology, echo = FALSE, warning = FALSE, message = FALSE}
-
-lab_volume_summarize <- function(x, LabDivision) {
-  # Subset data for relevant division
-  lab_vol_df <- x[x$Division == LabDivision, ]
-  # Update factors and format data
-  lab_vol_df$Test <- factor(lab_vol_df$Test, unique(test_code$Test[test_code$Division == LabDivision]))
-  lab_vol_df$MasterSetting <- factor(lab_vol_df$MasterSetting, pt_setting_order)
-  lab_vol_df$DashboardPriority <- droplevels(lab_vol_df$DashboardPriority)
-  
-  # Summarize data
-  lab_vol_summary <- lab_vol_df %>%
-  group_by(Site, Test, DashboardPriority, MasterSetting, .drop = FALSE) %>%
-  summarize(ResultedLabs = n())
-  # Add column concatenating Test and Priority
-  lab_vol_summary$TestPriority <- paste(lab_vol_summary$Test, "-", lab_vol_summary$DashboardPriority, "Labs")
-  
-  # Remove unused combinations (ie, Routine ED & ICU labs)
-  lab_vol_summary <- lab_vol_summary[!((lab_vol_summary$MasterSetting == "ED" | lab_vol_summary$MasterSetting == "ICU")&(lab_vol_summary$DashboardPriority == "Routine")), ]
-  
-  # Cast summary table
-  lab_vol_table <- dcast(lab_vol_summary, Test + DashboardPriority + TestPriority + MasterSetting ~ Site, value.var = "ResultedLabs")
-  
-  lab_vol_output <- list(lab_vol_df, lab_vol_summary, lab_vol_table)
-  return(lab_vol_output)
-}
-
-lab_vol_kable_format <- function(table_data) {
-  kable(table_data, format = "html", escape = FALSE, align = "c", 
-        col.names = c("Test & Priority", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
-  kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
-  column_spec(column = c(1, 8), border_right = "thin solid lightgray") %>%
-  add_header_above(c(" " = 1, "Resulted Lab Volume" = (ncol(table_data)-1)), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
-  column_spec(column = 2:8, background = "#00AEEF", color = "white", include_thead = TRUE) %>%
-  column_spec(column = 2:8, background = "inherit", color = "inherit") %>%
-  # column_spec(column = 1, width_min = "125px", include_thead = TRUE) %>%
-  # column_spec(column = c(3, 11), width_min = "100px", include_thead = TRUE) %>%
-  row_spec(row = 0, font_size = 13) %>%
-  collapse_rows(columns = c(1, 2))
-}
-
-```
-
-### Chemistry
-#### *Chemistry Resulted Lab Volume (Labs Resulted on `r wday_result_date`)*
-```{r Chemistry: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
-chem_vol_wday_output <- lab_volume_summarize(scc_sun_wday_master, LabDivision = "Chemistry")
-chem_vol_wday_df <- chem_vol_wday_output[[1]]
-chem_vol_wday_summary <- chem_vol_wday_output[[2]]
-chem_vol_wday_table <- chem_vol_wday_output[[3]]
-
-# Manually remove unused combinations (ie. Troponin & Lactate w/o "All" as priority, BUN with "All" priority)
-chem_vol_wday_table2 <- chem_vol_wday_table[!(((chem_vol_wday_table$Test == "Troponin" | chem_vol_wday_table$Test == "Lactate WB")&(chem_vol_wday_table$DashboardPriority != "All")) | (chem_vol_wday_table$Test == "BUN" & chem_vol_wday_table$DashboardPriority == "All")), ]
-
-chem_vol_wday_table2 <- chem_vol_wday_table2[ , 3:ncol(chem_vol_wday_table2)]
-rownames(chem_vol_wday_table2) <- 1:nrow(chem_vol_wday_table2)
-
-lab_vol_kable_format(chem_vol_wday_table2)
-```
-
-
-### Hematology
-#### *Hematology Resulted Lab Volume (Labs Resulted on `r wday_result_date`)*
-```{r Hematology: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
-hem_vol_wday_output <- lab_volume_summarize(scc_sun_wday_master, LabDivision = "Hematology")
-hem_vol_wday_df <- hem_vol_wday_output[[1]]
-hem_vol_wday_summary <- hem_vol_wday_output[[2]]
-hem_vol_wday_table <- hem_vol_wday_output[[3]]
-
-hem_vol_wday_table <- hem_vol_wday_table[ , 3:ncol(hem_vol_wday_table)]
-rownames(hem_vol_wday_table) <- 1:nrow(hem_vol_wday_table)
-
-lab_vol_kable_format(hem_vol_wday_table)
-```
-
-### Surgical Pathology   
-#### *Surgical Pathology Accessioned Cases Volume (As of `r wday_result_date`)*
-```{r Surgical Pathology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2)
-```
-
-### Cytology   
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
 Backlog_Accessioned_Table_New2 %>% 
@@ -1329,6 +1309,21 @@ Backlog_Accessioned_Table_New2 %>%
   row_spec(0, color = "white") %>%
   column_spec(1, color = "black", include_thead = TRUE)
 ```
+
+`r #Create tab placeholders for Ops & Quality indicators`
+## **Operational and Quality Indicators** _(Placeholder)_ {.tabset}
+### Clinical & Anatomic Pathology Operational Indicators
+#### _Clinical & Anatomic Pathology Ops Indicator Table Placeholder_
+### Blood Bank Operational Indicators
+#### _Blood Bank Ops Indicator Table Placeholder_
+### LIS
+#### _LIS Ops Indicator Table Placeholder_
+### Quality Indicators
+#### _Good Catch Table Placeholder_
+### Never Events
+#### _Never Events Table Placeholder_
+
+## {-}
 
 
 `r #End tabset`
