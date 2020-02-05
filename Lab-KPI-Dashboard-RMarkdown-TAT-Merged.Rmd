@@ -608,7 +608,7 @@ pre_processing_pp <- function(Raw_Data){
     Raw_Data_New_Cases_Signed_Stratified <- summarise(group_by(Raw_Data_New,spec_group, Facility, Patient.Setting), No_Cases_Signed = n())    
     Raw_Data_New_Cases_Signed_Stratified <- dcast(Raw_Data_New_Cases_Signed_Stratified, spec_group + Patient.Setting ~ Facility, value.var = "No_Cases_Signed" )
         
-    Raw_Data_New_Patient_Metric <- summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(round(mean(Collection_to_signed_out, na.rm = TRUE),2)))
+    Raw_Data_New_Patient_Metric <- summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))))
     
     Raw_Data_New_Patient_Metric <- dcast(Raw_Data_New_Patient_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
     
@@ -957,6 +957,8 @@ Surgical_Pathology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Patho_Volume
 Conditional_Formatting <- function(Table_New2){
   if (is.null(Table_New2)){
     Table_New3 <- NULL
+    Table_New4 <- NULL
+    Table_New5 <- NULL
   } else {
     
     Table_New2[,4:21] <- lapply(Table_New2[,4:21], as.numeric)
@@ -974,14 +976,25 @@ Conditional_Formatting <- function(Table_New2){
     
     
     Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
-    Table_New3 <- merge(x=Table_New3, y=TAT_Targets[1:3])
+    
+    Table_New4 <- melt(Table_New3, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x"))
+    
+    
+    Table_New4 <- Table_New4 %>%
+      mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), cell_spec(value, "html", color = "black")))
+    
+    Table_New4 <- dcast(Table_New4,spec_group + Patient.Setting + No_Cases_Signed + BIMC.x + MSH.x + MSQ.x + MSS.x + NYEE.x + PACC.x + R.x + SL.x + KH.x ~ variable )
+    
+    Table_New5 <- merge(x=Table_New4, y=TAT_Targets[1:3])
+    
     columns_order <- c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","MSH.x", "MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")
-    rows_order <- factor(rownames(Table_New3),levels = c(2,1,4,3))
-    Table_New3 <- Table_New3[order(rows_order), columns_order]
-    Table_New3$Received.to.signed.out.target..Days.<- paste("<= ", Table_New3$Received.to.signed.out.target..Days., "days")
-    row.names(Table_New3) <- NULL
+    rows_order <- factor(rownames(Table_New5),levels = c(2,1,4,3))
+    Table_New5 <- Table_New5[order(rows_order), columns_order]
+    Table_New5$Received.to.signed.out.target..Days.<- paste("<= ", Table_New5$Received.to.signed.out.target..Days., "days")
+    row.names(Table_New5) <- NULL
+    Table_New5$No_Cases_Signed[is.na(Table_New5$No_Cases_Signed)] <- 0
   }
-  return(Table_New3)
+  return(Table_New5)
 }
 
 Conditional_Formatting_V2 <- function(Table_New2_V2){
