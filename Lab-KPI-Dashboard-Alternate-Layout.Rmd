@@ -1158,6 +1158,9 @@ rownames(chem_vol_wday_table2) <- 1:nrow(chem_vol_wday_table2)
 lab_vol_kable_format(chem_vol_wday_table2)
 ```
 
+#### _Chemistry KPI Month to Date Trend Placeholder_
+
+
 ### Hematology
 #### *Hematology KPI (Labs Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
@@ -1181,6 +1184,7 @@ rownames(hem_vol_wday_table) <- 1:nrow(hem_vol_wday_table)
 lab_vol_kable_format(hem_vol_wday_table)
 ```
 
+#### _Hematology KPI Month to Date Trend Placeholder_
 
 ```{r Microbiology RRL volume and TAT table creation, warning = FALSE, message = FALSE, echo = FALSE}
 # chem_hem_micro_kable(micro_table)
@@ -1218,6 +1222,9 @@ micro_tat_vol_table <- micro_tat_vol_comb[ , 3:ncol(micro_tat_vol_comb)]
 chem_hem_micro_kable(micro_tat_vol_table)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+
+#### _Microbiology RRL KPI Month to Date Trend Placeholder_
+
 
 ### Missing Collections & Add Ons
 #### *Missing Collection Times and Add On Order Volume (Labs Resulted on `r wday_result_date`)*
@@ -1285,6 +1292,8 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
 Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2)
 ```
 
+#### _Surgical Pathology KPI Month to Date Trend Placeholder_
+
 
 ### Cytology
 #### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
@@ -1310,6 +1319,9 @@ Backlog_Accessioned_Table_New2 %>%
   column_spec(1, color = "black", include_thead = TRUE)
 ```
 
+#### _Cytology KPI Month to Date Trend Placeholder_
+## {-}
+
 `r #Create tab placeholders for Ops & Quality indicators`
 ## **Operational and Quality Indicators** _(Placeholder)_ {.tabset}
 ### Clinical & Anatomic Pathology Operational Indicators
@@ -1323,24 +1335,6 @@ Backlog_Accessioned_Table_New2 %>%
 ### Never Events
 #### _Never Events Table Placeholder_
 
-## {-}
-
-
-`r #End tabset`
-## {-}
-
-`r #Create new tabset placeholder for KPI trends`
-## **Month to Date KPI Trends** _(Placeholder)_ {.tabset}
-### Chemistry
-#### _Chemistry KPI Month to Date Trend Placeholder_
-### Hematology
-#### _Hematology KPI Month to Date Trend Placeholder_
-### Microbiology RRL
-#### _Microbiology RRL KPI Month to Date Trend Placeholder_
-### Surgical Pathology
-#### _Surgical Pathology KPI Month to Date Trend Placeholder_
-### Cytology
-#### _Cytology KPI Month to Date Trend Placeholder_
 ## {-}
 
 `r if (include_not_wday != TRUE) {"<!--"}`
