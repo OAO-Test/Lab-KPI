@@ -1320,10 +1320,8 @@ Backlog_Accessioned_Table_New2 %>%
 ```
 
 #### _Cytology KPI Month to Date Trend Placeholder_
-## {-}
 
 `r #Create tab placeholders for Ops & Quality indicators`
-## **Operational and Quality Indicators** _(Placeholder)_ {.tabset}
 ### Clinical & Anatomic Pathology Operational Indicators
 #### _Clinical & Anatomic Pathology Ops Indicator Table Placeholder_
 ### Blood Bank Operational Indicators
