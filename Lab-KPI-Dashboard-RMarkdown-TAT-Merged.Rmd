@@ -50,13 +50,13 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-# Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-Today <- as.timeDate(as.Date("01/28/2020", format = "%m/%d/%Y"))
+Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+#Today <- as.timeDate(as.Date("01/28/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-# Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("01/27/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+#Yesterday <- as.timeDate(as.Date("01/27/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -79,7 +79,7 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 ```{r Import all data, warning = FALSE, message = FALSE, echo = FALSE}
 # Select file/folder path for easier file selection and navigation
 # user_wd <- choose.dir(caption = "Select your working directory")
-user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
+user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 user_path <- paste0(user_wd, "\\*.*")
 
 
@@ -664,6 +664,8 @@ Cytology_Backlog$Backlog <- bizdays(Cytology_Backlog$Case_created_date, Today)-1
 #Case Volume
 Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days., na.rm = TRUE),2)))
 
+Cytology_Backlog_Volume$spec_group <- factor(Cytology_Backlog_Volume$spec_group, levels = c("CYTO GYN", "CYTO NONGYN"))
+
 #Days of work
 Cytology_case_Volume_DOW <- as.numeric(Cytology_Backlog_Volume$Cyto_Backlog[1])/80
 
@@ -673,6 +675,9 @@ Accessioned_Date <- as.Date(Cytology_Weekday_Raw$signed_out_date[1])
 #2. count the accessioned volume that was accessioned on that date from the cytology report
 Cytology_Weekday_Raw$Accessioned_Date_Only <- as.Date(Cytology_Weekday_Raw$Received_Date)
 Cytology_Accessioned_Vol1 <- summarise(group_by(Cytology_Weekday_Raw,spec_group), Cyto_Acc_Vol1 = as.numeric(sum(Accessioned_Date == Accessioned_Date_Only, na.rm = TRUE)))
+
+Cytology_Accessioned_Vol1$spec_group <- factor(Cytology_Accessioned_Vol1$spec_group, levels = c("CYTO GYN", "CYTO NONGYN"))
+
 #3. count the accessioned volume that was accessioned on that date from the backlog report
 Cytology_Backlog_Raw$Accessioned_Date_Only <- as.Date(Cytology_Backlog_Raw$Received_Date)
 Cytology_Accessioned_Vol2 <- summarise(group_by(Cytology_Backlog_Raw,spec_group), Cyto_Acc_Vol2 = as.numeric(sum(Accessioned_Date == Accessioned_Date_Only, na.rm = TRUE)))
@@ -681,7 +686,18 @@ Cytology_Accessioned_Vol3 <- merge(x= Cytology_Accessioned_Vol1, y= Cytology_Acc
 Cytology_Accessioned_Vol3$Total_Accessioned_Volume <- Cytology_Accessioned_Vol3$Cyto_Acc_Vol1 + Cytology_Accessioned_Vol3$Cyto_Acc_Vol2
 Cytology_Accessioned_Vol3$Cyto_Acc_Vol1 <- NULL
 Cytology_Accessioned_Vol3$Cyto_Acc_Vol2 <- NULL
-Backlog_Accessioned_Table <- merge(Cytology_Accessioned_Vol3, Cytology_Backlog_Volume)
+Backlog_Accessioned_Table <- merge(x = Cytology_Accessioned_Vol3, y = Cytology_Backlog_Volume, all = TRUE)
+
+#as extra precaution
+Table_Template_backlog_Accessioned <- data.frame(matrix(ncol=3, nrow = 2)) 
+colnames(Table_Template_backlog_Accessioned) <- c("spec_group", "Total_Accessioned_Volume", "Cyto_Backlog")
+Table_Template_backlog_Accessioned[1] <- c('CYTO GYN','CYTO NONGYN')
+
+Backlog_Accessioned_Table_New <- merge(x = Table_Template_backlog_Accessioned, y=Backlog_Accessioned_Table, all.y=TRUE)
+Backlog_Accessioned_Table_New2 <- merge(x = Table_Template_backlog_Accessioned[1], y= Backlog_Accessioned_Table, all.x = TRUE, by = c("spec_group"))
+
+Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
+
 ```
 
 ```{r Custom Functions for subsetting and summarizing data for SCC and Sunquest dashboard tables, warning = FALSE, message = FALSE, echo = FALSE}
@@ -1290,7 +1306,7 @@ Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2)
 ### Cytology   
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
-Backlog_Accessioned_Table %>% 
+Backlog_Accessioned_Table_New2 %>% 
   kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume")) %>%
   kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "left", row_label_position = "c", font_size = 11) %>%
   column_spec(2, background = "#00B9F2",include_thead = TRUE)%>%
