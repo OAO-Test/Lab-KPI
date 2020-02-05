@@ -239,6 +239,11 @@ colnames(Table_Template_Cyto_V2) <- columns_V2
 Table_Template_Cyto_V2[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto_V2[2] <- c('IP', 'Amb')
 
+Table_Template_Cyto_Vol <- data.frame(matrix(ncol=11, nrow = 4)) 
+colnames(Table_Template_Cyto_Vol) <- columns_V3
+Table_Template_Cyto_Vol[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
+Table_Template_Cyto_Vol[2] <- c('IP', 'Amb')
+
 #Patho
 Table_Template_Patho <- data.frame(matrix(ncol=21, nrow = 4)) 
 colnames(Table_Template_Patho) <- columns
@@ -635,6 +640,9 @@ Cytology_Table_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[1]]
 Cytology_Table_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[1]]
 Cytology_Table_Weekday_V2 <- pre_processing_pp(Cytology_Weekday_Raw)[[2]]
 Cytology_Table_Not_Weekday_V2 <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[2]]
+Cytology_Stratified_Vol_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[3]]
+Cytology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[3]]
+
 Surgical_Pathology_Table_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[1]]
 Surgical_Pathology_Table_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[1]]
 Surgical_Pathology_Stratified_Vol_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[3]]
@@ -931,27 +939,34 @@ Table_Merging_Patho <- function(Surgical_Pathology_Table){
 Surgical_Pathology_Table_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Weekday)
 Surgical_Pathology_Table_Not_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Not_Weekday)
 
-Table_Merging_Patho_Volume <- function(Surgical_Pathology_Vol_Table){
-  if (is.null(Surgical_Pathology_Vol_Table)){
-    Surgical_Pathology_Vol_Table_New <- NULL
-    Surgical_Pathology_Vol_Table_New2 <- NULL
-  } else {
-    #first step is merging the table template with the cytology table and this will include all of the missing columns.
 
-    Surgical_Pathology_Vol_Table_New <- merge(x = Table_Template_Patho_Vol, y= Surgical_Pathology_Vol_Table, all.y=TRUE)
+Table_Merging_Volume <- function(Table_Template_Vol, Vol_Table){
+  if (is.null(Vol_Table)){
+    Vol_Table_New <- NULL
+    Vol_Table_New2 <- NULL
+    rows_order_Vol <- NULL
+  } else {
+
+    Vol_Table_New <- merge(x = Table_Template_Vol, y= Vol_Table, all.y=TRUE)
     
-    #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
-    Surgical_Pathology_Vol_Table_New2 <- merge(x = Table_Template_Patho_Vol[c(1,2)], y= Surgical_Pathology_Vol_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
-    rows_order_Patho_Vol <- factor(rownames(Surgical_Pathology_Vol_Table_New2),levels = c(2,1,4,3))
-    Surgical_Pathology_Vol_Table_New2 <- Surgical_Pathology_Vol_Table_New2[order(rows_order_Patho_Vol), columns_order_V3]
-    row.names(Surgical_Pathology_Vol_Table_New2) <- NULL
+    Vol_Table_New2 <- merge(x = Table_Template_Vol[c(1,2)], y= Vol_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+    rows_order_Vol <- factor(rownames(Vol_Table_New2),levels = c(2,1,4,3))
+    Vol_Table_New2 <- Vol_Table_New2[order(rows_order_Vol), columns_order_V3]
+    row.names(Vol_Table_New2) <- NULL
   }
-  return(Surgical_Pathology_Vol_Table_New2)
+  return(Vol_Table_New2)
 }
 
 
-Surgical_Pathology_Stratified_Vol_Weekday_New2 <- Table_Merging_Patho_Volume(Surgical_Pathology_Stratified_Vol_Weekday)
-Surgical_Pathology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Patho_Volume(Surgical_Pathology_Stratified_Vol_Not_Weekday)
+Surgical_Pathology_Stratified_Vol_Weekday_New2 <- Table_Merging_Volume(Table_Template_Patho_Vol
+, Surgical_Pathology_Stratified_Vol_Weekday)
+Surgical_Pathology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Volume(Table_Template_Patho_Vol
+, Surgical_Pathology_Stratified_Vol_Not_Weekday)
+Cytology_Stratified_Vol_Weekday_New2 <- Table_Merging_Volume(Table_Template_Cyto_Vol
+, Cytology_Stratified_Vol_Weekday)
+Cytology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Volume(Table_Template_Cyto_Vol
+, Cytology_Stratified_Vol_Not_Weekday)
+
 
 ############Create a function for conditional formatting############
 Conditional_Formatting <- function(Table_New2){
@@ -1075,7 +1090,7 @@ Table_Formatting_Volume <- function (Volume_Table){
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("Case Type","Setting","MSH", "MSSM", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL", "NYEE")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-    column_spec(3:11, background = "gray",color ="white", include_thead = TRUE)%>%
+    column_spec(3:11, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
     column_spec(3:11, background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = 1)
@@ -1330,6 +1345,10 @@ Backlog_Accessioned_Table_New2 %>%
   column_spec(1, color = "black", include_thead = TRUE)
 ```
 
+#### *Cytology Accessioned Cases Volume (As of `r wday_result_date`)*
+```{r Cytology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2)
+```
 
 `r #End tabset`
 ## {-}
