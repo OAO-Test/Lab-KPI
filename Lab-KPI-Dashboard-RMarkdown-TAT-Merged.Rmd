@@ -50,13 +50,13 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-#Today <- as.timeDate(as.Date("01/28/2020", format = "%m/%d/%Y"))
+# Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+Today <- as.timeDate(as.Date("01/28/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-#Yesterday <- as.timeDate(as.Date("01/27/2020", format = "%m/%d/%Y"))
+# Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("01/27/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -79,8 +79,9 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 ```{r Import all data, warning = FALSE, message = FALSE, echo = FALSE}
 # Select file/folder path for easier file selection and navigation
 # user_wd <- choose.dir(caption = "Select your working directory")
-user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
+user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 user_path <- paste0(user_wd, "\\*.*")
+setwd(user_wd)
 
 
 #------------------------------Read Excel sheets------------------------------#
@@ -293,6 +294,9 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")] <- lapply(raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")],
                                                                                              as.POSIXlt, tz = "", format = "%Y-%m-%d %H:%M:%OS", options(digits.sec = 1))
   
+  # Add a column for Resulted date for later use in repository
+  raw_scc$ResultedDate <- as.Date(raw_scc$VERIFIED_DATE, format, "%m/%d/%Y")
+  
   # Update patient setting to reflect ICU/Non-ICU and update priorities for ED and ICU labs
   raw_scc$MasterSetting <- ifelse(raw_scc$CLINIC_TYPE == "E", "ED", 
                                    ifelse(raw_scc$CLINIC_TYPE == "O", "Amb", 
@@ -343,30 +347,32 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
   raw_scc$TATInclude <- ifelse(raw_scc$AddOnMaster != "Original" | raw_scc$MasterSetting == "Other" | raw_scc$CollectToResult < 0 | raw_scc$ReceiveToResult < 0 | is.na(raw_scc$CollectToResult) | is.na(raw_scc$ReceiveToResult), FALSE, TRUE)
 
-  scc_master <- raw_scc[ , c("Ward", "WARD_NAME", "WardandName", 
-                                   "ORDER_ID", "REQUESTING_DOC NAME", "MPI", "WORK SHIFT", 
-                                   "TEST_NAME", "Test", "Division", "PRIORITY", 
-                                   "Site", "ICU", "CLINIC_TYPE", 
-                                   "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
-                                   "AdjPriority", "DashboardPriority",
-                                   "ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE", 
-                                   "CollectToReceive", "ReceiveToResult", "CollectToResult", 
-                                   "AddOnMaster", "MissingCollect", 
-                                   "ReceiveResultTarget", "CollectResultTarget", 
-                                   "ReceiveResultInTarget", "CollectResultInTarget", 
-                                   "TATInclude")]
-  colnames(scc_master) <- c("LocCode", "LocName", "LocConcat", 
-                                 "OrderID", "RequestMD", "MSMRN", "WorkShift", 
-                                 "TestName", "Test", "Division", "OrderPriority", 
-                                 "Site", "ICU", "LocType", 
-                                 "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
-                                 "AdjPriority", "DashboardPriority",
-                                 "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
-                                 "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
-                                 "AddOnMaster", "MissingCollect", 
-                                 "ReceiveResultTarget", "CollectResultTarget", 
-                                 "ReceiveResultInTarget", "CollectResultInTarget", 
-                                 "TATInclude")
+  scc_master <- raw_scc[ , c("Ward", "WARD_NAME", "WardandName",
+                             "ORDER_ID", "REQUESTING_DOC NAME", "MPI", "WORK SHIFT",
+                             "TEST_NAME", "Test", "Division", "PRIORITY", 
+                             "Site", "ICU", "CLINIC_TYPE", 
+                             "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
+                             "AdjPriority", "DashboardPriority",
+                             "ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE",
+                             "ResultedDate", 
+                             "CollectToReceive", "ReceiveToResult", "CollectToResult", 
+                             "AddOnMaster", "MissingCollect", 
+                             "ReceiveResultTarget", "CollectResultTarget", 
+                             "ReceiveResultInTarget", "CollectResultInTarget", 
+                             "TATInclude")]
+  colnames(scc_master) <- c("LocCode", "LocName", "LocConcat",
+                            "OrderID", "RequestMD", "MSMRN", "WorkShift", 
+                            "TestName", "Test", "Division", "OrderPriority", 
+                            "Site", "ICU", "LocType", 
+                            "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
+                            "AdjPriority", "DashboardPriority",
+                            "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
+                            "ResultDate", 
+                            "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
+                            "AddOnMaster", "MissingCollect", 
+                            "ReceiveResultTarget", "CollectResultTarget", 
+                            "ReceiveResultInTarget", "CollectResultInTarget", 
+                            "TATInclude")
   
   ## SUNQUEST DATA PROCESSING ----------
   # Sunquest lookup references ----------------------------------------------
@@ -402,7 +408,9 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- lapply(raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")], 
                                                                                                  as.POSIXlt, tz = "", format = "%m/%d/%Y %H:%M:%S")
   
-  
+  # Add a column for Resulted date for later use in repository
+  raw_sun$ResultedDate <- as.Date(raw_sun$ResultDateTime, format, "%m/%d/%Y")
+
   
   
   # Sunquest data preprocessing --------------------------------------------------
@@ -459,30 +467,32 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_sun$TATInclude <- ifelse(raw_sun$AddOnMaster != "Original" | raw_sun$MasterSetting == "Other" | raw_sun$CollectToResult < 0 | raw_sun$ReceiveToResult < 0 | is.na(raw_sun$CollectToResult) | is.na(raw_sun$ReceiveToResult), FALSE, TRUE)
   
   sun_master <- raw_sun[ ,c("LocCode", "LocName", "LocandName", 
-                                  "HISOrderNumber", "PhysName", "PtNumber", "SHIFT",            
-                                  "TSTName", "Test", "Division", "SpecimenPriority", 
-                                  "Site", "ICU", "LocType",               
-                                  "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
-                                  "AdjPriority", "DashboardPriority", 
-                                  "OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime", 
-                                  "CollecttoReceive", "ReceivetoResult", "CollecttoResult", 
-                                  "AddOnMaster", "MissingCollect", 
-                                  "ReceiveResultTarget", "CollectResultTarget", 
-                                  "ReceiveResultInTarget", "CollectResultInTarget", 
-                                  "TATInclude")]
+                            "HISOrderNumber", "PhysName", "PtNumber", "SHIFT",            
+                            "TSTName", "Test", "Division", "SpecimenPriority", 
+                            "Site", "ICU", "LocType",               
+                            "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
+                            "AdjPriority", "DashboardPriority", 
+                            "OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime", 
+                            "ResultedDate", 
+                            "CollecttoReceive", "ReceivetoResult", "CollecttoResult", 
+                            "AddOnMaster", "MissingCollect", 
+                            "ReceiveResultTarget", "CollectResultTarget", 
+                            "ReceiveResultInTarget", "CollectResultInTarget", 
+                            "TATInclude")]
   
   colnames(sun_master) <- c("LocCode", "LocName", "LocConcat", 
-                                 "OrderID", "RequestMD", "MSMRN", "WorkShift", 
-                                 "TestName", "Test", "Division", "OrderPriority", 
-                                 "Site", "ICU", "LocType", 
-                                 "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
-                                 "AdjPriority", "DashboardPriority",
-                                 "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
-                                 "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
-                                 "AddOnMaster", "MissingCollect", 
-                                 "ReceiveResultTarget", "CollectResultTarget", 
-                                 "ReceiveResultInTarget", "CollectResultInTarget", 
-                                 "TATInclude")
+                            "OrderID", "RequestMD", "MSMRN", "WorkShift", 
+                            "TestName", "Test", "Division", "OrderPriority", 
+                            "Site", "ICU", "LocType", 
+                            "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
+                            "AdjPriority", "DashboardPriority",
+                            "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
+                            "ResultDate", 
+                            "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
+                            "AddOnMaster", "MissingCollect", 
+                            "ReceiveResultTarget", "CollectResultTarget", 
+                            "ReceiveResultInTarget", "CollectResultInTarget", 
+                            "TATInclude")
   
   
   scc_sun_master <- rbind(scc_master, sun_master)
