@@ -548,6 +548,30 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 }
 ```
 
+```{r Begin combining and summarizing data for historical repository, echo = FALSE, warning = FALSE, message = FALSE}
+# Bind weekday and non-weekday data, if any exists
+if (is.null(scc_sun_not_wday_master) == FALSE) {
+  scc_sun_all_days_master <- rbind(scc_sun_wday_master, scc_sun_not_wday_master)
+} else {
+  scc_sun_all_days_master <- scc_sun_wday_master
+}
+
+# Summarize data for export to historical repo
+scc_sun_all_days_subset <- scc_sun_all_days_master %>%
+  group_by(Site, ResultDate, Test, Division, 
+           Setting, SettingRollUp, MasterSetting, DashboardSetting,
+           OrderPriority, AdjPriority, DashboardPriority,
+           ReceiveResultTarget, CollectResultTarget) %>%
+  summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), TotalReceiveResultInTarget = sum(ReceiveResultInTarget), TotalCollectResultInTarget = sum(CollectResultInTarget), TotalAddOnOrder = sum(AddOnMaster == "AddOn"), TotalMissingCollections = sum(MissingCollect))
+
+
+test_results <- scc_sun_all_days_subset %>%
+  group_by(Site, Test, DashboardSetting, DashboardPriority) %>%
+  summarize(ReceiveResultPercent = sum(TotalReceiveResultInTarget)/sum(TotalResultedTAT)*100, CollectResultPercent = sum(TotalCollectResultInTarget)/sum(TotalResultedTAT)*100)
+
+```
+
+
 ```{r Custom function for preprocessing raw Powerpath data and calling function, warning = FALSE, message = FALSE, echo = FALSE}
 #------------------------------Extract the Cytology GYN and NON-GYN Data Only------------------------------#
 #Cytology
