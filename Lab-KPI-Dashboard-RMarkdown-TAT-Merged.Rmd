@@ -15,11 +15,10 @@ output:
 #install.packages("knitr")
 #install.packages("kableExtra")
 #install.packages("formattable")
-# install.packages("bizdays")
+#install.packages("bizdays")
 #install.packages("rmarkdown")
-# install.packages("stringr")
-#install.packages("tinytex")
-
+#install.packages("stringr")
+#install.packages("writexl")
 
 #-------------------------------Required packages-------------------------------#
 
@@ -35,7 +34,7 @@ library(kableExtra)
 library(formattable)
 library(rmarkdown)
 library(stringr)
-# library(tinytex)
+library(writexl)
 
 
 ```
@@ -88,6 +87,8 @@ setwd(user_wd)
 #The if-statement below helps in determining how many excel files are required
 
 if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){ # Scenario 1: Mon Holiday or Friday Holiday (Need to select 4 files)
+  # Save scenario
+  scenario <- 1
   # Import SCC data
   SCC_Holiday_Monday_or_Friday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE)
   SCC_Sunday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
@@ -117,6 +118,8 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),],stringsAsFactors = FALSE)
 } else if ((Holiday_Det) & (Yesterday_Day =="Sun")){ # Scenario 2: Regular Monday (Need to select 3 files)
   #
+  # Save scenario
+  scenario <- 2
   # Import SCC data
   SCC_Sunday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
   SCC_Saturday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
@@ -142,6 +145,8 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 } else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sun"))){ #Scenario 3: Midweek holiday (Need to select 2 files)
   #
+  # Save scenario
+  scenario <- 3
   # Import SCC data
   SCC_Holiday_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE)
   SCC_Not_Weekday <- SCC_Holiday_Weekday
@@ -160,6 +165,8 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 } else { #Scenario 4: Tue-Fri without holidays (Need to select 1 file)
   #
+  # Save scenario
+  scenario <- 4
   # Import SCC data
   SCC_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
   SCC_Not_Weekday <- NULL
@@ -461,7 +468,6 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_sun <- raw_sun[!duplicated(raw_sun$Concate3), ]
   
   
-  
   # Identify which labs to include in TAT analysis
   # Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
   raw_sun$TATInclude <- ifelse(raw_sun$AddOnMaster != "Original" | raw_sun$MasterSetting == "Other" | raw_sun$CollectToResult < 0 | raw_sun$ReceiveToResult < 0 | is.na(raw_sun$CollectToResult) | is.na(raw_sun$ReceiveToResult), FALSE, TRUE)
@@ -531,17 +537,31 @@ if (is.null(SQ_Not_Weekday) & is.null(SQ_Not_Weekday)) {
   scc_sun_not_wday_master <- scc_sun_not_wday_list[[3]]
 }
 
+# Remove labs from master data frame that were resulted at exactly midnight on next morning
+scc_sun_wday_master <- scc_sun_wday_master[!(scc_sun_wday_master$ResultDate > min(scc_sun_wday_master$ResultDate)), ]
+
+if (scenario == 1) {
+  scc_sun_not_wday_master <- scc_sun_not_wday_master[!(scc_sun_not_wday_master$ResultDate > (min(scc_sun_not_wday_master$ResultDate) + 2)), ]
+} else if (scenario == 2) {
+  scc_sun_not_wday_master <- scc_sun_not_wday_master[!(scc_sun_not_wday_master$ResultDate > (min(scc_sun_not_wday_master$ResultDate) + 1)), ]
+} else if (scenario == 3) {
+  scc_sun_not_wday_master <- scc_sun_not_wday_master[!(scc_sun_not_wday_master$ResultDate > min(scc_sun_not_wday_master$ResultDate)), ]
+}
+
+
 
 # Determine resulted date for weekday labs
-wday_dates_df <- scc_sun_wday_master[(hour(scc_sun_wday_master$ResultTime) !=0 & minute(scc_sun_wday_master$ResultTime) !=0) & is.na(scc_sun_wday_master$ResultTime) == FALSE, "ResultTime"]
-wday_dates_df$dates <- date(wday_dates_df$ResultTime)
-wday_result_date <- unique(date(wday_dates_df$ResultTime))
-wday_result_date <- format(wday_result_date, format = "%a %m/%d/%y")
+wday_dates_df <- scc_sun_wday_master[ , "ResultDate"]
+wday_result_date <- format(unique(wday_dates_df$ResultDate), format = "%a %m/%d/%y")
+
 
 if (is.null(scc_sun_not_wday_master) == FALSE) {
-  not_wday_dates_df <- scc_sun_not_wday_master[(hour(scc_sun_not_wday_master$ResultTime) !=0 & minute(scc_sun_not_wday_master$ResultTime) !=0) & is.na(scc_sun_not_wday_master$ResultTime) == FALSE, "ResultTime"]
-  not_wday_dates_df$dates <- date(not_wday_dates_df$ResultTime)
-  not_wday_result_date <- unique(date(not_wday_dates_df$ResultTime))
+  # not_wday_dates_df <- scc_sun_not_wday_master[(hour(scc_sun_not_wday_master$ResultTime) !=0 & minute(scc_sun_not_wday_master$ResultTime) !=0) & is.na(scc_sun_not_wday_master$ResultTime) == FALSE, "ResultTime"]
+  # not_wday_dates_df$dates <- date(not_wday_dates_df$ResultTime)
+  # not_wday_result_date <- unique(date(not_wday_dates_df$ResultTime))
+  # wkend_holiday_result_date <- ifelse(length(not_wday_result_date) == 1, format(not_wday_result_date, format = "%a %m/%d/%y"), paste0(format(not_wday_result_date[length(not_wday_result_date)], format = "%a %m/%d/%y"), "-", format(not_wday_result_date[1], format = "%a %m/%d/%y")))
+  not_wday_dates_df <- scc_sun_not_wday_master[ , "ResultDate"]
+  not_wday_result_date <- unique(date(not_wday_dates_df$ResultDate))
   wkend_holiday_result_date <- ifelse(length(not_wday_result_date) == 1, format(not_wday_result_date, format = "%a %m/%d/%y"), paste0(format(not_wday_result_date[length(not_wday_result_date)], format = "%a %m/%d/%y"), "-", format(not_wday_result_date[1], format = "%a %m/%d/%y")))
 } else {
   wkend_holiday_result_date <- NULL
@@ -551,9 +571,9 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 ```{r Begin combining and summarizing data for historical repository, echo = FALSE, warning = FALSE, message = FALSE}
 # Bind weekday and non-weekday data, if any exists
 if (is.null(scc_sun_not_wday_master) == FALSE) {
-  scc_sun_all_days_master <- rbind(scc_sun_wday_master, scc_sun_not_wday_master)
+  scc_sun_all_days <- rbind(scc_sun_wday_master, scc_sun_not_wday_master)
 } else {
-  scc_sun_all_days_master <- scc_sun_wday_master
+  scc_sun_all_days <- scc_sun_wday_master
 }
 
 # Summarize data for export to historical repo
@@ -564,10 +584,17 @@ scc_sun_all_days_subset <- scc_sun_all_days_master %>%
            ReceiveResultTarget, CollectResultTarget) %>%
   summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), TotalReceiveResultInTarget = sum(ReceiveResultInTarget[TATInclude == TRUE]), TotalCollectResultInTarget = sum(CollectResultInTarget[TATInclude == TRUE]), TotalAddOnOrder = sum(AddOnMaster == "AddOn"), TotalMissingCollections = sum(MissingCollect))
 
+scc_sun_repo <- rbind(scc_sun_all_days_subset)
+
+# Add data to historical repository
+write_xlsx(scc_sun_all_days_subset, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Hist Repo Test", Sys.Date(), ".xlsx"))
+
 
 test_results <- scc_sun_all_days_subset %>%
   group_by(Site, Test, DashboardPriority, DashboardSetting) %>%
   summarize(ReceiveResultPercent = sum(TotalReceiveResultInTarget)/sum(TotalResultedTAT)*100, CollectResultPercent = sum(TotalCollectResultInTarget)/sum(TotalResultedTAT)*100)
+
+
 
 ```
 
