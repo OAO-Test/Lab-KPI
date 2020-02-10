@@ -224,34 +224,30 @@ TAT_Targets <- data.frame(read_excel(reference_file, sheet = "AP_TAT Targets"), 
 GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAsFactors = FALSE)
 
 #-----------Create table template for Cyto/Path-----------#
-columns <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
-columns_V2 <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_Out_within_target","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")
-columns_V3 <- c("spec_group","Patient.Setting","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")
-
 #Cyto
-Table_Template_Cyto <- data.frame(matrix(ncol=21, nrow = 4)) 
-colnames(Table_Template_Cyto) <- columns
+Table_Template_Cyto <- data.frame(matrix(ncol=19, nrow = 4)) 
+colnames(Table_Template_Cyto) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
 Table_Template_Cyto[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto[2] <- c('IP', 'Amb')
 
-Table_Template_Cyto_V2 <- data.frame(matrix(ncol=13, nrow = 4)) 
-colnames(Table_Template_Cyto_V2) <- columns_V2
+Table_Template_Cyto_V2 <- data.frame(matrix(ncol=12, nrow = 4)) 
+colnames(Table_Template_Cyto_V2) <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_Out_within_target","BIMC", "MSH", "MSQ","NYEE","PACC","R","SL", "KH")
 Table_Template_Cyto_V2[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto_V2[2] <- c('IP', 'Amb')
 
-Table_Template_Cyto_Vol <- data.frame(matrix(ncol=11, nrow = 4)) 
-colnames(Table_Template_Cyto_Vol) <- columns_V3
+Table_Template_Cyto_Vol <- data.frame(matrix(ncol=10, nrow = 4)) 
+colnames(Table_Template_Cyto_Vol) <- c("spec_group","Patient.Setting","BIMC", "MSH", "MSQ","NYEE","PACC","R","SL", "KH")
 Table_Template_Cyto_Vol[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto_Vol[2] <- c('IP', 'Amb')
 
 #Patho
-Table_Template_Patho <- data.frame(matrix(ncol=21, nrow = 4)) 
-colnames(Table_Template_Patho) <- columns
+Table_Template_Patho <- data.frame(matrix(ncol=19, nrow = 4)) 
+colnames(Table_Template_Patho) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","PACC.y","R.y","SL.y", "KH.y")
 Table_Template_Patho[1] <- c('Breast','Breast','GI', 'GI')
 Table_Template_Patho[2] <- c('IP', 'Amb')
 
-Table_Template_Patho_Vol <- data.frame(matrix(ncol=11, nrow = 4)) 
-colnames(Table_Template_Patho_Vol) <- columns_V3
+Table_Template_Patho_Vol <- data.frame(matrix(ncol=10, nrow = 4)) 
+colnames(Table_Template_Patho_Vol) <- c("spec_group","Patient.Setting","BIMC", "MSH", "MSQ", "MSS","PACC","R","SL", "KH")
 Table_Template_Patho_Vol[1] <- c('Breast','Breast','GI', 'GI')
 Table_Template_Patho_Vol[2] <- c('IP', 'Amb')
 ```
@@ -612,6 +608,7 @@ pre_processing_pp <- function(Raw_Data){
 
     Raw_Data_New_Cases_Signed_Stratified <- summarise(group_by(Raw_Data_New,spec_group, Facility, Patient.Setting), No_Cases_Signed = n())    
     Raw_Data_New_Cases_Signed_Stratified <- dcast(Raw_Data_New_Cases_Signed_Stratified, spec_group + Patient.Setting ~ Facility, value.var = "No_Cases_Signed" )
+    Raw_Data_New_Cases_Signed_Stratified[is.na(Raw_Data_New_Cases_Signed_Stratified)] <- 0
         
     Raw_Data_New_Patient_Metric <- summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))))
     
@@ -875,12 +872,6 @@ micro_table <- micro_dashboard2[ , 3:ncol(micro_dashboard2)]
 
 ############Create a function for Table standardization for cyto and patho############
 #To add all the missing rows and columns
-columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")
-
-columns_order_V2 <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
-
-columns_order_V3 <- c("spec_group","Patient.Setting","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
-
 #Cytology table
 Table_Merging_Cyto <- function(Cytology_Table){
   if (is.null(Cytology_Table)){
@@ -893,7 +884,7 @@ Table_Merging_Cyto <- function(Cytology_Table){
     #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
     Cytology_Table_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
     rows_order_Cyto <- factor(rownames(Cytology_Table_New2),levels = c(2,1,4,3))
-    Cytology_Table_New2 <- Cytology_Table_New2[order(rows_order_Cyto), columns_order]
+    Cytology_Table_New2 <- Cytology_Table_New2[order(rows_order_Cyto), c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")]
   }
   return(Cytology_Table_New2)
 }
@@ -908,7 +899,7 @@ Table_Merging_Cyto_V2 <- function(Cytology_Table_V2){
     #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
     Cytology_Table_New2_V2 <- merge(x = Table_Template_Cyto_V2[c(1,2)], y= Cytology_Table_New_V2, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
     rows_order_Cyto_V2 <- factor(rownames(Cytology_Table_New2_V2),levels = c(2,1,4,3))
-    Cytology_Table_New2_V2 <- Cytology_Table_New2_V2[order(rows_order_Cyto_V2), columns_order_V2]
+    Cytology_Table_New2_V2 <- Cytology_Table_New2_V2[order(rows_order_Cyto_V2), c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH","MSQ","BIMC","PACC","KH","R","SL", "NYEE")]
   }
   return(Cytology_Table_New2_V2)
 }
@@ -931,7 +922,7 @@ Table_Merging_Patho <- function(Surgical_Pathology_Table){
     #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
     Surgical_Pathology_Table_New2 <- merge(x = Table_Template_Patho[c(1,2)], y= Surgical_Pathology_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
     rows_order_Patho <- factor(rownames(Surgical_Pathology_Table_New2),levels = c(2,1,4,3))
-    Surgical_Pathology_Table_New2 <- Surgical_Pathology_Table_New2[order(rows_order_Patho), columns_order]
+    Surgical_Pathology_Table_New2 <- Surgical_Pathology_Table_New2[order(rows_order_Patho), c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y")]
   }
   return(Surgical_Pathology_Table_New2)
 }
@@ -940,7 +931,10 @@ Surgical_Pathology_Table_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_
 Surgical_Pathology_Table_Not_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Not_Weekday)
 
 
-Table_Merging_Volume <- function(Table_Template_Vol, Vol_Table){
+pathology_volume_column_order <- c("spec_group","Patient.Setting","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL")  
+cytology_volume_column_order <- c("spec_group","Patient.Setting","MSH","MSQ","BIMC","PACC","KH","R","SL", "NYEE") 
+
+Table_Merging_Volume <- function(Table_Template_Vol, Vol_Table, columns_order_V3){
   if (is.null(Vol_Table)){
     Vol_Table_New <- NULL
     Vol_Table_New2 <- NULL
@@ -953,35 +947,36 @@ Table_Merging_Volume <- function(Table_Template_Vol, Vol_Table){
     rows_order_Vol <- factor(rownames(Vol_Table_New2),levels = c(2,1,4,3))
     Vol_Table_New2 <- Vol_Table_New2[order(rows_order_Vol), columns_order_V3]
     row.names(Vol_Table_New2) <- NULL
+    Vol_Table_New2[is.na(Vol_Table_New2)] <- 0
   }
   return(Vol_Table_New2)
 }
 
 
 Surgical_Pathology_Stratified_Vol_Weekday_New2 <- Table_Merging_Volume(Table_Template_Patho_Vol
-, Surgical_Pathology_Stratified_Vol_Weekday)
+, Surgical_Pathology_Stratified_Vol_Weekday,pathology_volume_column_order)
 Surgical_Pathology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Volume(Table_Template_Patho_Vol
-, Surgical_Pathology_Stratified_Vol_Not_Weekday)
+, Surgical_Pathology_Stratified_Vol_Not_Weekday,pathology_volume_column_order)
 Cytology_Stratified_Vol_Weekday_New2 <- Table_Merging_Volume(Table_Template_Cyto_Vol
-, Cytology_Stratified_Vol_Weekday)
+, Cytology_Stratified_Vol_Weekday,cytology_volume_column_order)
 Cytology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Volume(Table_Template_Cyto_Vol
-, Cytology_Stratified_Vol_Not_Weekday)
+, Cytology_Stratified_Vol_Not_Weekday,cytology_volume_column_order)
 
 
 ############Create a function for conditional formatting############
-Conditional_Formatting <- function(Table_New2){
+Conditional_Formatting_Cyto <- function(Table_New2){
   if (is.null(Table_New2)){
     Table_New3 <- NULL
     Table_New4 <- NULL
     Table_New5 <- NULL
   } else {
     
-    Table_New2[,4:21] <- lapply(Table_New2[,4:21], as.numeric)
-    Table_New2[,4:12] <- lapply(Table_New2[,4:12],percent, d=0)
+    Table_New2[,4:19] <- lapply(Table_New2[,4:19], as.numeric)
+    Table_New2[,4:11] <- lapply(Table_New2[,4:11],percent, d=0)
     
     #steps for conditional formatting:
     
-    Table_New3 <- melt(Table_New2, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.y","MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y"))
+    Table_New3 <- melt(Table_New2, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y"))
     
     
     Table_New3 <- Table_New3 %>%
@@ -990,21 +985,20 @@ Conditional_Formatting <- function(Table_New2){
                                    ifelse(value < 0.8, cell_spec(value, "html", color = "red"), cell_spec(value, "html", color = "orange")))))
     
     
-    Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
+    Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
     
-    Table_New4 <- melt(Table_New3, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x"))
+    Table_New4 <- melt(Table_New3, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x"))
     
     
     Table_New4 <- Table_New4 %>%
       mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), cell_spec(value, "html", color = "black")))
     
-    Table_New4 <- dcast(Table_New4,spec_group + Patient.Setting + No_Cases_Signed + BIMC.x + MSH.x + MSQ.x + MSS.x + NYEE.x + PACC.x + R.x + SL.x + KH.x ~ variable )
+    Table_New4 <- dcast(Table_New4,spec_group + Patient.Setting + No_Cases_Signed + BIMC.x + MSH.x + MSQ.x + NYEE.x + PACC.x + R.x + SL.x + KH.x ~ variable )
     
     Table_New5 <- merge(x=Table_New4, y=TAT_Targets[1:3])
     
-    columns_order <- c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","MSH.x", "MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")
     rows_order <- factor(rownames(Table_New5),levels = c(2,1,4,3))
-    Table_New5 <- Table_New5[order(rows_order), columns_order]
+    Table_New5 <- Table_New5[order(rows_order), c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")]
     Table_New5$Received.to.signed.out.target..Days.<- paste("<= ", Table_New5$Received.to.signed.out.target..Days., "days")
     row.names(Table_New5) <- NULL
     Table_New5$No_Cases_Signed[is.na(Table_New5$No_Cases_Signed)] <- 0
@@ -1012,9 +1006,13 @@ Conditional_Formatting <- function(Table_New2){
   return(Table_New5)
 }
 
-Conditional_Formatting_V2 <- function(Table_New2_V2){
+Cytology_Table_Weekday_New3 <- Conditional_Formatting_Cyto(Cytology_Table_Weekday_New2)
+Cytology_Table_Not_Weekday_New3 <- Conditional_Formatting_Cyto(Cytology_Table_Not_Weekday_New2)
+
+Conditional_Formatting_Cyto_V2 <- function(Table_New2_V2){
   if (is.null(Table_New2_V2)){
     Table_New3_V2 <- NULL
+    Table_New4_V2 <- NULL
   } else {
     
     Table_New2_V2[4] <- lapply(Table_New2_V2[4], as.numeric)
@@ -1026,38 +1024,91 @@ Conditional_Formatting_V2 <- function(Table_New2_V2){
       mutate(Received_to_Signed_out_within_target = ifelse(is.na(Received_to_Signed_out_within_target), cell_spec(Received_to_Signed_out_within_target, "html", color = "lightgray"), 
                             ifelse(Received_to_Signed_out_within_target > 0.9, cell_spec(Received_to_Signed_out_within_target, "html", color  = "green"),
                                    ifelse(Received_to_Signed_out_within_target < 0.8, cell_spec(Received_to_Signed_out_within_target, "html", color = "red"), cell_spec(Received_to_Signed_out_within_target, "html", color = "orange")))))
-    Table_New3_V2 <- merge(x=Table_New3_V2, y=TAT_Targets[1:3])
-    columns_order_V2 <- c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
-    rows_order_V2 <- factor(rownames(Table_New3_V2),levels = c(2,1,4,3))
-    Table_New3_V2 <- Table_New3_V2[order(rows_order_V2), columns_order_V2]
-    Table_New3_V2$Received.to.signed.out.target..Days.<- paste("<= ", Table_New3_V2$Received.to.signed.out.target..Days., "days")
-    row.names(Table_New3_V2) <- NULL
+    
+    Table_New4_V2 <- melt(Table_New3_V2, id =c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target"))
+    
+    
+    Table_New4_V2 <- Table_New4_V2 %>%
+      mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), cell_spec(value, "html", color = "black")))
+    
+    Table_New4_V2 <- dcast(Table_New4_V2,spec_group + Patient.Setting + No_Cases_Signed + Received_to_Signed_out_within_target ~ variable )
+    
+    Table_New4_V2 <- merge(x=Table_New4_V2, y=TAT_Targets[1:3])
+    rows_order_V2 <- factor(rownames(Table_New4_V2),levels = c(2,1,4,3))
+    Table_New4_V2 <- Table_New4_V2[order(rows_order_V2), c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH","MSQ","BIMC","PACC","KH","R","SL", "NYEE")]
+    Table_New4_V2$Received.to.signed.out.target..Days.<- paste("<= ", Table_New4_V2$Received.to.signed.out.target..Days., "days")
+    row.names(Table_New4_V2) <- NULL
+    Table_New4_V2$No_Cases_Signed[is.na(Table_New4_V2$No_Cases_Signed)] <- 0
   }
-  return(Table_New3_V2)
+  return(Table_New4_V2)
 }
 
-Cytology_Table_Weekday_New3 <- Conditional_Formatting(Cytology_Table_Weekday_New2)
-Cytology_Table_Not_Weekday_New3 <- Conditional_Formatting(Cytology_Table_Not_Weekday_New2)
-Cytology_Table_Weekday_New3_V2 <- Conditional_Formatting_V2(Cytology_Table_Weekday_New2_V2)
-Cytology_Table_Not_Weekday_New3_V2 <- Conditional_Formatting_V2(Cytology_Table_Not_Weekday_New2_V2)
-Surgical_Pathology_Table_Weekday_New3 <- Conditional_Formatting(Surgical_Pathology_Table_Weekday_New2)
-Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting(Surgical_Pathology_Table_Not_Weekday_New2)
+Cytology_Table_Weekday_New3_V2 <- Conditional_Formatting_Cyto_V2(Cytology_Table_Weekday_New2_V2)
+Cytology_Table_Not_Weekday_New3_V2 <- Conditional_Formatting_Cyto_V2(Cytology_Table_Not_Weekday_New2_V2)
+
+Conditional_Formatting_Patho <- function(Table_New2){
+  if (is.null(Table_New2)){
+    Table_New3 <- NULL
+    Table_New4 <- NULL
+    Table_New5 <- NULL
+  } else {
+    
+    Table_New2[,4:19] <- lapply(Table_New2[,4:19], as.numeric)
+    Table_New2[,4:11] <- lapply(Table_New2[,4:11],percent, d=0)
+    
+    #steps for conditional formatting:
+    
+    Table_New3 <- melt(Table_New2, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.y","MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y"))
+    
+    
+    Table_New3 <- Table_New3 %>%
+      mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), 
+                            ifelse(value > 0.9, cell_spec(value, "html", color  = "green"),
+                                   ifelse(value < 0.8, cell_spec(value, "html", color = "red"), cell_spec(value, "html", color = "orange")))))
+    
+    
+    Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + PACC.y + R.y + SL.y + KH.y ~ variable )
+    
+    Table_New4 <- melt(Table_New3, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x"))
+    
+    
+    Table_New4 <- Table_New4 %>%
+      mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), cell_spec(value, "html", color = "black")))
+    
+    Table_New4 <- dcast(Table_New4,spec_group + Patient.Setting + No_Cases_Signed + BIMC.x + MSH.x + MSQ.x + MSS.x  + PACC.x + R.x + SL.x + KH.x ~ variable )
+    
+    Table_New5 <- merge(x=Table_New4, y=TAT_Targets[1:3])
+    rows_order <- factor(rownames(Table_New5),levels = c(2,1,4,3))
+    Table_New5 <- Table_New5[order(rows_order), c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","MSH.x", "MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x","MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y")]
+    Table_New5$Received.to.signed.out.target..Days.<- paste("<= ", Table_New5$Received.to.signed.out.target..Days., "days")
+    row.names(Table_New5) <- NULL
+    Table_New5$No_Cases_Signed[is.na(Table_New5$No_Cases_Signed)] <- 0
+  }
+  return(Table_New5)
+}
+
+Surgical_Pathology_Table_Weekday_New3 <- Conditional_Formatting_Patho(Surgical_Pathology_Table_Weekday_New2)
+Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting_Patho(Surgical_Pathology_Table_Not_Weekday_New2)
 
 ```
 
 ```{r Custom function for Anatomic Pathology kable formatting, echo=FALSE, warning = FALSE, message = FALSE}
-Table_Formatting <- function (Table_New3){
+pathology_standardized_column_names <-  c("Case Type","Target","Setting","No. Cases Signed Out","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL")
+
+cytology_standardized_column_names <-  c("Case Type","Target","Setting","No. Cases Signed Out","MSH", "MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")
+
+Table_Formatting <- function (Table_New3,column_names){
   if (is.null(Table_New3)){
     Table_New3 <- NULL
   } else {
     Table_New3%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
+    kable(escape = F, align = "c", col.names = column_names) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-    add_header_above(c(" "= 4, "Receive to Result within Target (Business Days)"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
-    column_spec(2:13, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-    column_spec(14:22, background = "#221F72", color = "white", include_thead = TRUE)%>%
-    column_spec(2:22, background = "inherit", color = "inherit")%>%
+    add_header_above(c(" "= 1, "Receive to Result within Target (Business Days)"= 11, "Average Collection to Result TAT (Calendar Days)"=8), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
+    column_spec(2:12, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
+    column_spec(13:20, background = "#221F72", color = "white", include_thead = TRUE)%>%
+    column_spec(2:20, background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = c(1,2))
   }
@@ -1070,28 +1121,32 @@ Table_Formatting_V2 <- function (Table_New3_V2){
   } else {
     Table_New3_V2%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","Centralized Lab","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
+    kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","Centralized Lab","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-    add_header_above(c(" "= 4, "Receive to Result within Target (Business Days)"= 1, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
+    add_header_above(c(" "= 1, "Receive to Result within Target (Business Days)"= 4, "Average Collection to Result TAT (Calendar Days)"=8), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
     column_spec(2:5, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-    column_spec(6:14, background = "#221F72", color = "white", include_thead = TRUE)%>%
-    column_spec(2:14, background = "inherit", color = "inherit")%>%
+    column_spec(6:13, background = "#221F72", color = "white", include_thead = TRUE)%>%
+    column_spec(2:13, background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = c(1,2))
   }
 }
 
+pathology_volume_column_names <-  c("Case Type","Setting","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL")
+
+cytology_volume_column_names <-  c("Case Type","Setting","MSH", "MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")
+
 #Volume table formatting
-Table_Formatting_Volume <- function (Volume_Table){
+Table_Formatting_Volume <- function (Volume_Table, column_names){
   if (is.null(Volume_Table)){
     Volume_Table <- NULL
   } else {
     Volume_Table%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Case Type","Setting","MSH", "MSSM", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL", "NYEE")) %>%
+    kable(escape = F, align = "c", col.names = column_names) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-    column_spec(3:11, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-    column_spec(3:11, background = "inherit", color = "inherit")%>%
+    column_spec(3:10, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
+    column_spec(3:10, background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = 1)
   }
@@ -1215,7 +1270,7 @@ add_on_table %>%
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
 ```{r Surgical Pathology Efficiency Indicator Weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
+Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_column_names)
 ```
 <h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>
 
@@ -1226,7 +1281,7 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
 ```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting(Cytology_Table_Weekday_New3)
+Table_Formatting(Cytology_Table_Weekday_New3, cytology_standardized_column_names)
 Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 ```
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
@@ -1328,7 +1383,7 @@ lab_vol_kable_format(hem_vol_wday_table)
 ### Surgical Pathology   
 #### *Surgical Pathology Accessioned Cases Volume (As of `r wday_result_date`)*
 ```{r Surgical Pathology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2)
+Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, pathology_volume_column_names)
 ```
 
 ### Cytology   
@@ -1342,12 +1397,13 @@ Backlog_Accessioned_Table_New2 %>%
   column_spec(3, background = "#221F72", include_thead = TRUE)%>%
   row_spec(1:2, background = "white")%>%
   row_spec(0, color = "white") %>%
-  column_spec(1, color = "black", include_thead = TRUE)
+  column_spec(1, color = "black", include_thead = TRUE)%>%
+  row_spec(row = 0, font_size =13)
 ```
 
 #### *Cytology Accessioned Cases Volume (As of `r wday_result_date`)*
 ```{r Cytology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2)
+Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2, cytology_volume_column_names)
 ```
 
 `r #End tabset`
