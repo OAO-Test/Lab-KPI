@@ -667,7 +667,7 @@ Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed
 Cytology_Backlog$Backlog <- bizdays(Cytology_Backlog$Case_created_date, Today)-1
 
 #Case Volume
-Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days., na.rm = TRUE),2)))
+Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days., na.rm = TRUE),0)), percentile_25th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.25, na.rm = TRUE))), percentile_50th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.5, na.rm = TRUE))), percentile_75th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.75, na.rm = TRUE))))
 
 Cytology_Backlog_Volume$spec_group <- factor(Cytology_Backlog_Volume$spec_group, levels = c("CYTO GYN", "CYTO NONGYN"))
 
@@ -694,8 +694,8 @@ Cytology_Accessioned_Vol3$Cyto_Acc_Vol2 <- NULL
 Backlog_Accessioned_Table <- merge(x = Cytology_Accessioned_Vol3, y = Cytology_Backlog_Volume, all = TRUE)
 
 #as extra precaution
-Table_Template_backlog_Accessioned <- data.frame(matrix(ncol=3, nrow = 2)) 
-colnames(Table_Template_backlog_Accessioned) <- c("spec_group", "Total_Accessioned_Volume", "Cyto_Backlog")
+Table_Template_backlog_Accessioned <- data.frame(matrix(ncol=6, nrow = 2)) 
+colnames(Table_Template_backlog_Accessioned) <- c("spec_group", "Total_Accessioned_Volume", "Cyto_Backlog", "percentile_25th", "percentile_50th", "percentile_75th")
 Table_Template_backlog_Accessioned[1] <- c('CYTO GYN','CYTO NONGYN')
 
 Backlog_Accessioned_Table_New <- merge(x = Table_Template_backlog_Accessioned, y=Backlog_Accessioned_Table, all.y=TRUE)
@@ -1390,15 +1390,13 @@ Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, patholog
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
 Backlog_Accessioned_Table_New2 %>% 
-  kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume")) %>%
-  kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "left", row_label_position = "c", font_size = 11) %>%
-  column_spec(2, background = "#00B9F2",include_thead = TRUE)%>%
-  row_spec(1:2, background = "white")%>%
-  column_spec(3, background = "#221F72", include_thead = TRUE)%>%
-  row_spec(1:2, background = "white")%>%
-  row_spec(0, color = "white") %>%
-  column_spec(1, color = "black", include_thead = TRUE)%>%
-  row_spec(row = 0, font_size =13)
+  kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume", "Backlog Days (25th Percentile)", "Backlog Days (50th Percentile)", "Backlog Days (75th Percentile)")) %>%
+  kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+  column_spec(2, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
+  column_spec(3:6, background = "#221F72",color ="white", include_thead = TRUE)%>%
+  column_spec(2:6, background = "inherit", color = "inherit")%>%
+  row_spec(row = 0, font_size = 13)%>%
+  collapse_rows(columns = 1)
 ```
 
 #### *Cytology Accessioned Cases Volume (As of `r wday_result_date`)*
