@@ -50,13 +50,13 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-#Today <- as.timeDate(as.Date("01/28/2020", format = "%m/%d/%Y"))
+#Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+Today <- as.timeDate(as.Date("02/10/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-#Yesterday <- as.timeDate(as.Date("01/27/2020", format = "%m/%d/%Y"))
+#Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("02/09/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -1599,7 +1599,7 @@ add_on_table_not_wday %>%
 # asis_output('<h3> Surgical Pathology  </h3>')
 # asis_output(paste('<h4> *Surgical Pathology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
 # asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
-Table_Formatting(Surgical_Pathology_Table_Not_Weekday_New3)
+Table_Formatting(Surgical_Pathology_Table_Not_Weekday_New3,pathology_standardized_column_names)
 # asis_output('<h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>')
 ```
 <h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>
@@ -1613,7 +1613,8 @@ Table_Formatting(Surgical_Pathology_Table_Not_Weekday_New3)
 # asis_output('<h3> Cytology</h3>')
 # asis_output(paste('<h4> *Cytology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
 # asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
-Table_Formatting(Cytology_Table_Not_Weekday_New3)
+Table_Formatting(Cytology_Table_Not_Weekday_New3,cytology_standardized_column_names)
+Table_Formatting_V2(Cytology_Table_Not_Weekday_New3_V2)
 # asis_output('<h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>')
 ```
 <h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
@@ -1661,9 +1662,15 @@ lab_vol_kable_format(hem_vol_not_wday_table)
 ```
 
 ### Surgical Pathology   
-#### *Surgical Pathology Accessioned Cases Volume (As of `r wkend_holiday_result_date`)*
+#### *Surgical Pathology Signed Out Cases Volume (As of `r wkend_holiday_result_date`)*
 ```{r Surgical Pathology Weekend/Holiday: volume lookback, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Not_Weekday_New2)
+Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Not_Weekday_New2, pathology_volume_column_names)
+```
+
+### Cytology   
+#### *Cytology Signed Out Cases Volume (As of `r wkend_holiday_result_date`)*
+```{r Cytology Weekend/Holiday: volume lookback, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting_Volume(Cytology_Stratified_Vol_Not_Weekday_New2, cytology_volume_column_names)
 ```
 
 `r #End tabset`
