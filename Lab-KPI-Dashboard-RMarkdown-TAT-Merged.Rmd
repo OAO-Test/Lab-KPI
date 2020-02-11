@@ -667,7 +667,7 @@ Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed
 Cytology_Backlog$Backlog <- bizdays(Cytology_Backlog$Case_created_date, Today)-1
 
 #Case Volume
-Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days., na.rm = TRUE),0)), percentile_25th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.25, na.rm = TRUE))), percentile_50th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.5, na.rm = TRUE))), percentile_75th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.75, na.rm = TRUE))))
+Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days., na.rm = TRUE),0)), percentile_25th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.25, na.rm = TRUE))), percentile_50th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.5, na.rm = TRUE))), Maximum = format(ceiling(max(Backlog[Backlog > Received.to.signed.out.target..Days.], na.rm = TRUE))))
 
 Cytology_Backlog_Volume$spec_group <- factor(Cytology_Backlog_Volume$spec_group, levels = c("CYTO GYN", "CYTO NONGYN"))
 
@@ -695,7 +695,7 @@ Backlog_Accessioned_Table <- merge(x = Cytology_Accessioned_Vol3, y = Cytology_B
 
 #as extra precaution
 Table_Template_backlog_Accessioned <- data.frame(matrix(ncol=6, nrow = 2)) 
-colnames(Table_Template_backlog_Accessioned) <- c("spec_group", "Total_Accessioned_Volume", "Cyto_Backlog", "percentile_25th", "percentile_50th", "percentile_75th")
+colnames(Table_Template_backlog_Accessioned) <- c("spec_group", "Total_Accessioned_Volume", "Cyto_Backlog", "percentile_25th", "percentile_50th", "Maximum")
 Table_Template_backlog_Accessioned[1] <- c('CYTO GYN','CYTO NONGYN')
 
 Backlog_Accessioned_Table_New <- merge(x = Table_Template_backlog_Accessioned, y=Backlog_Accessioned_Table, all.y=TRUE)
@@ -1148,7 +1148,8 @@ Table_Formatting_Volume <- function (Volume_Table, column_names){
     column_spec(3:10, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
     column_spec(3:10, background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
-    collapse_rows(columns = 1)
+    collapse_rows(columns = 1)%>%
+    add_header_above(c(" "= 2, "Cases Signed Out by Home Hospital"= 8), background = c("white", "#00B9F2"), color= "white", font_size = 13)
   }
 }
 
@@ -1291,10 +1292,10 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 
 `r #Create new tabset placeholder for Ops & Quality indicators`
 ## **Operational and Quality Indicators** _(Placeholder)_ {.tabset}
-### Clinical & Anatomic Pathology Operational Indicators
-#### _Clinical & Anatomic Pathology Ops Indicator Table Placeholder_
-### Blood Bank Operational Indicators
-#### _Blood Bank Ops Indicator Table Placeholder_
+### Clinical Labs, Blood Bank & Anatomic Pathology Front End Operational Indicators
+#### _Clinical Labs, Blood Bank & Anatomic Pathology Front End Ops Indicator Table Placeholder_
+### Centralized Anatomic Pathology Operational Indicators
+#### _Centralized Anatomic Pathology Ops Indicator Table Placeholder_
 ### Quality Indicators
 #### _Good Catch Table Placeholder_
 ### Never Events
@@ -1381,8 +1382,8 @@ lab_vol_kable_format(hem_vol_wday_table)
 ```
 
 ### Surgical Pathology   
-#### *Surgical Pathology Accessioned Cases Volume (As of `r wday_result_date`)*
-```{r Surgical Pathology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+#### *Surgical Pathology Signed Out Cases Volume (As of `r wday_result_date`)*
+```{r Surgical Pathology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, pathology_volume_column_names)
 ```
 
@@ -1390,17 +1391,18 @@ Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, patholog
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
 Backlog_Accessioned_Table_New2 %>% 
-  kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume", "Backlog Days (25th Percentile)", "Backlog Days (50th Percentile)", "Backlog Days (75th Percentile)")) %>%
-  kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+  kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume", "25th Percentile", "50th Percentile", "Maximum")) %>%
+  kable_styling(bootstrap_options = "hover", full_width = TRUE, position = "center", row_label_position = "c", font_size = 11) %>%
   column_spec(2, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
   column_spec(3:6, background = "#221F72",color ="white", include_thead = TRUE)%>%
   column_spec(2:6, background = "inherit", color = "inherit")%>%
   row_spec(row = 0, font_size = 13)%>%
+  add_header_above(c(" "= 2, "Elapsed Turn Around Time for Backloged Cases From the Received Time"= 4), background = c("white", "#221F72"), color= "white", font_size = 13)%>%
   collapse_rows(columns = 1)
 ```
 
-#### *Cytology Accessioned Cases Volume (As of `r wday_result_date`)*
-```{r Cytology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+#### *Cytology Signed Out Cases Volume (As of `r wday_result_date`)*
+```{r Cytology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2, cytology_volume_column_names)
 ```
 
