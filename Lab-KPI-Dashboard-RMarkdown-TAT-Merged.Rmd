@@ -1539,7 +1539,7 @@ chem_hem_micro_kable(micro_tat_vol_table_not_wday)
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
 ### Missing Collections & Add Ons
-#### *Missing Collection Times and Add On Order Volume (Labs Resulted on 'r wkend_holiday_result_date`)*
+#### *Missing Collection Times and Add On Order Volume (Labs Resulted on `r wkend_holiday_result_date`)*
 <h5> Missing Collection Status Definitions: <span style = "color:red">Red:</span> >15%, 
 <span style = "color:orange">Yellow:</span> <=15% & >5%, 
 <span style = "color:green">Green:</span> <=5%</h5>
