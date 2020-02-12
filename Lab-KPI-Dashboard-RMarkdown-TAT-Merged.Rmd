@@ -1268,7 +1268,7 @@ add_on_table %>%
   column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
   row_spec(row = 0, font_size =13)
 ```
-<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
+<h6>*Missing collection time analysis includes analytes represented in Chemistry, Hematology, and Microbiology RRL dashboard TAT analysis from ED, ICU, IP Non-ICU, and ambulatory settings.*</h6>
 
 ### Surgical Pathology
 #### *Surgical Pathology KPI (Specimens Resulted on `r wday_result_date`)*
@@ -1593,7 +1593,7 @@ add_on_table_not_wday %>%
 # asis_output('<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
 # ')
 ```
-<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
+<h6>*Missing collection time analysis includes analytes represented in Chemistry, Hematology, and Microbiology RRL dashboard TAT analysis from ED, ICU, IP Non-ICU, and ambulatory settings.*</h6>
 
 ### Surgical Pathology
 #### *Surgical Pathology KPI (Specimens Resulted on `r wkend_holiday_result_date`)*
