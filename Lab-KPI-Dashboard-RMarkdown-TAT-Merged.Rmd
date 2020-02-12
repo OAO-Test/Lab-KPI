@@ -1,5 +1,5 @@
 ---
-title: "MSHS Laboratory KPI Dashboard"
+title: "MSHS Laboratory KPI Dashboard "
 output:
   html_document
 ---
@@ -39,6 +39,7 @@ library(stringr)
 
 
 ```
+<h1><span style = "color:red">Draft - Not For Distribution</h1>
 
 ```{r global_options, echo=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
@@ -50,13 +51,13 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-#Today <- as.timeDate(as.Date("02/10/2020", format = "%m/%d/%Y"))
+#Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+Today <- as.timeDate(as.Date("02/11/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-#Yesterday <- as.timeDate(as.Date("02/09/2020", format = "%m/%d/%Y"))
+#Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("02/10/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
