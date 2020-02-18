@@ -211,55 +211,62 @@ Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
 
 ```
 
-## **Weekday Operational Indicators** {.tabset}
-### Clinical Laboratories
-#### *Operational Indicators for Clinical Laboratories*
+## **Operational and Quality Indicators** {.tabset}
+### Operational Indicators
+#### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology*
 ```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE}
 
 Formatted_Clinical_Labs_Melt_New3%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Facility","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing", "CPA Reference Labs")) %>%
-    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
+    kable(escape = F, align = "c", col.names = c("Facility","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
 
 Comments_Clinical_Labs %>%
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("Facility","Comments if At Risk or Not Safe")) %>%
-    kable_styling(bootstrap_options = "hover", full_width = TRUE, position = "center", row_label_position = "c", font_size = 11)
+    kable_styling(bootstrap_options = "hover", full_width = TRUE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
 
 ```
 
 
-### LIS
+### Laboratory Information System
 #### *Operational Indicators for LIS*
 ```{r Qualitative Indicators for LIS, echo=FALSE, message=FALSE, warning=FALSE}
 Formatted_LIS_New2%>%
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("","Staffing","Service Change", "Preplanned Downtime")) %>%
-    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
 ```
 
 
-### Never Events
-#### *Reported Never Events for Each Division/Facility*
+### Quality Indicators
+#### Never Events 
+##### *Reported Never Events for Each Division/Facility*
 ```{r Lab KPI Form for Never Events, echo=FALSE, message=FALSE, warning=FALSE}
-Formatted_Never_Events_Melt_New2 %>%
+Never_Events_Only %>%
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("Facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results")) %>%
-    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
 
 Never_Events_Comments %>%
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("Facility", "Comments if There is a Never Event")) %>%
-    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
 ```
 
-### Good Catches
-#### *Reported Good Catches for Each Division/Facility*
+#### Good Catches
+##### *Reported Good Catches for Each Division/Facility*
 ```{r Lab KPI Form for Good Catches, echo=FALSE, message=FALSE, warning=FALSE}
-Good_Catch_New %>%
+Good_Catch %>%
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("Facility", "Good Catch Comment")) %>%
-    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11)
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
 
 
 
