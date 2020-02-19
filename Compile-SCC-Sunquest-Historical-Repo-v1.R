@@ -36,8 +36,8 @@ user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Proj
 user_path <- paste0(user_wd, "\\*.*")
 setwd(user_wd)
 
-file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = "^(Doc){1}.+(2020)\\-(01){1}\\-[0-9]{2}.xlsx")
-file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-(01){1}\\-[0-9]{2}.xls")
+file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = "^(Doc){1}.+(2020)\\-(01){1}\\-(10){1}.xlsx")
+file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-(01){1}\\-(10){1}.xls")
 
 scc_list <- lapply(file_list_scc, function(x) read_excel(path = paste0(user_wd, "\\SCC CP Reports\\", x)))
 sun_list <- lapply(file_list_sun, function(x) suppressWarnings(read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x))))
@@ -98,11 +98,11 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # SCC data formatting ----------------------------------------------
   raw_scc[c("Ward", "WARD_NAME", 
             "REQUESTING_DOC", 
-            "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", "Test",
+            "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "Test",
             "COLLECT_CENTER_ID", "SITE", "Site",
             "CLINIC_TYPE", "Setting", "SettingRollUp")] <- lapply(raw_scc[c("Ward", "WARD_NAME", 
                                                                             "REQUESTING_DOC", 
-                                                                            "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", "Test",
+                                                                            "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "Test",
                                                                             "COLLECT_CENTER_ID", "SITE", "Site",
                                                                             "CLINIC_TYPE", "Setting", "SettingRollUp")], as.factor)
   
@@ -212,13 +212,16 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # Sunquest data formatting --------------------------------------------
   raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
             "LocType", "LocCode", "LocName", 
-            "SpecimenPriority", "PhysName", "SHIFT",
+            "PhysName", "SHIFT",
             "ReceiveTech", "ResultTech", "PerformingLabCode",
             "Test", "LocandName", "Setting", "SettingRollUp", "Site")] <- lapply(raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
                                                                                            "LocType", "LocCode", "LocName", 
-                                                                                           "SpecimenPriority", "PhysName", "SHIFT",
+                                                                                           "PhysName", "SHIFT",
                                                                                            "ReceiveTech", "ResultTech", "PerformingLabCode",
                                                                                            "Test", "LocandName", "Setting", "SettingRollUp", "Site")], as.factor)
+  
+  # Add NA as factor level for SpecimenPriority since many specimens are submitted without a priority
+  raw_sun$SpecimenPriority <- addNA(raw_sun$SpecimenPriority)
   
   # Fix any timestamps that weren't imported correctly and then format as date/time
   raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- lapply(raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")], function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
@@ -335,7 +338,25 @@ bind_test <- NULL
 
 for (i in seq(from = 3, to = length(test), by = 3)) {
   bind_test <- rbind(bind_test, test[[i]])
+  # bind_test$OrderPriority <- addNA(bind_test$OrderPriority)
 }
+
+
 
 # Remove duplicate entries across days
 bind_test <- unique(bind_test)
+
+# bind_test$OrderPriority <- as.character(bind_test$OrderPriority)
+
+# bind_test$OrderPriority <- addNA(bind_test$OrderPriority)
+
+# Summarize data for export to historical repo
+scc_sun_all_days_subset <- bind_test %>%
+  group_by(Site, ResultDate, Test, Division, 
+           Setting, SettingRollUp, MasterSetting, DashboardSetting,
+           OrderPriority, AdjPriority, DashboardPriority,
+           ReceiveResultTarget, CollectResultTarget) %>%
+  summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), TotalReceiveResultInTarget = sum(ReceiveResultInTarget[TATInclude == TRUE]), TotalCollectResultInTarget = sum(CollectResultInTarget[TATInclude == TRUE]), TotalAddOnOrder = sum(AddOnMaster == "AddOn"), TotalMissingCollections = sum(MissingCollect))
+
+
+scc_sun_all_days_subset$Test2 <- is.na(scc_sun_all_days_subset$OrderPriority)
