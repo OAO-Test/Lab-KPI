@@ -586,6 +586,7 @@ pre_processing_pp <- function(Raw_Data){
     Raw_Data_New_Lab_Metric_V2 <- NULL
     Processed_Data_Table_V2 <-NULL
     Processed_Data_Table <- NULL
+    Summarized_Table <- NULL
     Return_Tables <- NULL
   } else {
     #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
@@ -611,21 +612,23 @@ pre_processing_pp <- function(Raw_Data){
     
     Raw_Data_New_Cases_Signed <- summarise(group_by(Raw_Data_New,spec_group, Patient.Setting), No_Cases_Signed = n())
 
-    Raw_Data_New_Cases_Signed_Stratified <- summarise(group_by(Raw_Data_New,spec_group, Facility, Patient.Setting), No_Cases_Signed = n())    
-    Raw_Data_New_Cases_Signed_Stratified <- dcast(Raw_Data_New_Cases_Signed_Stratified, spec_group + Patient.Setting ~ Facility, value.var = "No_Cases_Signed" )
+    Raw_Data_New_Cases_Signed_Stratified_sum <- summarise(group_by(Raw_Data_New,spec_group, Facility, Patient.Setting), No_Cases_Signed = n())    
+    Raw_Data_New_Cases_Signed_Stratified <- dcast(Raw_Data_New_Cases_Signed_Stratified_sum, spec_group + Patient.Setting ~ Facility, value.var = "No_Cases_Signed" )
     Raw_Data_New_Cases_Signed_Stratified[is.na(Raw_Data_New_Cases_Signed_Stratified)] <- 0
         
-    Raw_Data_New_Patient_Metric <- summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))))
+    Raw_Data_New_Patient_Metric_sum <- summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))))
     
-    Raw_Data_New_Patient_Metric <- dcast(Raw_Data_New_Patient_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
+    Raw_Data_New_Patient_Metric <- dcast(Raw_Data_New_Patient_Metric_sum, spec_group + Patient.Setting ~ Facility, value.var = "Avg_Collection_to_Signed_out" )
     
     
     #Calculate % Receive to result TAT within target
-    Raw_Data_New_Lab_Metric <-summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)))
+    Raw_Data_New_Lab_Metric_sum <-summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)))
     
-    Raw_Data_New_Lab_Metric <- dcast(Raw_Data_New_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
+    Raw_Data_New_Lab_Metric <- dcast(Raw_Data_New_Lab_Metric_sum, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
     
     Raw_Data_New_Lab_Metric_V2 <- summarise(group_by(Raw_Data_New,spec_group,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)))
+    
+    Summarized_Table <- summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), No_Cases_Signed = n(), Lab_Metric_TAT_Avg =mean(Received_to_signed_out, na.rm = TRUE), Lab_Metric_TAT_med =median(Received_to_signed_out, na.rm = TRUE), Lab_Metric_TAT_sd =sd(Received_to_signed_out, na.rm = TRUE), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)), Avg_Collection_to_Signed_out=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))), Patient_Metric_TAT_med =median(Collection_to_signed_out, na.rm = TRUE), Patient_Metric_TAT_sd =sd(Collection_to_signed_out, na.rm = TRUE))
     
     #here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
     
@@ -633,7 +636,7 @@ pre_processing_pp <- function(Raw_Data){
     Processed_Data_Table <- Processed_Data_Table[!(Processed_Data_Table$Patient.Setting == "Other"),]
     Processed_Data_Table_V2 <- left_join(full_join(Raw_Data_New_Cases_Signed, Raw_Data_New_Lab_Metric_V2), Raw_Data_New_Patient_Metric, by = c("spec_group", "Patient.Setting"))
     Processed_Data_Table_V2 <- Processed_Data_Table_V2[!(Processed_Data_Table_V2$Patient.Setting == "Other"),]
-    Return_Tables <- list(Processed_Data_Table, Processed_Data_Table_V2,Raw_Data_New_Cases_Signed_Stratified,Raw_Data_New) 
+    Return_Tables <- list(Processed_Data_Table, Processed_Data_Table_V2,Raw_Data_New_Cases_Signed_Stratified,Raw_Data_New, Summarized_Table) 
   }
   return(Return_Tables)
 }
@@ -645,13 +648,17 @@ Cytology_Table_Not_Weekday_V2 <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[2]
 Cytology_Stratified_Vol_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[3]]
 Cytology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[3]]
 Cytology_Table_Weekday_Raw <- pre_processing_pp(Cytology_Weekday_Raw)[[4]]
+Cytology_Table_Weekday_Summarized <- pre_processing_pp(Cytology_Weekday_Raw)[[5]]
+Cytology_Table_Not_Weekday_Summarized <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[5]]
+
 
 Surgical_Pathology_Table_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[1]]
 Surgical_Pathology_Table_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[1]]
 Surgical_Pathology_Stratified_Vol_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[3]]
 Surgical_Pathology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[3]]
 Surgical_Pathology_Table_Weekday_Raw <- pre_processing_pp(Surgical_Pathology_Weekday)[[4]]
-
+Surgical_Pathology_Table_Weekday_Summarized <- pre_processing_pp(Surgical_Pathology_Weekday)[[5]]
+Surgical_Pathology_Table_Not_Weekday_Summarized <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[5]]
 
 ```
 
@@ -1100,6 +1107,16 @@ Surgical_Pathology_Table_Weekday_New3 <- Conditional_Formatting_Patho(Surgical_P
 Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting_Patho(Surgical_Pathology_Table_Not_Weekday_New2)
 
 ```
+
+```{r Create historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE}
+
+
+```
+
+
+
+
+
 
 ```{r Custom function for Anatomic Pathology kable formatting, echo=FALSE, warning = FALSE, message = FALSE}
 pathology_standardized_column_names <-  c("Case Type","Target","Setting","No. Cases Signed Out","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL")
