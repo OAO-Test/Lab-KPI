@@ -112,6 +112,7 @@ pre_processing_historical <- function(Raw_Data){
 
 Historical_Data_Summarized <- pre_processing_historical(SP_Dataframe_combined_Exc)
 
+write.csv(Historical_Data_Summarized, "Historical_Repo_Surgical_Pathology.csv")
 
 
 
