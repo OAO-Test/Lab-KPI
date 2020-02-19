@@ -36,19 +36,11 @@ user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Proj
 user_path <- paste0(user_wd, "\\*.*")
 setwd(user_wd)
 
-file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = "^(Doc){1}.+(2020)\\-(01){1}\\-(10){1}.xlsx")
-file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-(01){1}\\-(10){1}.xls")
+file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = "^(Doc){1}.+(2020)\\-(01|02){1}\\-[0-9]{2}.xlsx")
+file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-(01|02){1}\\-[0-9]{2}.xls")
 
 scc_list <- lapply(file_list_scc, function(x) read_excel(path = paste0(user_wd, "\\SCC CP Reports\\", x)))
 sun_list <- lapply(file_list_sun, function(x) suppressWarnings(read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x))))
-
-# for (i in 1:(length(scc_list)-1)) {
-#   assign(paste0("scc_raw_data", i), scc_list[[i]])
-# }
-# 
-# for (i in 1:(length(sun_list)-1)) {
-#   assign(paste0("sun_raw_data", i), sun_list[[i]])
-# }
 
 # Import analysis reference data starting with test codes for SCC and Sunquest --------------------------------------
 reference_file <- choose.files(default = user_path, caption = "Select analysis reference file")
@@ -331,32 +323,32 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
 }
 
 # Preprocess all SCC and Sunquest files
-test <- mapply(preprocess_scc_sun, scc_list, sun_list)
+preprocess_all_files <- mapply(preprocess_scc_sun, scc_list, sun_list)
 
 # Bind together scc_sun_master file for each day
-bind_test <- NULL
+bind_all_data <- NULL
 
-for (i in seq(from = 3, to = length(test), by = 3)) {
-  bind_test <- rbind(bind_test, test[[i]])
-  # bind_test$OrderPriority <- addNA(bind_test$OrderPriority)
+for (i in seq(from = 3, to = length(preprocess_all_files), by = 3)) {
+  bind_all_data <- rbind(bind_all_data, preprocess_all_files[[i]])
 }
 
 
 
 # Remove duplicate entries across days
-bind_test <- unique(bind_test)
+bind_all_data <- unique(bind_all_data)
 
-# bind_test$OrderPriority <- as.character(bind_test$OrderPriority)
 
-# bind_test$OrderPriority <- addNA(bind_test$OrderPriority)
-
-# Summarize data for export to historical repo
-scc_sun_all_days_subset <- bind_test %>%
+# Summarize data for export to historical repo ---------------------------------
+scc_sun_all_days_subset <- bind_all_data %>%
   group_by(Site, ResultDate, Test, Division, 
            Setting, SettingRollUp, MasterSetting, DashboardSetting,
            OrderPriority, AdjPriority, DashboardPriority,
            ReceiveResultTarget, CollectResultTarget) %>%
   summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), TotalReceiveResultInTarget = sum(ReceiveResultInTarget[TATInclude == TRUE]), TotalCollectResultInTarget = sum(CollectResultInTarget[TATInclude == TRUE]), TotalAddOnOrder = sum(AddOnMaster == "AddOn"), TotalMissingCollections = sum(MissingCollect))
 
+start_date <- format(min(scc_sun_all_days_subset$ResultDate), "%m-%d-%y")
+end_date <- format(max(scc_sun_all_days_subset$ResultDate), "%m-%d-%y")
 
-scc_sun_all_days_subset$Test2 <- is.na(scc_sun_all_days_subset$OrderPriority)
+
+write_xlsx(scc_sun_all_days_subset, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Hist Repo Test ", start_date, " to ", end_date, " Created ", Sys.Date(), ".xlsx"))
+
