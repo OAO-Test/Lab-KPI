@@ -36,8 +36,8 @@ user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Proj
 user_path <- paste0(user_wd, "\\*.*")
 setwd(user_wd)
 
-file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = "^(Doc){1}.+(2020)\\-02-19.xlsx")
-file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-02-19.xls")
+file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = "^(Doc){1}.+(2020)\\-[0-9]{2}-[0-9]{2}.xlsx")
+file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-[0-9]{2}-[0-9]{2}.xls")
 
 scc_list <- lapply(file_list_scc, function(x) read_excel(path = paste0(user_wd, "\\SCC CP Reports\\", x)))
 sun_list <- lapply(file_list_sun, function(x) suppressWarnings(read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x))))
@@ -325,30 +325,9 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
 # Preprocess all SCC and Sunquest files
 preprocess_all_files <- mapply(preprocess_scc_sun, scc_list, sun_list)
 
-scc_data <- preprocess_all_files[[1]]
-sun_data <- preprocess_all_files[[2]]
-master_data <- preprocess_all_files[[3]]
-
-# master_result_dates <- master_data %>%
-#   group_by(ResultDate) %>%
-#   summarize(VolLabs = n())
-# 
-# result_date <- master_result_dates$ResultDate[master_result_dates$VolLabs == max(master_result_dates$VolLabs)]
-# master_data <- master_data[master_data$ResultDate == result_date, ]
-
-
-test_dates <- as.Date(c("2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04"), format = "%Y-%m-%d")
-test_vol <- c(2, 300, 400, 3)
-
-test_df <- data.frame(test_dates, test_vol)
-
-test_df <- test_df[order(test_df$test_vol, decreasing = TRUE), ]
-ndays <- 2
-correct_dates <- test_df$test_dates[1:ndays]
-
-test_df2 <- test_df
-
-test_df2 <- test_df2[test_df2$test_dates %in% correct_dates, ]
+# scc_data <- preprocess_all_files[[1]]
+# sun_data <- preprocess_all_files[[2]]
+# master_data <- preprocess_all_files[[3]]
 
 correct_result_dates <- function(data, number_days) {
   all_resulted_dates_vol <- data %>%
@@ -363,21 +342,22 @@ correct_result_dates <- function(data, number_days) {
   return(new_data)
 }
 
-test <- correct_result_dates(master_data, number_days = 1)
+# master_data <- correct_result_dates(master_data, number_days = 1)
 
-# Bind together scc_sun_master file for each day
+total_row <- 0
+for (i in seq(from = 3, to = length(preprocess_all_files), by = 3)) {
+  total_row <- total_row + nrow(preprocess_all_files[[i]])
+}
+
+# Remove any data with incorrect date from master files individually and then combine all reports into one dataframe
 bind_all_data <- NULL
-
 for (i in seq(from = 3, to = length(preprocess_all_files), by = 3)) {
   preprocess_all_files[[i]] <- correct_result_dates(preprocess_all_files[[i]], 1)
   bind_all_data <- rbind(bind_all_data, preprocess_all_files[[i]])
 }
 
-
-
 # Remove duplicate entries across days
 bind_all_data <- unique(bind_all_data)
-
 
 # Summarize data for export to historical repo ---------------------------------
 scc_sun_all_days_subset <- bind_all_data %>%
