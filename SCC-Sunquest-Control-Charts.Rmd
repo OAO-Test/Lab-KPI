@@ -157,7 +157,7 @@ resulted_volume_graph <- function(data, test_name, site_name) {
   ggplot() +
     geom_point(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), shape = 16, size = 3) +
     geom_line(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), linetype = "dashed") +
-    labs(title = paste0(site_name, ": ", test_name, "Resulted Lab Volume"), x = "Date",  y = "Volume of Labs") +
+    labs(title = paste0(site_name, ": ", test_name, " Resulted Lab Volume"), x = "Date",  y = "Volume of Labs") +
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
     scale_x_date(limits = c(start_date -1, max(data$ResultDate)+1), breaks = seq(start_date, max(data$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
@@ -188,25 +188,63 @@ for (test in unique(b$Test)) {
       # print(tat_percentage_graph(data = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "ReceiveResultPercent"))
       # print(tat_percentage_graph(data = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "CollectResultPercent"))
     }
-    print(resulted_volume_graph(data = dashboard_vol_summary, test_name = test, site_name = site))
+    # print(resulted_volume_graph(data = dashboard_vol_summary, test_name = test, site_name = site))
   }
 }
 
 ```
 
 
+```{r Custom function for stratifying TAT data, echo = FALSE, warning = FALSE, message = FALSE}
+stratified_data_for_plots <- function(tat_data, test) {
+  test_df <- tat_data[tat_data$Test == test, ]
+  sites <- unique(test_df$Site)
+  for (site in sites) {
+    site_df <- test_df[test_df$Site == site, ]
+    priorities <- unique(site_df$DashboardPriority)
+    for (priority in priorities) {
+      priority_df <- site_df[site_df$DashboardPriority == priority, ]
+      print(tat_percentage_graph(data = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "ReceiveResultPercent"))
+      print(tat_percentage_graph(data = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "CollectResultPercent"))
+      }
+    print(resulted_volume_graph(data = dashboard_vol_summary, test_name = test, site_name = site))
+  }
+}
+```
+
+
 ## Percentage of Labs within Target TAT {.tabset}
 
 ### Troponin
-
+```{r Troponin historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Troponin")
+```
 ### Lactate WB
+```{r Lactate WB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Lactate WB")
+```
 
 ### BUN
+```{r BUN historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "BUN")
+```
 
 ### HGB
+```{r HGB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "HGB")
+```
 
 ### PT
+```{r PT historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "PT")
+```
 
 ### Rapid Flu
+```{r Rapid Flu historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Rapid Flu")
+```
 
 ### C. diff
+```{r C. diff historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "C. diff")
+```
