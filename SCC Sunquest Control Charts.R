@@ -1,4 +1,5 @@
 # Sample control charts
+install.packages("gridExtra")
 
 library(timeDate)
 library(readxl)
@@ -13,6 +14,7 @@ library(rmarkdown)
 library(stringr)
 library(writexl)
 library(ggplot2)
+library(gridExtra)
 
 rm(list = ls())
 
@@ -141,26 +143,6 @@ for (test in tests) {
 }
 
 
-tests <- unique(dashboard_tat_filter$Test)
-for (test in tests) {
-  print(paste("Test:", test))
-  test_df <- dashboard_tat_filter[dashboard_tat_filter$Test == test, ]
-  sites <- unique(test_df$Site)
-  for (site in sites) {
-    print(paste("Site: ", site))
-    site_test_df <- test_df[test_df$Site == site, ] 
-    priorities <- unique(site_test_df$DashboardPriority)
-    for (priority in priorities) {
-      print(paste("Priority: ", priority))
-      priority_site_test_df <- site_test_df[site_test_df$DashboardPriority == priority, ]
-      patient_settings <- unique(priority_site_test_df$DashboardSetting)
-      for (patient_setting in patient_settings) {
-        print(paste("Patient Setting: ", patient_setting))
-      }
-    }
-  }
-}
-
 tat_percentage_graph2 <- function(data, test_name, site_name, lab_priority, metric) {
   metric_name <- ifelse(metric == "ReceiveResultPercent", "Receive to Result TAT", ifelse(metric == "CollectResultPercent", "Collect to Result TAT", "Error"))
   # df <- data[data$ResultDate >= start_date & data$Test == test & data$Site == site & data$DashboardPriority == lab_priority, ]
@@ -176,7 +158,7 @@ tat_percentage_graph2 <- function(data, test_name, site_name, lab_priority, metr
     theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
     scale_x_date(limits = c(start_date -1, max(data$ResultDate)+1), breaks = seq(start_date, max(data$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
     scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green"), breaks=c("Not Safe","At Risk","Safe")) +
-    scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.2, "At Risk" = 0.2, "Safe" = 0.2), breaks=c("Not Safe","At Risk","Safe")) +
+    scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.15, "At Risk" = 0.15, "Safe" = 0.15), breaks=c("Not Safe","At Risk","Safe")) +
     scale_color_manual(name = "Setting", values = mshs_colors)
 }
 
@@ -184,29 +166,61 @@ test_df <- dashboard_tat_filter[dashboard_tat_filter$Test == "Troponin" | dashbo
 
 tat_percentage_graph2(data = test_df, test_name = "Troponin", site_name = "MSH", lab_priority = "All", metric = "ReceiveResultPercent")
 
-# Create a loop to graph all necessary combinations
-for (test in unique(test_df$Test)) {
-  # print(paste("Test:", test))
-  # test_df <- dashboard_tat_filter[dashboard_tat_filter$Test == test, ]
-  dummy_df <- test_df[test_df$Test == test, ]
+b <- dashboard_tat_filter
+for (test in unique(b$Test)) {
+  test_df <- b[b$Test == test, ]
+  print(paste("Test:", test))
   sites <- unique(test_df$Site)
   for (site in sites) {
-    # print(paste("Site: ", site))
-    # site_test_df <- test_df[test_df$Site == site, ] 
-    dummy_df <- dummy_df[dummy_df$Site == site, ]
-    priorities <- unique(dummy_df$DashboardPriority)
+    site_df <- test_df[test_df$Site == site, ]
+    print(paste("Site: ", site))
+    priorities <- unique(site_df$DashboardPriority)
     for (priority in priorities) {
-      dummy_df <- dummy_df[dummy_df$DashboardPriority == priority, ]
-      tat_percentage_graph2(data = dummy_df, test_name = test, site_name = site, lab_priority = priority, metric = "ReceiveResultPercent")
-      # print(paste("Priority: ", priority))
-      # priority_site_test_df <- site_test_df[site_test_df$DashboardPriority == priority, ]
-      # patient_settings <- unique(priority_site_test_df$DashboardSetting)
-      # for (patient_setting in patient_settings) {
-      #   print(paste("Patient Setting: ", patient_setting))
-      # }
+      priority_df <- site_df[site_df$DashboardPriority == priority, ]
+      print(paste("Priority: ", priority))
+      print(paste(test, site, priority))
+      # print(head(new_test4, 10))
+      print(tat_percentage_graph2(data = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "ReceiveResultPercent"))
     }
   }
 }
 
-tat_percentage_graph(data = dummy_df, site = "MSH", metric = "ReceiveResultPercent")
+unique_combos <- unique(dashboard_tat_filter[ , c("Test", "Site", "DashboardPriority")])
 
+for (i in 1:nrow(unique_combos)) {
+  new_data <- dashboard_tat_filter[dashboard_tat_filter$Test == unique_combos$Test[i] & 
+                                   dashboard_tat_filter$Site == unique_combos$Site[i] &
+                                   dashboard_tat_filter$DashboardPriority == unique_combos$DashboardPriority[i], ]
+  # print(head(new_data))
+  print(tat_percentage_graph2(data = new_data, test_name = unique_combos$Test[i], site_name = unique_combos$Site[i], lab_priority = unique_combos$DashboardPriority[i], metric = "ReceiveResultPercent"))
+}
+
+test_subplot <- dashboard_tat_filter[dashboard_tat_filter$Test == "Troponin" & 
+                                       dashboard_tat_filter$Site == "MSH" &
+                                       dashboard_tat_filter$DashboardPriority == "All", ]
+
+p1 <- tat_percentage_graph2(data = test_subplot, test_name = "Troponin", site_name = "MSH", lab_priority = "All", metric = "ReceiveResultPercent")
+p2 <- tat_percentage_graph2(data = test_subplot, test_name = "Troponin", site_name = "MSH", lab_priority = "All", metric = "CollectResultPercent")
+
+grid.arrange(p1, p2, nrow = 2)
+
+ggplot() +
+  geom_point(data = dashboard_vol_summary[dashboard_vol_summary$ResultDate >= start_date & dashboard_vol_summary$Test == "Troponin" & dashboard_vol_summary$Site == "MSH", ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), shape = 16, size = 3) +
+  geom_line(data = dashboard_vol_summary[dashboard_vol_summary$ResultDate >= start_date & dashboard_vol_summary$Test == "Troponin" & dashboard_vol_summary$Site == "MSH", ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), linetype = "dashed") +
+  labs(title = paste0("Troponin Resulted Lab Volume: MSH"), x = "Date",  y = "Volume of Labs") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
+  scale_x_date(limits = c(start_date -1, max(dashboard_vol_summary$ResultDate)+1), breaks = seq(start_date, max(dashboard_vol_summary$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+  scale_color_manual(name = "All Settings", values = mshs_colors)
+
+p3 <- ggplot() +
+  geom_point(data = dashboard_vol_summary[dashboard_vol_summary$ResultDate >= start_date & dashboard_vol_summary$Test == "Troponin" & dashboard_vol_summary$Site == "MSH", ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), shape = 16, size = 3) +
+  geom_line(data = dashboard_vol_summary[dashboard_vol_summary$ResultDate >= start_date & dashboard_vol_summary$Test == "Troponin" & dashboard_vol_summary$Site == "MSH", ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), linetype = "dashed") +
+  labs(title = paste0("Troponin Resulted Lab Volume: MSH"), x = "Date",  y = "Volume of Labs") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
+  scale_x_date(limits = c(start_date -1, max(dashboard_vol_summary$ResultDate)+1), breaks = seq(start_date, max(dashboard_vol_summary$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+  scale_color_manual(name = "All Settings", values = mshs_colors)
+
+
+grid.arrange(p1, p2, p3, nrow = 3)
