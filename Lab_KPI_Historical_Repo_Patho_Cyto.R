@@ -110,7 +110,7 @@ pre_processing_historical <- function(Raw_Data){
 }
 
 Historical_Data_Summarized <- pre_processing_historical(SP_Dataframe_combined_Exc)
-
+colnames(Historical_Data_Summarized) <- c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr", "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target", "Patient_metric_target", "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std","Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med", "Patient_metric_std")
 write.csv(Historical_Data_Summarized, "Historical_Repo_Surgical_Pathology.csv")
 
 
