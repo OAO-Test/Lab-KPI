@@ -64,14 +64,15 @@ dashboard_tat_summary$CollectResultDefectRate <- (dashboard_tat_summary$Resulted
 dashboard_tat_summary$SafeThreshold <- ifelse(dashboard_tat_summary$Test == "Rapid Flu" | dashboard_tat_summary$Test == "C. diff", 1.0, 0.95)
 dashboard_tat_summary$NotSafeThreshold <- ifelse(dashboard_tat_summary$Test == "Rapid Flu" | dashboard_tat_summary$Test == "C. diff", 0.9, 0.8)
 
+# Summarize volume data
+# dashboard_vol_summary <- scc_sun_hist %>%
+#   group_by(Site, ResultDate, Test) %>%
+#   summarize(ResultedVolume = sum(TotalResulted))
+
 dashboard_vol_summary <- scc_sun_hist %>%
-  group_by(Site, ResultDate, Test) %>%
+  group_by(Site, ResultDate, Test, DashboardPriority) %>%
   summarize(ResultedVolume = sum(TotalResulted))
 
-# troponin_test <- dashboard_tat_summary[dashboard_tat_summary$Test == "Troponin", ]
-# troponin_test <- troponin_test[troponin_test$DashboardSetting == "ED & ICU" | troponin_test$DashboardSetting == "IP Non-ICU", ]
-# 
-# # troponin_test$ResultDate <- as.Date(troponin_test$ResultDate, format = "%m/%d/%y")
 ```
 
 ```{r Test plot, echo = FALSE, warning = FALSE, message = FALSE}
@@ -153,15 +154,28 @@ tat_percentage_graph <- function(data, test_name, site_name, lab_priority, metri
     scale_color_manual(name = "Setting", values = mshs_colors)
 }
 
+# Custom function for plotting total resulted lab volume
+# resulted_volume_graph <- function(data, test_name, site_name) {
+#   ggplot() +
+#     geom_point(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), shape = 16, size = 3) +
+#     geom_line(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), linetype = "dashed") +
+#     labs(title = paste0(site_name, ": ", test_name, " Resulted Lab Volume"), x = "Date",  y = "Volume of Labs") +
+#     theme_bw() +
+#     theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
+#     scale_x_date(limits = c(start_date -1, max(data$ResultDate)+1), breaks = seq(start_date, max(data$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+#     scale_color_manual(name = "All Settings", values = mshs_colors)
+# }
+
+# Function for plotting total resulted lab volume stratified by order priority
 resulted_volume_graph <- function(data, test_name, site_name) {
   ggplot() +
-    geom_point(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), shape = 16, size = 3) +
-    geom_line(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = "All Settings"), linetype = "dashed") +
-    labs(title = paste0(site_name, ": ", test_name, " Resulted Lab Volume"), x = "Date",  y = "Volume of Labs") +
+    geom_point(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = DashboardPriority, shape = DashboardPriority), size = 3) +
+    geom_line(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = DashboardPriority), linetype = "dashed") +
+    labs(title = paste0(site_name, ": ", test_name, " Resulted Lab Volume"), x = "Date",  y = "Volume of Labs", color = "Priority", shape = "Priority") +
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
     scale_x_date(limits = c(start_date -1, max(data$ResultDate)+1), breaks = seq(start_date, max(data$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
-    scale_color_manual(name = "All Settings", values = mshs_colors)
+    scale_color_manual(name = "Priority", values = mshs_colors)
 }
 ```
 
@@ -219,6 +233,7 @@ stratified_data_for_plots <- function(tat_data, test) {
 ```{r Troponin historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Troponin")
 ```
+
 ### Lactate WB
 ```{r Lactate WB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Lactate WB")
