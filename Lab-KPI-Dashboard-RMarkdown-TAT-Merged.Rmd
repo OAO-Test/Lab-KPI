@@ -35,6 +35,7 @@ library(kableExtra)
 library(formattable)
 library(rmarkdown)
 library(stringr)
+library(ggplot2)
 # library(tinytex)
 
 
@@ -51,13 +52,13 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-#Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-Today <- as.timeDate(as.Date("02/19/2020", format = "%m/%d/%Y"))
+Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+#Today <- as.timeDate(as.Date("02/19/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-#Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("02/18/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+#Yesterday <- as.timeDate(as.Date("02/18/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -721,7 +722,7 @@ Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
 #1. import the historical repo
 Historical_Repo <- read.csv("J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Historical_Repo_Surgical_Pathology.csv", stringsAsFactors = FALSE)
 Historical_Repo$X <- NULL
-Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%y')
+Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%Y')
 
 #2. append all the summary tables together
 Cytology_Table_Weekday_Summarized <- pre_processing_pp(Cytology_Weekday_Raw)[[5]]
@@ -746,6 +747,32 @@ Historical_Repo[common] <- lapply(common, function(x) {
 Historical_Repo_Updated <- rbind(Historical_Repo, current_summary)
 
 write.csv(Historical_Repo_Updated , "Historical_Repo_Surgical_Pathology_test.csv")
+
+```
+
+```{r create a custom function for 30 days volume lookback,warning = FALSE, message = FALSE, echo = FALSE}
+#exclude weekends
+Historical_Repo_Updated_weekdays <- Historical_Repo_Updated[which(Historical_Repo_Updated$Signed_out_day_only != "Sunday" | Historical_Repo_Updated$Signed_out_day_only != "Saturday"),]
+
+#determine the 30 business that will be reported
+unique_dates <- unique(Historical_Repo_Updated_weekdays$Signed_out_date_only)
+
+Ordered_Dates <- unique_dates[rev(order(unique_dates))]
+
+reporting_30_day_period <- Ordered_Dates[1:30]
+last_day_in_reporting_period <- Ordered_Dates[30] 
+first_day_in_reporting_period <- Ordered_Dates[1]
+
+historical_30_day_period <- Historical_Repo_Updated_weekdays[which(Historical_Repo_Updated_weekdays$Signed_out_date_only>=last_day_in_reporting_period),]
+
+#we need to create a percent within target graph for cyto and patho
+#the graph will have the split between IP and AMB
+historical_30_day_period_breast_MSH <- historical_30_day_period[historical_30_day_period$Spec_group == "Breast"& (historical_30_day_period$Patient_setting == "Amb" | historical_30_day_period$Patient_setting == "IP") & historical_30_day_period$Facility == "MSH",]
+
+ggplot(historical_30_day_period_breast_MSH, aes(x = Signed_out_date_only, y = Lab_metric_within_target, group= Patient_setting)) + 
+  geom_point() +
+  geom_line()
+
 
 
 ```
