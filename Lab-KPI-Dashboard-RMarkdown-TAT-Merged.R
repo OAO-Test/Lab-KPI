@@ -1,5 +1,6 @@
 ---
-title: "MSHS Laboratory KPI Dashboard "
+title: "MSHS Laboratory KPI Dashboard"
+
 output:
   html_document
 ---
@@ -35,16 +36,13 @@ library(kableExtra)
 library(formattable)
 library(rmarkdown)
 library(stringr)
-# library(tinytex)
-
-
 ```
+
 <h1><span style = "color:red">Draft - Not For Distribution</h1>
 
 ```{r global_options, echo=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 ```
-
 
 ```{r Determine date, warning = FALSE, message = FALSE, echo = FALSE}
 #Clear existing history
@@ -77,15 +75,16 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 
 #### *Dashboard Creation Date: `r format(Today, "%m/%d/%Y")`*
 
+
 ```{r Import all data, warning = FALSE, message = FALSE, echo = FALSE}
 # Select file/folder path for easier file selection and navigation
 # user_wd <- choose.dir(caption = "Select your working directory")
 user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 user_path <- paste0(user_wd, "\\*.*")
 
-
 #------------------------------Read Excel sheets------------------------------#
 #The if-statement below helps in determining how many excel files are required
+
 
 if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){ # Scenario 1: Mon Holiday or Friday Holiday (Need to select 4 files)
   # Import SCC data
@@ -185,7 +184,6 @@ Cytology_Backlog_Raw <- data.frame(Cytology_Backlog_Raw[-nrow(Cytology_Backlog_R
 # Import analysis reference data starting with test codes for SCC and Sunquest
 # reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
 reference_file <- choose.files(default = user_path, caption = "Select analysis reference file")
-
 test_code <- read_excel(reference_file, sheet = "TestNames")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
@@ -225,6 +223,7 @@ TAT_Targets <- data.frame(read_excel(reference_file, sheet = "AP_TAT Targets"), 
 GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAsFactors = FALSE)
 
 #-----------Create table template for Cyto/Path-----------#
+
 #Cyto
 Table_Template_Cyto <- data.frame(matrix(ncol=19, nrow = 4)) 
 colnames(Table_Template_Cyto) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
@@ -252,7 +251,6 @@ colnames(Table_Template_Patho_Vol) <- c("spec_group","Patient.Setting","BIMC", "
 Table_Template_Patho_Vol[1] <- c('Breast','Breast','GI', 'GI')
 Table_Template_Patho_Vol[2] <- c('IP', 'Amb')
 ```
-
 
 ```{r Custom Function for preprocessing raw SCC and Sunquest data, warning = FALSE, message = FALSE, echo = FALSE}
 preprocess_scc_sun <- function(raw_scc, raw_sun)  {
@@ -286,7 +284,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   
   # Fix any timestamps that weren't imported correctly and then format as date/time
   raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")] <- lapply(raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")], function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
-  
+
   raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")] <- lapply(raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")],
                                                                                              as.POSIXlt, tz = "", format = "%Y-%m-%d %H:%M:%OS", options(digits.sec = 1))
   
@@ -393,6 +391,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                                                                              "ReceiveTech", "ResultTech", "PerformingLabCode",
                                                                                              "Test", "LocandName", "Setting", "SettingRollUp", "Site")], as.factor)
   
+
   # Fix any timestamps that weren't imported correctly and then format as date/time
   raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- lapply(raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")], function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
 
@@ -497,6 +496,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   
 }
 ```
+
 
 ```{r Data Preprocessing and Merging for SCC and Sunquest data, message = FALSE, warning = FALSE, echo = FALSE}
 scc_sun_wday_list <- preprocess_scc_sun(SCC_Weekday, SQ_Weekday)
@@ -893,6 +893,7 @@ Table_Merging_Cyto <- function(Cytology_Table){
     Cytology_Table_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
     rows_order_Cyto <- factor(rownames(Cytology_Table_New2),levels = c(2,1,4,3))
     Cytology_Table_New2 <- Cytology_Table_New2[order(rows_order_Cyto), c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")]
+
   }
   return(Cytology_Table_New2)
 }
@@ -937,7 +938,6 @@ Table_Merging_Patho <- function(Surgical_Pathology_Table){
 
 Surgical_Pathology_Table_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Weekday)
 Surgical_Pathology_Table_Not_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Not_Weekday)
-
 
 pathology_volume_column_order <- c("spec_group","Patient.Setting","MSH","MSQ","BIMC","PACC","KH","R","SL")
 
@@ -985,8 +985,7 @@ Conditional_Formatting_Cyto <- function(Table_New2){
     
     #steps for conditional formatting:
     
-    Table_New3 <- melt(Table_New2, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y"))
-    
+    Table_New3 <- melt(Table_New2, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y"))    
     
     Table_New3 <- Table_New3 %>%
       mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), 
@@ -994,6 +993,7 @@ Conditional_Formatting_Cyto <- function(Table_New2){
                                    ifelse(value < 0.8, cell_spec(value, "html", color = "red"), cell_spec(value, "html", color = "orange")))))
     
     
+
     Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
     
     Table_New4 <- melt(Table_New3, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x"))
@@ -1033,7 +1033,7 @@ Conditional_Formatting_Cyto_V2 <- function(Table_New2_V2){
       mutate(Received_to_Signed_out_within_target = ifelse(is.na(Received_to_Signed_out_within_target), cell_spec(Received_to_Signed_out_within_target, "html", color = "lightgray"), 
                             ifelse(Received_to_Signed_out_within_target > 0.9, cell_spec(Received_to_Signed_out_within_target, "html", color  = "green"),
                                    ifelse(Received_to_Signed_out_within_target < 0.8, cell_spec(Received_to_Signed_out_within_target, "html", color = "red"), cell_spec(Received_to_Signed_out_within_target, "html", color = "orange")))))
-    
+
     Table_New4_V2 <- melt(Table_New3_V2, id =c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target"))
     
     
@@ -1102,6 +1102,7 @@ Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting_Patho(Surgic
 ```
 
 ```{r Custom function for Anatomic Pathology kable formatting, echo=FALSE, warning = FALSE, message = FALSE}
+
 pathology_standardized_column_names <-  c("Case Type","Target","Setting","No. Cases Signed Out","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL")
 
 #cytology_standardized_column_names <-  c("Case Type","Target","Setting","No. Cases Signed Out","MSH", "MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")
@@ -1112,6 +1113,7 @@ Table_Formatting <- function (Table_New3,column_names){
   } else {
     Table_New3%>%
     select(everything()) %>%
+
     kable(escape = F, align = "c", col.names = column_names) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
     add_header_above(c(" "= 1, "Receive to Result within Target (Business Days)"= 10, "Average Collection to Result TAT (Calendar Days)"=7), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
@@ -1130,6 +1132,7 @@ Table_Formatting_V2 <- function (Table_New3_V2){
   } else {
     Table_New3_V2%>%
     select(everything()) %>%
+
     kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","Centralized Lab","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
     add_header_above(c(" "= 1, "Receive to Result within Target (Business Days)"= 4, "Average Collection to Result TAT (Calendar Days)"=8), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
@@ -1152,6 +1155,7 @@ Table_Formatting_Volume <- function (Volume_Table, column_names){
   } else {
     Volume_Table%>%
     select(everything()) %>%
+
     kable(escape = F, align = "c", col.names = column_names) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
     column_spec(3:length(column_names), background = "#00B9F2",color ="white", include_thead = TRUE)%>%
@@ -1298,19 +1302,233 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 
 ## {-} `r #End tabset`
 
-`r #Create new tabset placeholder for Ops & Quality indicators`
-## **Operational and Quality Indicators** _(Placeholder)_ {.tabset}
+```{r Lab KPI Form for Qualitative Indicators, echo=FALSE, message=FALSE, warning=FALSE}
+#read the excel sheet that is generated from office form responses
+KPI_Form <- data.frame(read_excel(choose.files(caption = "Select the KPI form generated today"), 1), stringsAsFactors = FALSE)
+
+#Determine the dates within the KPI excel sheet and report only the latest date
+KPI_Form$Completion_Date <- as.Date(as.POSIXct(KPI_Form$Completion.time,tz="",format='%m/%d/%y %I:%M %p'))
+List_of_Dates <-unique(KPI_Form$Completion_Date)
+Ordered_Dates <- List_of_Dates[rev(order(List_of_Dates))]
+#pick only the newest responses
+KPI_Form_Today <- KPI_Form[which(KPI_Form$Completion_Date == Ordered_Dates[1]),]
+
+#split the data into 3 datasets
+
+# the first dataset representes the following: CP/AP/CPA/4LABS
+
+Clinical_Labs_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)"),c(6:14,16)]
+
+# the second dataset represents the LIS indicators
+LIS_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility == "Laboratory Information System (LIS)"),c(6,19:21)]
+
+# the third and last dataset is the never events and good catches dataset
+Never_Events <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)"), c(6,15,17:18)]
+
+####### Start creating and formatting the tables
+
+#first melt the tables to get the values needed in one column:
+
+#1. Clinical labs table
+Clinical_Labs_Melt <- melt(Clinical_Labs_Ops_Ind, id =c( "Select.your.branch.facility", "IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident"))
+
+#2. LIS table
+LIS_Melt <- melt(LIS_Ops_Ind, id =c("Select.your.branch.facility", "LIS...Unplanned.Service.Changes", "LIS.Preplanned.Downtime...If.Applicable."))
+##### create a function to rename the status of the measures to a standard one ( Sfae, Under Stress, and Not Safe)
+
+Renaming <- function(Melted_Dataset){
+  Melted_Dataset[Melted_Dataset == "Green (No issues)"] <- "Safe"
+
+  Melted_Dataset[Melted_Dataset == "Yellow (Safe/Under Stress)"| Melted_Dataset == "Yellow (Delays)" |  Melted_Dataset == "Yellow (Delays in pickup/delivery)" | Melted_Dataset == "Yellow (Shortage with no/minimal significant impact)" | Melted_Dataset == "Yellow (Minor issues/Coordinating with Reference Labs)"] <- "Under Stress"
+
+  Melted_Dataset[Melted_Dataset == "Yellow (Safe/Under Stress)"| Melted_Dataset == "Yellow (Delays)" |  Melted_Dataset == "Yellow (Delays in pickup/delivery)" | Melted_Dataset == "Yellow (Shortage with no/minimal significant impact)" | Melted_Dataset == "Yellow (Minor issues/Coordinating with Reference Labs)"] <- "Under Stress"
+
+  Melted_Dataset[Melted_Dataset== "Red (Severe shortage of consumables)" | Melted_Dataset == "Red (Missed pickups)" | Melted_Dataset == "Red (Not Safe/Risk)" | Melted_Dataset == "Red (Severe shortage that halts activity)"| Melted_Dataset =="Red (Major issues/Requires Immediate Attention)"] <- "Not Safe"
+
+return(Melted_Dataset)
+}
+
+Clinical_Labs_Melt_New <- Renaming(Clinical_Labs_Melt)
+LIS_Melt_New <- Renaming(LIS_Melt)
+
+### create a function to format the data table into the correct colors
+
+Conditional_Formatting_Kpi_Form <- function(Melted_Data_New){
+  Melted_Data_New <- Melted_Data_New %>%
+      mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), 
+                            ifelse((value == "Safe"|value == "None"), cell_spec(value, "html", color  = "green"),
+                                   ifelse((value == "Not Safe" |value == "Present") , cell_spec(value, "html", color = "red"), cell_spec(value, "html", color = "orange")))))
+
+return(Melted_Data_New)  
+  }
+
+Formatted_Clinical_Labs_Melt_New <- Conditional_Formatting_Kpi_Form(Clinical_Labs_Melt_New)
+Formatted_LIS_New <- Conditional_Formatting_Kpi_Form(LIS_Melt_New)
+
+###### --------------- Now decast the melted clinical table --------------- ######
+
+Formatted_Clinical_Labs_Melt_New2 <- dcast(Formatted_Clinical_Labs_Melt_New,  Select.your.branch.facility +IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident ~ variable)
+
+#Change the order of the columns in the table
+
+Columns_Order_Form_Clinical <- c("Select.your.branch.facility", "LabCorp...Consumables", "Vendor.Services..LabLogistics..HealthEx..Reference.Labs..Other.Vendors.", "Environment", "Equipment.Issues..Lab.Equipment..Pneumatic.Tube.System..Others.", "IT.Issues", "Service.Changes", "Acute.Volume.Increase", "Staffing.Issues","IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident")
+
+Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[,Columns_Order_Form_Clinical]
+
+#Change the order of the rows in the table
+
+Rows_Order_Form_Clinical <- factor(rownames(Formatted_Clinical_Labs_Melt_New2),levels = c(11, 4, 3, 9, 10, 1 , 2, 5, 8, 6, 7))
+Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[Rows_Order_Form_Clinical,]
+rownames(Formatted_Clinical_Labs_Melt_New2) <- NULL
+
+#Change the names in the Facility columns to be standardized
+
+rownames(Formatted_Clinical_Labs_Melt_New2) <- c("MSH", "MSQ", "MSBI", "MSB", "MSSL", "MSW", "NYEE", "MSSN", "Anatomic Pathology (Centralized)", "Central Processiong & Accessioning (CPA)", "Client Services - 4LABS")
+
+Formatted_Clinical_Labs_Melt_New2$Select.your.branch.facility <- rownames(Formatted_Clinical_Labs_Melt_New2)
+rownames(Formatted_Clinical_Labs_Melt_New2) <- NULL
+
+Formatted_Clinical_Labs_Melt_New3 <- Formatted_Clinical_Labs_Melt_New2[,c(1:9)]
+
+Comments_Clinical_Labs <- Formatted_Clinical_Labs_Melt_New2[,c(1,10)]
+Comments_Clinical_Labs[is.na(Comments_Clinical_Labs)] <- "No Issues Reported (Safe)"
+
+###### --------------- now decast the LIS  table --------------- ######
+Formatted_LIS_New2 <- dcast(Formatted_LIS_New, Select.your.branch.facility + LIS...Unplanned.Service.Changes + LIS.Preplanned.Downtime...If.Applicable. ~ variable)
+Columns_Order_Form_LIS <- c("Select.your.branch.facility","LIS...Staffing.Issues", "LIS...Unplanned.Service.Changes", "LIS.Preplanned.Downtime...If.Applicable.")
+Formatted_LIS_New2 <- Formatted_LIS_New2[,Columns_Order_Form_LIS]
+rownames(Formatted_LIS_New2) <- NULL
+Formatted_LIS_New2[is.na(Formatted_LIS_New2)] <- "None"
+
+###### --------------- Formatting Never Events Table --------------- ######
+
+# added 4 extra columns each one for different never event
+Never_Events["Specimen(s) Lost"] <- NA
+Never_Events["QNS - specimen that cannot be recollected"] <- NA
+Never_Events["Treatment based on mislabeled/misidentified specimen"] <- NA
+Never_Events["Treatment based on false positive/false negative results"] <- NA
+
+#because we have multiple never events in one cell i created a list with these by:
+Splitting_NE_Text <- sapply(Never_Events$NEVER.EVENTS, strsplit,'[;]')
+
+#created a nested for loop with nested if to determine which of these never events are listed
+for (i in 1:nrow(Never_Events)){
+  for (j in 1:length(Splitting_NE_Text[[i]])){
+    if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[5]){
+      Never_Events$`Specimen(s) Lost`[i] = 1
+    } else if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[6]){
+      Never_Events$`QNS - specimen that cannot be recollected`[i] = 1
+      } else if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[7]){
+        Never_Events$`Treatment based on mislabeled/misidentified specimen`[i] = 1
+        } else if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[8]){
+          Never_Events$`Treatment based on false positive/false negative results`[i] = 1
+        }
+  }
+}
+
+Never_Events$NEVER.EVENTS <- NULL
+
+Never_Events_Melt <- melt(Never_Events, id =c("Select.your.branch.facility", "NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.","X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable."))
+
+Never_Events_Melt$value[is.na(Never_Events_Melt$value)] <- "None"
+Never_Events_Melt$value[Never_Events_Melt$value == 1] <- "Present"
+
+Formatted_Never_Event_Melt <- Conditional_Formatting_Kpi_Form(Never_Events_Melt)
+
+Formatted_Never_Event <- dcast(Formatted_Never_Event_Melt,Select.your.branch.facility+NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.+ X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable. ~ variable)
+
+Never_Events_Column_Order_1 <- c("Select.your.branch.facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results", "NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.", "X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable.")
+
+Formatted_Never_Event <- Formatted_Never_Event[,Never_Events_Column_Order_1]
+
+#Change the order of the rows in the table
+
+Rows_Order_Never_Events <- factor(rownames(Formatted_Never_Event),levels = c(11, 4, 3, 9, 10, 1 , 2, 5, 8, 6, 7))
+Formatted_Never_Event <- Formatted_Never_Event[Rows_Order_Never_Events,]
+rownames(Formatted_Never_Event) <- NULL
+
+#Change the names in the Facility columns to be standardized
+
+rownames(Formatted_Never_Event) <- c("MSH", "MSQ", "MSBI", "MSB", "MSSL", "MSW", "NYEE", "MSSN", "Anatomic Pathology (Centralized)", "Central Processiong & Accessioning (CPA)", "Client Services - 4LABS")
+
+Formatted_Never_Event$Select.your.branch.facility <- rownames(Formatted_Never_Event)
+rownames(Formatted_Never_Event) <- NULL
+
+#Split the table into three
+#table one is the comments only while table two is the details
+
+Good_Catch <- Formatted_Never_Event[,c(1,7)]
+Good_Catch[is.na(Good_Catch)] <- 0
+
+#Good_Catch_New <- Good_Catch[which(!(is.na(Good_Catch$X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable.))),]
+
+Never_Events_Comments <- Formatted_Never_Event[,c(1,6)]
+Never_Events_Comments[is.na(Never_Events_Comments)] <- "No Issues Reported"
+
+Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
+
+```
+
+## **Operational and Quality Indicators** {.tabset}
 ### Operational Indicators
-#### _Labs at each Site & Centralized Anatomic Pathology Ops Indicator Table Placeholder_
-### Laboratory Information System (LIS)
-#### _LIS Ops Indicator Table Placeholder_
+#### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology*
+```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE}
+
+Formatted_Clinical_Labs_Melt_New3%>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+Comments_Clinical_Labs %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility","Comments if At Risk or Not Safe")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = TRUE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+```
+
+
+### Laboratory Information System
+#### *Operational Indicators for LIS*
+```{r Qualitative Indicators for LIS, echo=FALSE, message=FALSE, warning=FALSE}
+Formatted_LIS_New2%>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("","Staffing","Service Change", "Preplanned Downtime")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+```
+
+
 ### Quality Indicators
-#### _Never Events Table Placeholder_
-#### _Good Catch Table Placeholder_
+#### Never Events 
+##### *Reported Never Events for Each Division/Facility*
+```{r Lab KPI Form for Never Events, echo=FALSE, message=FALSE, warning=FALSE}
+Never_Events_Only %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
 
+Never_Events_Comments %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility", "Comments if There is a Never Event")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+```
 
+#### Good Catches
+##### *Reported Good Catches for Each Division/Facility*
+```{r Lab KPI Form for Good Catches, echo=FALSE, message=FALSE, warning=FALSE}
+Good_Catch %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility", "Good Catch Comment")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
 
 ## {-}
+    
+
 
 `r #Create new tabset`
 ## **Weekday 24-Hour Volume Lookback** {.tabset}
@@ -1418,19 +1636,6 @@ Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2, cytology_volume_co
 `r #End tabset`
 ## {-}
 
-`r #Create new tabset placeholder for KPI trends`
-## **Month to Date KPI Trends** _(Placeholder)_ {.tabset}
-### Chemistry
-#### _Chemistry KPI Month to Date Trend Placeholder_
-### Hematology
-#### _Hematology KPI Month to Date Trend Placeholder_
-### Microbiology RRL
-#### _Microbiology RRL KPI Month to Date Trend Placeholder_
-### Surgical Pathology
-#### _Surgical Pathology KPI Month to Date Trend Placeholder_
-### Cytology
-#### _Cytology KPI Month to Date Trend Placeholder_
-## {-}
 
 `r if (include_not_wday != TRUE) {"<!--"}`
 
@@ -1648,6 +1853,3 @@ lab_vol_kable_format(hem_vol_not_wday_table)
 `r if (include_not_wday != TRUE) {"-->"}`
 
 <h6> *End of report.* </h6>
-
-
-
