@@ -92,24 +92,24 @@ ggplot() +
   geom_rect(aes(xmin = start_date - 1, xmax = max(troponin_test$ResultDate) + 1, ymin = -Inf, ymax = min(troponin_test$NotSafeThreshold), fill = "Not Safe", alpha = "Not Safe")) +
   geom_rect(aes(xmin = start_date - 1, xmax = max(troponin_test$ResultDate) + 1, ymin = min(troponin_test$NotSafeThreshold), ymax = min(troponin_test$SafeThreshold), fill = "At Risk", alpha = "At Risk")) +
   geom_rect(aes(xmin = start_date - 1, xmax = max(troponin_test$ResultDate) + 1, ymin = min(troponin_test$SafeThreshold), ymax = Inf, fill = "Safe", alpha = "Safe")) +
-  # Plot resulted volume on secondary axis
-  geom_point(data = trop_vol, aes(x = ResultDate, y = ResultedVolume/scale, size = "Volume"), color = "#959595", shape = 18) +
-  geom_line(data = trop_vol, aes(x = ResultDate, y = ResultedVolume/scale, linetype = "Volume"), color = "#959595") +
   # Plot turnaround time percentages
   geom_point(data = troponin_test[troponin_test$ResultDate >= start_date & troponin_test$Site == "MSH", ], aes(x = ResultDate, y = ReceiveResultPercent, color = DashboardSetting, shape = DashboardSetting), size = 3) +
   geom_line(data = troponin_test[troponin_test$ResultDate >= start_date & troponin_test$Site == "MSH", ], aes(x = ResultDate, y = ReceiveResultPercent, color = DashboardSetting), linetype = "dashed") +
-  #
+  # Plot resulted volume on secondary axis
+  geom_point(data = trop_vol, aes(x = ResultDate, y = ResultedVolume/scale, size = "Volume"), color = "#959595", shape = 18) +
+  geom_line(data = trop_vol, aes(x = ResultDate, y = ResultedVolume/scale, linetype = "Volume"), color = "#959595") +
+  # Format graph
   labs(title = "MSH Troponin Percentage of Labs within Target TAT:\n Receive to Result", x = "Date",  y = "Percentage of Labs", shape = "Setting") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
   scale_x_date(limits = c(start_date -1, max(troponin_test$ResultDate)+1), breaks = seq(start_date, max(troponin_test$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+  scale_size_manual(name = "Resulted Volume", values = 2, labels = "All Settings") + 
+  scale_linetype_manual(name = "Resulted Volume", values = "dashed", labels = "All Settings") +
   scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green"), labels=c("Not Safe","At Risk","Safe")) +
   scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.2, "At Risk" = 0.2, "Safe" = 0.2), labels=c("Not Safe","At Risk","Safe")) +
   scale_color_manual(name = "Setting", values = mshs_colors) +
-  scale_size_manual(name = "Resulted Volume", values = 2, labels = "All Settings") + 
-  scale_linetype_manual(name = "Resulted Volume", values = "dashed", labels = "All Settings") + #, guide = guide_legend(override.aes = list(color = "#959595", linetype = "dashed", shape = 18))) +
+  guides(color = guide_legend(order = 1), shape = guide_legend(order = 1), fill = guide_legend(order = 3), alpha = guide_legend(order = 3), size = guide_legend(order = 2), linetype = guide_legend(order = 2)) +
   scale_y_continuous(limits = c(NA, 1), expand = c(0,0), sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
-  
 
 ```
 
