@@ -49,13 +49,13 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-#Today <- as.timeDate(as.Date("02/10/2020", format = "%m/%d/%Y"))
+#Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+Today <- as.timeDate(as.Date("02/11/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-#Yesterday <- as.timeDate(as.Date("02/09/2020", format = "%m/%d/%Y"))
+#Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("02/10/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -1525,7 +1525,7 @@ Good_Catch %>%
     kable(escape = F, align = "c", col.names = c("Facility", "Good Catch Comment")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
     row_spec(row = 0, font_size = 13)
-
+```
 ## {-}
     
 
