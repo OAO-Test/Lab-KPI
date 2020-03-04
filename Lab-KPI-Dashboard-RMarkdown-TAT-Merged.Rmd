@@ -724,7 +724,7 @@ Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
 #1. import the historical repo
 Historical_Repo <- read.csv("J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Historical_Repo_Surgical_Pathology.csv", stringsAsFactors = FALSE)
 Historical_Repo$X <- NULL
-Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%Y')
+#Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%Y')
 
 #2. append all the summary tables together
 Cytology_Table_Weekday_Summarized <- pre_processing_pp(Cytology_Weekday_Raw)[[5]]
@@ -754,7 +754,7 @@ write.csv(Historical_Repo_Updated , "Historical_Repo_Surgical_Pathology_test.csv
 
 ```{r create a custom function for 30 days volume lookback,warning = FALSE, message = FALSE, echo = FALSE}
 #exclude weekends
-Historical_Repo_Updated_weekdays <- Historical_Repo_Updated[which(Historical_Repo_Updated$Signed_out_day_only != "Sunday" | Historical_Repo_Updated$Signed_out_day_only != "Saturday"),]
+Historical_Repo_Updated_weekdays <- Historical_Repo_Updated[which(Historical_Repo_Updated$Signed_out_day_only != "Sunday" & Historical_Repo_Updated$Signed_out_day_only != "Saturday"),]
 
 #determine the 30 business that will be reported
 unique_dates <- unique(Historical_Repo_Updated_weekdays$Signed_out_date_only)
@@ -765,32 +765,44 @@ reporting_30_day_period <- Ordered_Dates[1:30]
 first_day_in_reporting_period <- Ordered_Dates[30] 
 last_day_in_reporting_period <- Ordered_Dates[1]
 
-historical_30_day_period <- Historical_Repo_Updated_weekdays[which(Historical_Repo_Updated_weekdays$Signed_out_date_only>=last_day_in_reporting_period),]
+historical_30_day_period <- Historical_Repo_Updated_weekdays[which(Historical_Repo_Updated_weekdays$Signed_out_date_only>=first_day_in_reporting_period),]
 
 #summarized the data to plot it correctly
-historical_30_day_period_sum <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility,Patient_setting), Lab_metric_within_target = format(round(mean(as.numeric(Lab_metric_within_target), na.rm = TRUE), 2)), Patient_metric_avg = format(round(mean(as.numeric(Patient_metric_avg), na.rm = TRUE),0)))
+historical_30_day_period_sum <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility,Patient_setting), Lab_metric_within_target = format(round(mean(as.numeric(Lab_metric_within_target), na.rm = TRUE), 2)), Patient_metric_avg = format(round(mean(as.numeric(Patient_metric_avg), na.rm = TRUE),0)),No_cases_signed_out = sum(No_cases_signed_out))
 
 historical_30_day_period_sum$Lab_metric_within_target <- as.numeric(historical_30_day_period_sum$Lab_metric_within_target)
 
 historical_30_day_period_sum$Patient_metric_avg <- as.numeric(historical_30_day_period_sum$Patient_metric_avg)
 
+historical_30_day_period_sum$No_cases_signed_out <- as.numeric(historical_30_day_period_sum$No_cases_signed_out)
+
+historical_30_day_period_sum_vol <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility),No_cases_signed_out = sum(No_cases_signed_out))
+
+
+mshs_colors = c("#221F72", "#00AEFF", "#D80B8C", "#7F7F7F")
+
 #we need to create a percent within target graph for cyto and patho
 #the graph will have the split between IP and AMB
 historical_30_day_period_breast_MSH <- historical_30_day_period_sum[historical_30_day_period_sum$Spec_group == "Breast"& (historical_30_day_period_sum$Patient_setting == "Amb" | historical_30_day_period_sum$Patient_setting == "IP") & historical_30_day_period_sum$Facility == "MSH",]
 
-mshs_colors = c("#221F72", "#00AEFF", "#D80B8C", "#7F7F7F")
+historical_30_day_period_vol_breast_MSH <- historical_30_day_period_sum_vol[historical_30_day_period_sum_vol$Spec_group == "Breast" & historical_30_day_period_sum_vol$Facility == "MSH",]
 
 ggplot()+
   geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = -Inf, ymax = 0.8, fill = "Not Safe", alpha = "Not Safe"))+
   geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = 0.8, ymax = 0.9, fill = "At Risk",  alpha = "At Risk"))+
   geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = 0.9, ymax = Inf, fill = "Safe", alpha = "Safe"))+
-  geom_point(data = historical_30_day_period_breast_MSH, aes(x = Signed_out_date_only, y = Lab_metric_within_target, group= Patient_setting, color = Patient_setting, shape = Patient_setting)) +
-  geom_line(data = historical_30_day_period_breast_MSH, aes(x = Signed_out_date_only, y = Lab_metric_within_target, group= Patient_setting, color = Patient_setting, shape = Patient_setting)) +
+  geom_line(data = historical_30_day_period_vol_breast_MSH, aes(x = Signed_out_date_only, y = No_cases_signed_out/100), linetype = "dashed")+ 
+  geom_point(data = historical_30_day_period_vol_breast_MSH, aes(x = Signed_out_date_only, y = No_cases_signed_out/100), size = 3, shape = 4, fill = "#7F7F7F")+
+  geom_point(data = historical_30_day_period_breast_MSH, aes_string(x = "Signed_out_date_only", y = "Lab_metric_within_target", color = "Patient_setting", shape = "Patient_setting"), size = 3) +
+  geom_line(data = historical_30_day_period_breast_MSH, aes_string(x = "Signed_out_date_only", y = "Lab_metric_within_target", color = "Patient_setting"), linetype = "dashed") +
+  labs(title = "All Breast Specimen for MSH", x = "Date",  y = "Percentage of Labs", color = "Patient Setting", shape = "Patient Setting") +
   scale_x_date(name = "Date", labels = date_format("%m/%d/%Y"), limits = c(first_day_in_reporting_period - 1,last_day_in_reporting_period + 1), date_breaks = "3 days", date_minor_breaks = "1 day", expand = c(0, 0))+
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), panel.border = element_rect(colour = "black", fill=NA, size=1)) + 
-  scale_y_continuous(name = "Percentage of Labs",limits = c(0,1), labels = percent) +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8), axis.text.x = element_text(angle = 45, hjust = 1), panel.border = element_rect(colour = "black", fill=NA, size=1)) + 
+  scale_y_continuous(name = "Percentage of Labs",limits = c(0,1), labels = percent, sec.axis = sec_axis(~.*100, name = "Labs Volume")) +
   scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green"), breaks=c("Not Safe","At Risk","Safe")) +
-  scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.15, "At Risk" = 0.15, "Safe" = 0.15), breaks = c("Not Safe", "At Risk", "Safe"))
+  scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.15, "At Risk" = 0.15, "Safe" = 0.15), breaks = c("Not Safe", "At Risk", "Safe")) +
+  scale_color_manual(name = "Patient Setting", values = mshs_colors)
+  
 
 
 
