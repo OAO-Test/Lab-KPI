@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r Install and load packages, echo = FALSE, warning = FALSE, message = FALSE}
 # install.packages("gridExtra")
+# install.packages("scales")
 
 library(timeDate)
 library(readxl)
@@ -27,6 +28,7 @@ library(stringr)
 library(writexl)
 library(ggplot2)
 library(gridExtra)
+library(scales)
 ```
 
 ```{r Clear history and import relevant data, echo = FALSE, warning = FALSE, message = FALSE}
@@ -85,7 +87,8 @@ troponin_test$ResultDate <- as.Date(troponin_test$ResultDate, format = "%m/%d/%y
 
 trop_vol <- dashboard_vol_summary[dashboard_vol_summary$Test == "Troponin" & dashboard_vol_summary$Site == "MSH", ]
 
-scale <- mean(vol_min/percent_min, vol_max/percent_max)
+base10 <- floor(log10(max(trop_vol$ResultedVolume[trop_vol$ResultDate >= start_date])))
+scale <- ceiling(max(trop_vol$ResultedVolume[trop_vol$ResultDate >= start_date])/(10^(base10-1)))*10^(base10-1)
 
 ggplot() +
   # Plot safe, at risk, not safe thresholds
@@ -109,7 +112,7 @@ ggplot() +
   scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.2, "At Risk" = 0.2, "Safe" = 0.2), labels=c("Not Safe","At Risk","Safe")) +
   scale_color_manual(name = "Setting", values = mshs_colors) +
   guides(color = guide_legend(order = 1), shape = guide_legend(order = 1), fill = guide_legend(order = 3), alpha = guide_legend(order = 3), size = guide_legend(order = 2), linetype = guide_legend(order = 2)) +
-  scale_y_continuous(limits = c(NA, 1), expand = c(0,0), sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
+  scale_y_continuous(limits = c(NA, 1), labels = percent_format(accuracy = 1), expand = c(0,0, .05, 0), sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
 
 ```
 
@@ -216,15 +219,23 @@ max_vol <- max(data_vol_plot$ResultedVolume)
 min_tat <- min(data_tat_plot[ , colnames(data_tat_plot) == metric])
 max_tat <- max(data_tat_plot[ , colnames(data_tat_plot) == metric])
 
-scale <- mean(min_vol/min_tat, max_vol/max_tat)
+base10 <- floor(log10(max(data_vol_plot$ResultedVolume)))
 
-metric_name <- ifelse(metric == "ReceiveResultPercent", "Receive to Result TAT", ifelse(metric == "CollectResultPercent", "Collect to Result TAT", "Error"))
+scale <- ceiling(max(data_vol_plot$ResultedVolume)/(10^(base10-1)))*10^(base10-1)
+# scale <- max(data_vol_plot$ResultedVolume)
+
+# min_ratio  <- min(data_vol_plot$ResultedVolume)/min(data_tat_plot$ReceiveResultPercent)
+# max_ratio  <- max(data_vol_plot$ResultedVolume)/max(data_tat_plot$ReceiveResultPercent)
+# scale <- mean(c(max_ratio, min_ratio))
+
+metric_name <- ifelse(metric == "ReceiveResultPercent", "Receive to Result", ifelse(metric == "CollectResultPercent", "Collect to Result", "Error"))
 
 ggplot() +
   # Plot safe, at risk, not safe thresholds
   geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = -Inf, ymax = min(data_tat_plot$NotSafeThreshold), fill = "Not Safe", alpha = "Not Safe")) +
-  geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = min(data_tat_plot$NotSafeThreshold), ymax = min(data_tat_plot$SafeThreshold), fill = "At Risk", alpha = "At Risk")) +
-  geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = min(data_tat_plot$SafeThreshold), ymax = Inf, fill = "Safe", alpha = "Safe")) +    
+  geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = min(data_tat_plot$NotSafeThreshold), ymax = min(data_tat_plot$SafeThreshold), fill = "At Risk", alpha = "At Risk"), show.legend = FALSE) +
+  geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = min(data_tat_plot$SafeThreshold), ymax = 1, fill = "Safe", alpha = "Safe"), show.legend = FALSE) + 
+  geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = 1, ymax = Inf, fill = "N/A", alpha = "N/A"), show.legend = FALSE) +
   # Plot percentage of labs within turnaround time target
   geom_point(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "DashboardSetting", shape = "DashboardSetting"), size = 3) +
   geom_line(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "DashboardSetting"), linetype = "dashed") +
@@ -232,19 +243,104 @@ ggplot() +
   geom_point(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/scale, size = "Volume"), color = "#959595", shape = 18) +
   geom_line(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/scale, linetype = "Volume"), color = "#959595") +
   #
-  labs(title = paste0(test_name, " ", metric_name, ":\n", site_name, " Percentage of ", lab_priority, " Labs within Target"), x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting") +
+  labs(title = paste0(site_name, " ", test_name, " ", metric_name, ":\n", "Percentage of ", lab_priority, " Labs within Target TAT"), x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting", fill = "Status", alpha = "Status", linetype = "Resulted Volume", size = "Resulted Volume") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
   scale_x_date(limits = c(start_date -1, max(data_tat_plot$ResultDate)+1), breaks = seq(start_date, max(data_tat_plot$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
-  scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green"), breaks=c("Not Safe","At Risk","Safe")) +
-  scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.15, "At Risk" = 0.15, "Safe" = 0.15), breaks=c("Not Safe","At Risk","Safe")) +
+  scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green", "N/A" = "grey"), breaks=c("Not Safe","At Risk","Safe")) +
+  scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.25, "At Risk" = 0.25, "Safe" = 0.25, "N/A" = 0.5), breaks=c("Not Safe","At Risk","Safe")) +
   scale_color_manual(name = "Setting", values = mshs_colors) +
-  scale_size_manual(name = paste0(lab_priority, " Lab Volume"), values = 2, labels = "All Settings") + 
-  scale_linetype_manual(name = paste0(lab_priority, " Lab Volume"), values = "dotted", labels = "All Settings") +
+  scale_size_manual(name = "Resulted Volume", values = 2, labels = paste(lab_priority, "Labs, \n All Settings")) + 
+  scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste(lab_priority, "Labs, \n All Settings")) +
   guides(color = guide_legend(order = 1), shape = guide_legend(order = 1), fill = guide_legend(order = 3), alpha = guide_legend(order = 3), size = guide_legend(order = 2), linetype = guide_legend(order = 2)) +
-  scale_y_continuous(limits = c(NA, 1), expand = c(0,0.01), sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
+  scale_y_continuous(limits = c(NA, 1), labels = percent_format(accuracy = 1), sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
+
+```
+
+```{r Custom function for plotting TAT percentages, resulted volume, and status thresholds, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8}
+
+tat_and_volume_plot <- function(test_name, site_name, lab_priority, metric) {
+  # 
+  # Subset turnaround time and volume data based on test, site, and priority
+  data_tat_plot <- dashboard_tat_filter[dashboard_tat_filter$ResultDate >= start_date & dashboard_tat_filter$Test == test_name & dashboard_tat_filter$Site == site_name & dashboard_tat_filter$DashboardPriority == lab_priority, ]
+
+  data_vol_plot <- dashboard_vol_summary[dashboard_vol_summary$ResultDate >= start_date & dashboard_vol_summary$Test == test_name & dashboard_vol_summary$Site == site_name & dashboard_vol_summary$DashboardPriority == lab_priority, ]
+  # 
+  # Create printable metric name based on selected metric
+  metric_name <- ifelse(metric == "ReceiveResultPercent", "Receive to Result", ifelse(metric == "CollectResultPercent", "Collect to Result", "Error"))
+  #
+  # Determine scale factor for secondary axis based on maximum resulted volume
+  base10 <- floor(log10(max(data_vol_plot$ResultedVolume)))
+  scale <- ceiling(max(data_vol_plot$ResultedVolume)/(10^(base10-1)))*10^(base10-1)
+  #
+  # Create plot and standard settings
+  ggplot() +
+    # Plot safe, at risk, not safe thresholds
+    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
+                  ymin = -Inf, ymax = min(data_tat_plot$NotSafeThreshold), 
+                  fill = "Not Safe", alpha = "Not Safe")) +
+    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
+                  ymin = min(data_tat_plot$NotSafeThreshold), ymax = min(data_tat_plot$SafeThreshold), 
+                  fill = "At Risk", alpha = "At Risk"), show.legend = FALSE) +
+    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
+                  ymin = min(data_tat_plot$SafeThreshold), ymax = 1, 
+                  fill = "Safe", alpha = "Safe"), show.legend = FALSE) + 
+    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
+                  ymin = 1, ymax = Inf, fill = "N/A", 
+                  alpha = "N/A"), show.legend = FALSE) +
+    # Plot percentage of labs within turnaround time target
+    geom_point(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "DashboardSetting", shape = "DashboardSetting"), size = 3) +
+    geom_line(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "DashboardSetting"), linetype = "dashed") +
+    # Plot resulted volume on secondary axis
+    geom_point(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/scale, size = "Volume"), color = "#959595", shape = 18) +
+    geom_line(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/scale, linetype = "Volume"), color = "#959595") +
+    # Specify graph labels and themes
+    labs(title = paste0(site_name, " ", test_name, " ", metric_name, ":\n", "Percentage of ", lab_priority, " Labs within Target TAT"), 
+         x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting", fill = "Status", alpha = "Status", linetype = "Resulted Volume", size = "Resulted Volume") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", 
+          legend.title = element_text(size = 10), legend.text = element_text(size = 8),
+          axis.text.x = element_text(angle = 30, hjust = 1)) +
+    # Specify fills, shapes, and lines mappings and legends
+    scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green", "N/A" = "grey"), 
+                      breaks=c("Not Safe","At Risk","Safe")) +
+    scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.25, "At Risk" = 0.25, "Safe" = 0.25, "N/A" = 0.5), 
+                       breaks=c("Not Safe","At Risk","Safe")) +
+    scale_color_manual(name = "Setting", values = mshs_colors) +
+    scale_size_manual(name = "Resulted Volume", values = 2, labels = paste(lab_priority, "Labs, \n All Settings")) + 
+    scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste(lab_priority, "Labs, \n All Settings")) +
+    # Reorder legends
+    guides(color = guide_legend(order = 1), shape = guide_legend(order = 1), fill = guide_legend(order = 3), alpha = guide_legend(order = 3), 
+           size = guide_legend(order = 2), linetype = guide_legend(order = 2)) +
+    # Specify axis properties
+    scale_x_date(limits = c(start_date -1, max(data_tat_plot$ResultDate)+1), 
+                 breaks = seq(start_date, max(data_tat_plot$ResultDate), by = 3), date_minor_breaks = "1 day", 
+                 date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+    scale_y_continuous(limits = c(NA, 1), labels = percent_format(accuracy = 1), 
+                       sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
+}
 
 
+
+plot_two_tat_graphs <- function(test, site, priority) {
+  # Save paramaters as variables for use in plotting function
+  test_name <- test
+  site_name <- site
+  lab_priority <- priority
+  #
+  # Create plot for receive to result TAT
+  receive_result_plot <- tat_and_volume_plot(test_name = test_name, site_name = site_name, lab_priority = lab_priority, metric = "ReceiveResultPercent")
+  #
+  # Create plot for Collect to Result TAT
+  collect_result_plot <- tat_and_volume_plot(test_name = test, site_name = site, lab_priority = priority, metric = "CollectResultPercent")
+  #
+  # Display plots
+  print(receive_result_plot)
+  print(collect_result_plot)
+  
+}
+
+plot_two_tat_graphs(test = "Troponin", site = "MSH", priority = "All")
 
 ```
 
