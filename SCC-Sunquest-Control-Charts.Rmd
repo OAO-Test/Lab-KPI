@@ -29,6 +29,7 @@ library(writexl)
 library(ggplot2)
 library(gridExtra)
 library(scales)
+library(ggQC)
 ```
 
 ```{r Clear history and import relevant data, echo = FALSE, warning = FALSE, message = FALSE}
@@ -59,10 +60,11 @@ dashboard_tat_summary <- scc_sun_hist %>%
   group_by(Site, ResultDate, Division, Test, DashboardPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget) %>%
   summarize(ResultedVolume = sum(TotalResulted), ResultedVolumeWithTAT = sum(TotalResultedTAT), ReceiveResultInTarget = sum(TotalReceiveResultInTarget), CollectResultInTarget = sum(TotalCollectResultInTarget))
 
+dashboard_tat_summary$ReceiveResultDefects <- dashboard_tat_summary$ResultedVolumeWithTAT - dashboard_tat_summary$ReceiveResultInTarget
+dashboard_tat_summary$CollectResultDefects <- dashboard_tat_summary$ResultedVolumeWithTAT - dashboard_tat_summary$CollectResultInTarget
+
 dashboard_tat_summary$ReceiveResultPercent <- dashboard_tat_summary$ReceiveResultInTarget / dashboard_tat_summary$ResultedVolumeWithTAT
 dashboard_tat_summary$CollectResultPercent <- dashboard_tat_summary$CollectResultInTarget / dashboard_tat_summary$ResultedVolumeWithTAT
-dashboard_tat_summary$ReceiveResultDefectRate <- (dashboard_tat_summary$ResultedVolumeWithTAT - dashboard_tat_summary$ReceiveResultInTarget) / dashboard_tat_summary$ResultedVolumeWithTAT
-dashboard_tat_summary$CollectResultDefectRate <- (dashboard_tat_summary$ResultedVolumeWithTAT - dashboard_tat_summary$CollectResultInTarget) / dashboard_tat_summary$ResultedVolumeWithTAT
 
 dashboard_tat_summary$SafeThreshold <- ifelse(dashboard_tat_summary$Test == "Rapid Flu" | dashboard_tat_summary$Test == "C. diff", 1.0, 0.95)
 dashboard_tat_summary$NotSafeThreshold <- ifelse(dashboard_tat_summary$Test == "Rapid Flu" | dashboard_tat_summary$Test == "C. diff", 0.9, 0.8)
@@ -290,7 +292,7 @@ tat_and_volume_plot <- function(data_tat, test_name, site_name, lab_priority, me
 ```
 
 
-```{r Custom function for stratifying TAT data, echo = FALSE, warning = FALSE, message = FALSE}
+```{r Custom function for stepping through stratified TAT data, echo = FALSE, warning = FALSE, message = FALSE}
 stratified_data_for_plots <- function(tat_data, test) {
   test_df <- tat_data[tat_data$Test == test, ]
   sites <- unique(test_df$Site)
@@ -309,6 +311,7 @@ stratified_data_for_plots <- function(tat_data, test) {
 }
 ```
 
+# {.tabset}
 
 ## Efficiency Indicator Historical Performance {.tabset}
 
@@ -316,33 +319,166 @@ stratified_data_for_plots <- function(tat_data, test) {
 ```{r Troponin historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Troponin")
 ```
+<h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory. </h6>
 
 ### Lactate WB
-```{r Lactate WB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+```{r Lactate WB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Lactate WB")
 ```
+<h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory. </h6>
 
 ### BUN
-```{r BUN historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+```{r BUN historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "BUN")
 ```
+<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
 ### HGB
-```{r HGB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+```{r HGB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "HGB")
 ```
+<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
 ### PT
-```{r PT historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+```{r PT historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "PT")
 ```
+<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
 ### Rapid Flu
-```{r Rapid Flu historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+```{r Rapid Flu historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Rapid Flu")
 ```
+<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
 ### C. diff
-```{r C. diff historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8, fig.align="center"}
+```{r C. diff historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "C. diff")
 ```
+<h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+
+
+## Laboratory Process Defect Rate Control Charts {.tabset}
+
+```{r Summarize data to calculate defects and defect rates, echo = FALSE, warning = FALSE, message = FALSE}
+
+# Summarize data based on site and priority
+dashboard_defect_summary <- dashboard_tat_filter %>%
+  group_by(Site, ResultDate, Division, Test, DashboardPriority) %>%
+  summarize(ResultedVolume = sum(ResultedVolume), ResultedVolumeWithTAT = sum(ResultedVolumeWithTAT),
+            ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
+            ReceiveResultDefects = ResultedVolumeWithTAT - ReceiveResultInTarget, ReceiveResultDefectRate = ReceiveResultDefects / ResultedVolumeWithTAT)
+
+dashboard_defect_summary <- dashboard_defect_summary[!is.na(dashboard_defect_summary$ReceiveResultDefectRate), ]
+# 
+# troponin_defect <- dashboard_defect_summary[dashboard_defect_summary$ResultDate >= start_date & dashboard_defect_summary$Test == "Troponin" & dashboard_defect_summary$Site == "MSH", ]
+# 
+# center_line <- mean(QC_Lines(data = troponin_defect$ReceiveResultDefectRate[troponin_defect$ResultDate >= start_date], n = troponin_defect$ResultedVolumeWithTAT[troponin_defect$ResultDate >= start_date], method = "p")$pBar)
+# 
+# ggplot(data = troponin_defect[troponin_defect$ResultDate >= start_date, ], aes(x = ResultDate, y = ReceiveResultDefectRate, n = ResultedVolumeWithTAT)) +
+#   # Create point and connecting lines for defect rate data
+#   geom_point(color = mshs_colors[1], shape = 16, size = 3) +
+#   geom_line(color = mshs_colors[1], linetype = "dashed") +
+#   # Add centerline, upper, and lower control limit lines
+#   stat_QC(method = "p", auto.label = T, color.qc_center = "black") +
+#     geom_label(x = max(troponin_defect$ResultDate)+1, y = center_line, vjust = 1.2, hjust = 1, label = paste("CL:", round(center_line, digits = 2))) +
+#   # Specify graph labels and themes
+#   labs(title = "MSH Troponin Receive to Result TAT:\nDefect Rate Control Chart", x = "Date",  y = "Defect Rate") +
+#   theme_bw() +
+#   theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
+#           legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
+#           axis.text.x = element_text(angle = 30, hjust = 1)) +
+#   # Specify axis properties
+#   scale_x_date(limits = c(start_date -1, max(troponin_defect$ResultDate)+1), breaks = seq(start_date, max(troponin_defect$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+#   scale_y_continuous(labels = percent_format(accuracy = 1))
+
+```
+
+```{r Custom function for p-charts, echo = FALSE, warning = FALSE, message = FALSE}
+
+receive_result_pchart <- function(data_defect, test_name, site_name, lab_priority) {
+  # 
+  # Subset turnaround time and volume data based on test, site, and priority
+  data_defect_plot <- data_defect[data_defect$ResultDate >= start_date & data_defect$Test == test_name & data_defect$Site == site_name & data_defect$DashboardPriority == lab_priority, ]
+  # Calculate center line
+  center_line <- mean(QC_Lines(data = data_defect_plot$ReceiveResultDefectRate, n = data_defect_plot$ResultedVolumeWithTAT, method = "p")$pBar)
+  # 
+  # Create plot and standard settings
+  ggplot(data = data_defect_plot, aes(x = ResultDate, y = ReceiveResultDefectRate, n = ResultedVolumeWithTAT)) +
+  # Create point and connecting lines for defect rate data
+  geom_point(color = mshs_colors[1], shape = 16, size = 3) +
+  geom_line(color = mshs_colors[1], linetype = "dashed") +
+  # Add centerline, upper, and lower control limit lines
+  stat_QC(method = "p", auto.label = T, color.qc_center = "black") +
+  geom_label(x = max(data_defect_plot$ResultDate)+1, y = center_line, vjust = 1.2, hjust = 1, label = paste("CL:", percent(center_line, accuracy = 0.1))) +
+  # Specify graph labels and themes
+  labs(title = paste(site_name, test_name, "Receive to Result TAT:\nDefect Rate Control Chart"), x = "Date",  y = "Defect Rate") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
+          legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
+          axis.text.x = element_text(angle = 30, hjust = 1)) +
+  # Specify axis properties
+  scale_x_date(limits = c(start_date -1, max(data_defect_plot$ResultDate)+1), breaks = seq(start_date, max(data_defect_plot$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+  scale_y_continuous(labels = percent_format(accuracy = 1))
+}
+
+
+```
+
+```{r Iterate through defect rate data and plot p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+
+stratified_data_for_pcharts <- function(defect_data, test) {
+  test_df <- defect_data[defect_data$Test == test, ]
+  sites <- unique(test_df$Site)
+
+  for (site in sites) {
+    # print(site)
+    # print(test)
+    site_df <- test_df[test_df$Site == site, ]
+    priorities <- unique(site_df$DashboardPriority)
+    for (priority in priorities) {
+      # print(priority)
+      priority_df <- site_df[site_df$DashboardPriority == priority, ]
+      print(receive_result_pchart(data_defect = priority_df, test_name = test, site_name = site, lab_priority = priority))
+    }
+  }
+}
+
+```
+
+### Troponin
+```{r Troponin p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "Troponin")
+```
+<h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+
+
+### Lactate WB
+```{r Lactate WB p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "Lactate WB")
+```
+<h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+
+### BUN
+```{r BUN p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "BUN")
+```
+<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+
+### HGB
+```{r HGB p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "HGB")
+```
+<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} 
+
+### Rapid Flu
+```{r Rapid Flu p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "Rapid Flu")
+```
+<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} 
+
+### C. diff
+```{r C. diff p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "C. diff")
+```
+<h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} 
