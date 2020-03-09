@@ -46,7 +46,7 @@ start_date <- max(scc_sun_hist$ResultDate) - (lookback_period - 1)
 
 # Orders for labs, sites, patient setting, and priority
 cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu", "C. diff")
-site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")
+site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
 dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 dashboard_priority_order <- c("All", "Stat", "Routine")
 
