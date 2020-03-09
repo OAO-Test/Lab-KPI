@@ -50,12 +50,12 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 #Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-Today <- as.timeDate(as.Date("02/11/2020", format = "%m/%d/%Y"))
+Today <- as.timeDate(as.Date("02/20/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
 #Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("02/10/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("02/19/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -536,6 +536,9 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 ```
 
 ```{r Custom function for preprocessing raw Powerpath data and calling function, warning = FALSE, message = FALSE, echo = FALSE}
+#standardize column names
+#GI_codes_column_name <- c("Specimen_code", "GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.")
+#colnames(GI_Codes) <- GI_codes_column_name
 # create an extra column for old Fcaility and change the facility from MSSM to MSH 
 PP_Weekday$Facility_Old <- PP_Weekday$Facility
 PP_Weekday$Facility[PP_Weekday$Facility_Old == "MSS"] <- "MSH" 
@@ -552,10 +555,23 @@ Cytology_Not_Weekday_Raw <- PP_Not_Weekday[which(PP_Not_Weekday$spec_group=="CYT
 #Merge the exclusion/inclusion cloumn into the modified powerpath Dataset for weekdays and not weekdays
 
 PP_Weekday_Excl <- merge(x = PP_Weekday, y= GI_Codes, all.x = TRUE)
-Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group=="GI") &(PP_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Weekday_Excl$spec_group=="Breast"),]
+
+#find MRNs with GI_Code = exclude
+Must_Exclude_MRN <- PP_Weekday_Excl[which((PP_Weekday_Excl$spec_group=="GI") & (PP_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Exclude")),]
+
+Must_Exclude_MRN <- unique(Must_Exclude_MRN$MRN)
+
+Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group=="GI") & (!(PP_Weekday_Excl$MRN %in% Must_Exclude_MRN)) & (PP_Weekday_Excl$spec_sort_order=="A")) | ((PP_Weekday_Excl$spec_group=="Breast") & (PP_Weekday_Excl$spec_sort_order=="A"))),]
 
 PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday, y= GI_Codes, all.x = TRUE)
-Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
+
+#find MRNs with GI_Code = exclude
+Must_Exclude_MRN_Not_Weekday <- PP_Not_Weekday_Excl[which((PP_Not_Weekday_Excl$spec_group=="GI") & (PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Exclude")),]
+
+Must_Exclude_MRN_Not_Weekday <- unique(Must_Exclude_MRN_Not_Weekday$MRN)
+
+Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") & (!(PP_Not_Weekday_Excl$MRN %in% Must_Exclude_MRN_Not_Weekday)) & (PP_Not_Weekday_Excl$spec_sort_order=="A")) | ((PP_Not_Weekday_Excl$spec_group=="Breast") & (PP_Not_Weekday_Excl$spec_sort_order=="A"))),]
+
 
 #-----------Reporting Dates-----------#
 #1. Weekday Date
@@ -593,6 +609,14 @@ pre_processing_pp <- function(Raw_Data){
 
     #vlookup targets based on spec_group and patient setting
     Raw_Data_New <- merge(x=Raw_Data_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
+    
+    #check if any of the dates was imported as char
+    if (is.character(Raw_Data_New$Collection_Date)){
+      Raw_Data_New$Collection_Date <- as.numeric(Raw_Data_New$Collection_Date)
+      Raw_Data_New$Collection_Date <- as.Date(Raw_Data_New$Collection_Date, origin = "1899-12-30")
+    } else {
+      Raw_Data_New$Collection_Date <- Raw_Data_New$Collection_Date
+    }
     
     #Change all Dates into POSIXct format to start the calculations
     
