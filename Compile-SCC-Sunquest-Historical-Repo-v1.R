@@ -30,17 +30,45 @@ library(writexl)
 
 rm(list = ls())
 
-# Set working directory
+# Set working directory -------------------------------
 # reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
 user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 user_path <- paste0(user_wd, "\\*.*")
 setwd(user_wd)
 
-file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = "^(Doc){1}.+(2020)\\-[0-9]{2}-[0-9]{2}.xlsx")
-file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-[0-9]{2}-[0-9]{2}.xls")
+# Import data for two scenarious - first time compiling repository and updating repository -----------------------
+initial_run <- FALSE
 
-scc_list <- lapply(file_list_scc, function(x) read_excel(path = paste0(user_wd, "\\SCC CP Reports\\", x)))
-sun_list <- lapply(file_list_sun, function(x) suppressWarnings(read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x))))
+if (initial_run == TRUE) {
+  # Find list of data reports from 2020
+  file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = "^(Doc){1}.+(2020)\\-[0-9]{2}-[0-9]{2}.xlsx")
+  file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-[0-9]{2}-[0-9]{2}.xls")
+  # Read in data reports from possible date range
+  scc_list <- lapply(file_list_scc, function(x) read_excel(path = paste0(user_wd, "\\SCC CP Reports\\", x)))
+  sun_list <- lapply(file_list_sun, function(x) suppressWarnings(read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x))))
+} else {
+  # Import existing historical repository
+  existing_repo <- read_excel(choose.files(default = user_path, caption = "Select Historical Repository"), sheet = 1, col_names = TRUE)
+  #
+  # Find last date of resulted lab data in historical repository
+  last_date <- as.Date(max(existing_repo$ResultDate), format = "%Y-%m-%d")
+  # Determine today's date to determine last possible data report
+  todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
+  # Create vector with possible data report dates
+  date_range <- seq(from = last_date + 2, to = todays_date, by = "day")
+  # Find list of data reports from date range
+  file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = paste0("^(Doc){1}.+", date_range, ".xlsx", collapse = "|"))
+  file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = paste0("^(KPI_Daily_TAT_Report ){1}", date_range, ".xls", collapse = "|"))
+  # Read in data reports from possible date range
+  scc_list <- lapply(file_list_scc, function(x) read_excel(path = paste0(user_wd, "\\SCC CP Reports\\", x)))
+  sun_list <- lapply(file_list_sun, function(x) suppressWarnings(read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x))))
+}
+
+# file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = "^(Doc){1}.+(2020)\\-[0-9]{2}-[0-9]{2}.xlsx")
+# file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-[0-9]{2}-[0-9]{2}.xls")
+# 
+# scc_list <- lapply(file_list_scc, function(x) read_excel(path = paste0(user_wd, "\\SCC CP Reports\\", x)))
+# sun_list <- lapply(file_list_sun, function(x) suppressWarnings(read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x))))
 
 # Import analysis reference data starting with test codes for SCC and Sunquest --------------------------------------
 reference_file <- choose.files(default = user_path, caption = "Select analysis reference file")
@@ -61,14 +89,14 @@ mshs_site <- read_excel(reference_file, sheet = "SiteNames")
 
 cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu", "C. diff")
 
-site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")
+site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
 
-# Preprocess data --------------------------------
+# Preprocess new data --------------------------------
 preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # SCC DATA PROCESSING --------------------------
   # SCC lookup references ----------------------------------------------
@@ -322,13 +350,10 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   
 }
 
-# Preprocess all SCC and Sunquest files
+# Preprocess all SCC and Sunquest files --------------------------------------------
 preprocess_all_files <- mapply(preprocess_scc_sun, scc_list, sun_list)
 
-# scc_data <- preprocess_all_files[[1]]
-# sun_data <- preprocess_all_files[[2]]
-# master_data <- preprocess_all_files[[3]]
-
+# Custom function to determine resulted lab date from preprocessed data (SCC data often has a few labs with incorrect result date) --------------------
 correct_result_dates <- function(data, number_days) {
   all_resulted_dates_vol <- data %>%
     group_by(ResultDate) %>%
@@ -342,22 +367,23 @@ correct_result_dates <- function(data, number_days) {
   return(new_data)
 }
 
-# master_data <- correct_result_dates(master_data, number_days = 1)
+# # Count total rows in all reports to compare after incorrect dates are removed
+# total_row <- 0
+# for (i in seq(from = 3, to = length(preprocess_all_files), by = 3)) {
+#   total_row <- total_row + nrow(preprocess_all_files[[i]])
+# }
 
-total_row <- 0
-for (i in seq(from = 3, to = length(preprocess_all_files), by = 3)) {
-  total_row <- total_row + nrow(preprocess_all_files[[i]])
-}
-
-# Remove any data with incorrect date from master files individually and then combine all reports into one dataframe
+# Remove any data with incorrect date from master files individually and then combine all reports into one dataframe ------------------------
 bind_all_data <- NULL
 for (i in seq(from = 3, to = length(preprocess_all_files), by = 3)) {
   preprocess_all_files[[i]] <- correct_result_dates(preprocess_all_files[[i]], 1)
   bind_all_data <- rbind(bind_all_data, preprocess_all_files[[i]])
 }
+# new_total_row <- nrow(bind_all_data)
 
 # Remove duplicate entries across days
 bind_all_data <- unique(bind_all_data)
+
 
 # Summarize data for export to historical repo ---------------------------------
 scc_sun_all_days_subset <- bind_all_data %>%
@@ -365,11 +391,25 @@ scc_sun_all_days_subset <- bind_all_data %>%
            Setting, SettingRollUp, MasterSetting, DashboardSetting,
            OrderPriority, AdjPriority, DashboardPriority,
            ReceiveResultTarget, CollectResultTarget) %>%
-  summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), TotalReceiveResultInTarget = sum(ReceiveResultInTarget[TATInclude == TRUE]), TotalCollectResultInTarget = sum(CollectResultInTarget[TATInclude == TRUE]), TotalAddOnOrder = sum(AddOnMaster == "AddOn"), TotalMissingCollections = sum(MissingCollect))
+  summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), TotalReceiveResultInTarget = sum(ReceiveResultInTarget[TATInclude == TRUE]), TotalCollectResultInTarget = sum(CollectResultInTarget[TATInclude == TRUE]), TotalAddOnOrder = sum(AddOnMaster == "AddOn"), TotalMissingCollections = sum(MissingCollect)) %>%
+  ungroup()
 
-start_date <- format(min(scc_sun_all_days_subset$ResultDate), "%m-%d-%y")
-end_date <- format(max(scc_sun_all_days_subset$ResultDate), "%m-%d-%y")
+if (initial_run == TRUE) {
+  scc_sun_repo <- scc_sun_all_days_subset
+} else {
+  # Format existing repository for binding
+  existing_repo$Site <- factor(existing_repo$Site, levels = site_order)
+  existing_repo$Test <- factor(existing_repo$Test, levels = cp_micro_lab_order)
+  existing_repo$MasterSetting <- factor(existing_repo$MasterSetting, levels = pt_setting_order)
+  existing_repo$DashboardSetting <- factor(existing_repo$DashboardSetting, levels = pt_setting_order2)
+  existing_repo$DashboardPriority <- factor(existing_repo$DashboardPriority, levels = dashboard_priority_order)
+  # 
+  # Bind new data with repository
+  scc_sun_repo <- rbind(existing_repo, scc_sun_all_days_subset)
+}
 
+start_date <- format(min(scc_sun_repo$ResultDate), "%m-%d-%y")
+end_date <- format(max(scc_sun_repo$ResultDate), "%m-%d-%y")
 
-write_xlsx(scc_sun_all_days_subset, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Hist Repo Test ", start_date, " to ", end_date, " Created ", Sys.Date(), ".xlsx"))
+write_xlsx(scc_sun_repo, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Hist Repo Test ", start_date, " to ", end_date, " Created ", Sys.Date(), ".xlsx"))
 
