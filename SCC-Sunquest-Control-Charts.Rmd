@@ -471,6 +471,12 @@ stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "HGB"
 ```
 <h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} 
 
+### PT
+```{r PT p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "PT")
+```
+<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} 
+
 ### Rapid Flu
 ```{r Rapid Flu p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "Rapid Flu")
