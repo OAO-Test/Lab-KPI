@@ -412,7 +412,7 @@ receive_result_pchart <- function(data_defect, test_name, site_name, lab_priorit
   stat_QC(method = "p", auto.label = T, color.qc_center = "black") +
   geom_label(x = max(data_defect_plot$ResultDate)+1, y = center_line, vjust = 1.2, hjust = 1, label = paste("CL:", percent(center_line, accuracy = 0.1))) +
   # Specify graph labels and themes
-  labs(title = paste(site_name, test_name, "Receive to Result TAT:\nDefect Rate Control Chart"), x = "Date",  y = "Defect Rate") +
+  labs(title = paste(site_name, test_name, "Receive to Result TAT:\n", lab_priority, "Labs Defect Rate Control Chart"), x = "Date",  y = "Defect Rate") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
           legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
