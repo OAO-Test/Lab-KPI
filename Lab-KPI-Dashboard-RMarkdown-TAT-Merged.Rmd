@@ -542,7 +542,7 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 # create an extra column for old Fcaility and change the facility from MSSM to MSH 
 PP_Weekday$Facility_Old <- PP_Weekday$Facility
 PP_Weekday$Facility[PP_Weekday$Facility_Old == "MSS"] <- "MSH" 
-
+PP_Weekday$Facility[PP_Weekday$Facility_Old == "STL"] <- "SL"
 #------------------------------Extract the Cytology GYN and NON-GYN Data Only------------------------------#
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
