@@ -80,44 +80,6 @@ dashboard_vol_summary <- scc_sun_hist %>%
 
 ```
 
-```{r Test plot, echo = FALSE, warning = FALSE, message = FALSE}
-# 
-# troponin_test <- dashboard_tat_summary[dashboard_tat_summary$Test == "Troponin", ]
-# troponin_test <- troponin_test[troponin_test$DashboardSetting == "ED & ICU" | troponin_test$DashboardSetting == "IP Non-ICU", ]
-# 
-# troponin_test$ResultDate <- as.Date(troponin_test$ResultDate, format = "%m/%d/%y")
-# 
-# trop_vol <- dashboard_vol_summary[dashboard_vol_summary$Test == "Troponin" & dashboard_vol_summary$Site == "MSH", ]
-# 
-# base10 <- floor(log10(max(trop_vol$ResultedVolume[trop_vol$ResultDate >= start_date])))
-# scale <- ceiling(max(trop_vol$ResultedVolume[trop_vol$ResultDate >= start_date])/(10^(base10-1)))*10^(base10-1)
-# 
-# ggplot() +
-#   # Plot safe, at risk, not safe thresholds
-#   geom_rect(aes(xmin = start_date - 1, xmax = max(troponin_test$ResultDate) + 1, ymin = -Inf, ymax = min(troponin_test$NotSafeThreshold), fill = "Not Safe", alpha = "Not Safe")) +
-#   geom_rect(aes(xmin = start_date - 1, xmax = max(troponin_test$ResultDate) + 1, ymin = min(troponin_test$NotSafeThreshold), ymax = min(troponin_test$SafeThreshold), fill = "At Risk", alpha = "At Risk")) +
-#   geom_rect(aes(xmin = start_date - 1, xmax = max(troponin_test$ResultDate) + 1, ymin = min(troponin_test$SafeThreshold), ymax = Inf, fill = "Safe", alpha = "Safe")) +
-#   # Plot turnaround time percentages
-#   geom_point(data = troponin_test[troponin_test$ResultDate >= start_date & troponin_test$Site == "MSH", ], aes(x = ResultDate, y = ReceiveResultPercent, color = DashboardSetting, shape = DashboardSetting), size = 3) +
-#   geom_line(data = troponin_test[troponin_test$ResultDate >= start_date & troponin_test$Site == "MSH", ], aes(x = ResultDate, y = ReceiveResultPercent, color = DashboardSetting), linetype = "dashed") +
-#   # Plot resulted volume on secondary axis
-#   geom_point(data = trop_vol, aes(x = ResultDate, y = ResultedVolume/scale, size = "Volume"), color = "#959595", shape = 18) +
-#   geom_line(data = trop_vol, aes(x = ResultDate, y = ResultedVolume/scale, linetype = "Volume"), color = "#959595") +
-#   # Format graph
-#   labs(title = "MSH Troponin Percentage of Labs within Target TAT:\n Receive to Result", x = "Date",  y = "Percentage of Labs", shape = "Setting") +
-#   theme_bw() +
-#   theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
-#   scale_x_date(limits = c(start_date -1, max(troponin_test$ResultDate)+1), breaks = seq(start_date, max(troponin_test$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
-#   scale_size_manual(name = "Resulted Volume", values = 2, labels = "All Settings") + 
-#   scale_linetype_manual(name = "Resulted Volume", values = "dashed", labels = "All Settings") +
-#   scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green"), labels=c("Not Safe","At Risk","Safe")) +
-#   scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.2, "At Risk" = 0.2, "Safe" = 0.2), labels=c("Not Safe","At Risk","Safe")) +
-#   scale_color_manual(name = "Setting", values = mshs_colors) +
-#   guides(color = guide_legend(order = 1), shape = guide_legend(order = 1), fill = guide_legend(order = 3), alpha = guide_legend(order = 3), size = guide_legend(order = 2), linetype = guide_legend(order = 2)) +
-#   scale_y_continuous(limits = c(NA, 1), labels = percent_format(accuracy = 1), expand = c(0,0, .05, 0), sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
-
-```
-
 ```{r Filter unused TAT combinations, echo = FALSE, warning = FALSE, message = FALSE}
 # Manually remove patient settings or combinations not represented in efficiency indicator dashboards
 dashboard_tat_filter <- dashboard_tat_summary
@@ -168,64 +130,6 @@ resulted_volume_graph <- function(data, test_name, site_name) {
     scale_color_manual(name = "Priority", values = mshs_colors)
 }
 ```
-
-```{r Develop function for graphing TAT percentages within target and resulted lab volume on a secondary axis, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 4, fig.width = 8}
-
-# test_name <- "HGB"
-# site_name <- "MSH"
-# lab_priority <- "Routine"
-# metric <- "ReceiveResultPercent"
-# 
-# data <- dashboard_tat_filter
-# data_tat_plot <- data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name & data$DashboardPriority == lab_priority, ] 
-# 
-# 
-# data_vol <- dashboard_vol_summary
-# data_vol_plot <- data_vol[data_vol$ResultDate >= start_date & data_vol$Test == test_name & data_vol$Site == site_name & data_vol$DashboardPriority == lab_priority, ]
-# 
-# min_vol <- min(data_vol_plot$ResultedVolume)
-# max_vol <- max(data_vol_plot$ResultedVolume)
-# 
-# min_tat <- min(data_tat_plot[ , colnames(data_tat_plot) == metric])
-# max_tat <- max(data_tat_plot[ , colnames(data_tat_plot) == metric])
-# 
-# base10 <- floor(log10(max(data_vol_plot$ResultedVolume)))
-# 
-# scale <- ceiling(max(data_vol_plot$ResultedVolume)/(10^(base10-1)))*10^(base10-1)
-# # scale <- max(data_vol_plot$ResultedVolume)
-# 
-# # min_ratio  <- min(data_vol_plot$ResultedVolume)/min(data_tat_plot$ReceiveResultPercent)
-# # max_ratio  <- max(data_vol_plot$ResultedVolume)/max(data_tat_plot$ReceiveResultPercent)
-# # scale <- mean(c(max_ratio, min_ratio))
-# 
-# metric_name <- ifelse(metric == "ReceiveResultPercent", "Receive to Result", ifelse(metric == "CollectResultPercent", "Collect to Result", "Error"))
-# 
-# ggplot() +
-#   # Plot safe, at risk, not safe thresholds
-#   geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = -Inf, ymax = min(data_tat_plot$NotSafeThreshold), fill = "Not Safe", alpha = "Not Safe")) +
-#   geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = min(data_tat_plot$NotSafeThreshold), ymax = min(data_tat_plot$SafeThreshold), fill = "At Risk", alpha = "At Risk"), show.legend = FALSE) +
-#   geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = min(data_tat_plot$SafeThreshold), ymax = 1, fill = "Safe", alpha = "Safe"), show.legend = FALSE) + 
-#   geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, ymin = 1, ymax = Inf, fill = "N/A", alpha = "N/A"), show.legend = FALSE) +
-#   # Plot percentage of labs within turnaround time target
-#   geom_point(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "DashboardSetting", shape = "DashboardSetting"), size = 3) +
-#   geom_line(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "DashboardSetting"), linetype = "dashed") +
-#   # Plot resulted volume on secondary axis
-#   geom_point(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/(scale*1.0), size = "Volume"), color = "#959595", shape = 18) +
-#   geom_line(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/(scale*1.0), linetype = "Volume"), color = "#959595") +
-#   #
-#   labs(title = paste0(site_name, " ", test_name, " ", metric_name, ":\n", "Percentage of ", lab_priority, " Labs within Target TAT"), x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting", fill = "Status", alpha = "Status", linetype = "Resulted Volume", size = "Resulted Volume") +
-#   theme_bw() +
-#   theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
-#   scale_x_date(limits = c(start_date -1, max(data_tat_plot$ResultDate)+1), breaks = seq(start_date, max(data_tat_plot$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
-#   scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green", "N/A" = "grey"), breaks=c("Not Safe","At Risk","Safe")) +
-#   scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.25, "At Risk" = 0.25, "Safe" = 0.25, "N/A" = 0.5), breaks=c("Not Safe","At Risk","Safe")) +
-#   scale_color_manual(name = "Setting", values = mshs_colors) +
-#   scale_size_manual(name = "Resulted Volume", values = 2, labels = paste(lab_priority, "Labs, \n All Settings")) + 
-#   scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste(lab_priority, "Labs, \n All Settings")) +
-#   guides(color = guide_legend(order = 1), shape = guide_legend(order = 1), fill = guide_legend(order = 3), alpha = guide_legend(order = 3), size = guide_legend(order = 2), linetype = guide_legend(order = 2)) +
-#   scale_y_continuous(limits = c(NA, 1), labels = percent_format(accuracy = 1), sec.axis = sec_axis(~.*scale*1.0, name = "Volume of Labs"))
-```
-
 
 ```{r Custom function for plotting TAT percentages and resulted volume on single graph, echo = FALSE, warning = FALSE, message = FALSE}
 
@@ -317,43 +221,43 @@ stratified_data_for_plots <- function(tat_data, test) {
 
 ### Troponin
 ```{r Troponin historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-# stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Troponin")
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Troponin")
 ```
 <h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory. </h6>
 
 ### Lactate WB
 ```{r Lactate WB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-# stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Lactate WB")
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Lactate WB")
 ```
 <h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory. </h6>
 
 ### BUN
 ```{r BUN historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-# stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "BUN")
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "BUN")
 ```
 <h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
 ### HGB
 ```{r HGB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-# stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "HGB")
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "HGB")
 ```
 <h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
 ### PT
 ```{r PT historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-# stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "PT")
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "PT")
 ```
 <h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
 ### Rapid Flu
 ```{r Rapid Flu historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-# stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Rapid Flu")
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "Rapid Flu")
 ```
 <h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
 ### C. diff
 ```{r C. diff historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-# stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "C. diff")
+stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "C. diff")
 ```
 <h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
@@ -370,28 +274,6 @@ dashboard_defect_summary <- dashboard_tat_filter %>%
             ReceiveResultDefects = ResultedVolumeWithTAT - ReceiveResultInTarget, ReceiveResultDefectRate = ReceiveResultDefects / ResultedVolumeWithTAT)
 
 dashboard_defect_summary <- dashboard_defect_summary[!is.na(dashboard_defect_summary$ReceiveResultDefectRate), ]
-# 
-# troponin_defect <- dashboard_defect_summary[dashboard_defect_summary$ResultDate >= start_date & dashboard_defect_summary$Test == "Troponin" & dashboard_defect_summary$Site == "MSH", ]
-# 
-# center_line <- mean(QC_Lines(data = troponin_defect$ReceiveResultDefectRate[troponin_defect$ResultDate >= start_date], n = troponin_defect$ResultedVolumeWithTAT[troponin_defect$ResultDate >= start_date], method = "p")$pBar)
-# 
-# ggplot(data = troponin_defect[troponin_defect$ResultDate >= start_date, ], aes(x = ResultDate, y = ReceiveResultDefectRate, n = ResultedVolumeWithTAT)) +
-#   # Create point and connecting lines for defect rate data
-#   geom_point(color = mshs_colors[1], shape = 16, size = 3) +
-#   geom_line(color = mshs_colors[1], linetype = "dashed") +
-#   # Add centerline, upper, and lower control limit lines
-#   stat_QC(method = "p", auto.label = T, color.qc_center = "black") +
-#     geom_label(x = max(troponin_defect$ResultDate)+1, y = center_line, vjust = 1.2, hjust = 1, label = paste("CL:", round(center_line, digits = 2))) +
-#   # Specify graph labels and themes
-#   labs(title = "MSH Troponin Receive to Result TAT:\nDefect Rate Control Chart", x = "Date",  y = "Defect Rate") +
-#   theme_bw() +
-#   theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
-#           legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
-#           axis.text.x = element_text(angle = 30, hjust = 1)) +
-#   # Specify axis properties
-#   scale_x_date(limits = c(start_date -1, max(troponin_defect$ResultDate)+1), breaks = seq(start_date, max(troponin_defect$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
-#   scale_y_continuous(labels = percent_format(accuracy = 1))
-
 ```
 
 ```{r Custom function for p-charts, echo = FALSE, warning = FALSE, message = FALSE}
