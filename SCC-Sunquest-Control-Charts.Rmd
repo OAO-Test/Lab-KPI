@@ -358,7 +358,7 @@ stratified_data_for_plots <- function(tat_data, test) {
 <h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
 
 
-## Laboratory Process Defect Rate Control Charts {.tabset}
+## Control Charts of Non-Compliant Labs {.tabset}
 
 ```{r Summarize data to calculate defects and defect rates, echo = FALSE, warning = FALSE, message = FALSE}
 
@@ -412,7 +412,7 @@ receive_result_pchart <- function(data_defect, test_name, site_name, lab_priorit
   stat_QC(method = "p", auto.label = T, color.qc_center = "black") +
   geom_label(x = max(data_defect_plot$ResultDate)+1, y = center_line, vjust = 1.2, hjust = 1, label = paste("CL:", percent(center_line, accuracy = 0.1))) +
   # Specify graph labels and themes
-  labs(title = paste(site_name, test_name, "Receive to Result TAT:\n", lab_priority, "Labs Defect Rate Control Chart"), x = "Date",  y = "Defect Rate") +
+  labs(title = paste(site_name, test_name, lab_priority, "Labs:\n", "Control Chart of Non-Compliant Receive to Result TAT"), x = "Date",  y = "Percent Non-Compliant") +
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
           legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
@@ -454,71 +454,49 @@ stratified_data_for_pcharts <- function(defect_data, test) {
 ```
 
 ### Troponin
-```{r Troponin p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE}
+```{r Troponin p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "Troponin")
 ```
-<h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+<h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 
 ### Lactate WB
-```{r Lactate WB p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE}
+```{r Lactate WB p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "Lactate WB")
 ```
-<h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+<h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### BUN
-```{r BUN p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE}
+```{r BUN p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "BUN")
 ```
-<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### HGB
-```{r HGB p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE}
+```{r HGB p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "HGB")
 ```
-<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### PT
-```{r PT p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE}
+```{r PT p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "PT")
 ```
-<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### Rapid Flu
 ```{r Rapid Flu p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "Rapid Flu")
 # asis_output('<span style = "color: red">test text</span>')
 ```
-<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+<h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### C. diff
-```{r C. diff p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE}
+```{r C. diff p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 stratified_data_for_pcharts(defect_data = dashboard_defect_summary, test = "C. diff")
 ```
-<h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Center line calculated as $\overline{p} =  \frac{\sum_{} np}{n}$ and control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+<h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
-```{r Incorporate logic for n < 50, echo = FALSE, warning = FALSE, message = FALSE}
-# 
-# test <- "Rapid Flu"
-# test_df <- dashboard_defect_summary[dashboard_defect_summary$Test == test, ]
-# sites <- unique(test_df$Site)
-# 
-# for (site in sites) {
-#     print(site)
-#     print(test)
-#     site_df <- test_df[test_df$Site == site, ]
-#     priorities <- unique(site_df$DashboardPriority)
-#     for (priority in priorities) {
-#       print(priority)
-#       priority_df <- site_df[site_df$DashboardPriority == priority, ]
-#       avg_resulted_volume <- mean(priority_df$ResultedVolumeWithTAT[priority_df$ResultDate >= start_date])
-#       print(avg_resulted_volume)
-#       if (avg_resulted_volume >= 50) {
-#         print(receive_result_pchart(data_defect = priority_df, test_name = test, site_name = site, lab_priority = priority))
-#       } else {
-#         print(paste(site, test, priority, "Labs: Insufficient volume for this analysis. (Average resulted volume over last 30 days:", round(avg_resulted_volume, digits = 0), "specimens.)"))
-#       }
-#     }
-# }
+##{-}
 
-```
+## Methodology and Assumptions
