@@ -47,6 +47,10 @@ SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\
 SP_Dataframe_combined <- bind_rows(SP_list)
 SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility ==  "Page -1 of 1",]
 
+cyto_gyn_combined <- SP_Dataframe_combined[which(SP_Dataframe_combined$spec_group == "CYTO GYN"),]
+write.csv(cyto_gyn_combined, "cyto_gyn_combined.csv")
+unique_case_numbers <- unique(cyto_gyn_combined$Case_no) 
+  
 # Import analysis reference data starting with test codes for SCC and Sunquest
 # reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
 reference_file <- choose.files(caption = "Select analysis reference file")
