@@ -1413,13 +1413,13 @@ Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[,Columns_
 
 #Change the order of the rows in the table
 
-Rows_Order_Form_Clinical <- factor(rownames(Formatted_Clinical_Labs_Melt_New2),levels = c(11, 4, 3, 9, 10, 1 , 2, 5, 8, 6, 7))
+Rows_Order_Form_Clinical <- factor(rownames(Formatted_Clinical_Labs_Melt_New2),levels = c(11, 4, 3, 9, 10, 1 , 2, 6, 8, 5, 7))
 Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[Rows_Order_Form_Clinical,]
 rownames(Formatted_Clinical_Labs_Melt_New2) <- NULL
 
 #Change the names in the Facility columns to be standardized
 
-rownames(Formatted_Clinical_Labs_Melt_New2) <- c("MSH", "MSQ", "MSBI", "MSB", "MSSL", "MSW", "NYEE", "MSSN", "Anatomic Pathology (Centralized)", "Central Processiong & Accessioning (CPA)", "Client Services - 4LABS")
+rownames(Formatted_Clinical_Labs_Melt_New2) <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "NYEE", "MSSN", "Anatomic Pathology (Centralized)", "Central Processiong & Accessioning (CPA)", "Client Services - 4LABS")
 
 Formatted_Clinical_Labs_Melt_New2$Select.your.branch.facility <- rownames(Formatted_Clinical_Labs_Melt_New2)
 rownames(Formatted_Clinical_Labs_Melt_New2) <- NULL
@@ -1479,13 +1479,13 @@ Formatted_Never_Event <- Formatted_Never_Event[,Never_Events_Column_Order_1]
 
 #Change the order of the rows in the table
 
-Rows_Order_Never_Events <- factor(rownames(Formatted_Never_Event),levels = c(11, 4, 3, 9, 10, 1 , 2, 5, 8, 6, 7))
+Rows_Order_Never_Events <- factor(rownames(Formatted_Never_Event),levels = c(11, 4, 3, 9, 10, 1 , 2, 6, 8, 5, 7))
 Formatted_Never_Event <- Formatted_Never_Event[Rows_Order_Never_Events,]
 rownames(Formatted_Never_Event) <- NULL
 
 #Change the names in the Facility columns to be standardized
 
-rownames(Formatted_Never_Event) <- c("MSH", "MSQ", "MSBI", "MSB", "MSSL", "MSW", "NYEE", "MSSN", "Anatomic Pathology (Centralized)", "Central Processiong & Accessioning (CPA)", "Client Services - 4LABS")
+rownames(Formatted_Never_Event) <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "NYEE", "MSSN", "Anatomic Pathology (Centralized)", "Central Processiong & Accessioning (CPA)", "Client Services - 4LABS")
 
 Formatted_Never_Event$Select.your.branch.facility <- rownames(Formatted_Never_Event)
 rownames(Formatted_Never_Event) <- NULL
