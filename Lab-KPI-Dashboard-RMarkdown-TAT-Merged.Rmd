@@ -55,7 +55,7 @@ Today <- as.timeDate(as.Date("03/12/2020", format = "%m/%d/%Y"))
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
 #Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("02/26/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("03/11/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -1343,10 +1343,14 @@ KPI_Form <- data.frame(read_excel(choose.files(caption = "Select the KPI form ge
 
 #Determine the dates within the KPI excel sheet and report only the latest date
 KPI_Form$Completion_Date <- as.Date(as.POSIXct(KPI_Form$Completion.time,tz="",format='%m/%d/%y %I:%M %p'))
-List_of_Dates <-unique(KPI_Form$Completion_Date)
-Ordered_Dates <- List_of_Dates[rev(order(List_of_Dates))]
+KPI_Form$Completion_Hour <- format(KPI_Form$Completion.time, format = "%H:%M:%S")
+
+#List_of_Dates <-unique(KPI_Form$Completion_Date)
+#Ordered_Dates <- List_of_Dates[rev(order(List_of_Dates))]
 #pick only the newest responses
-KPI_Form_Today <- KPI_Form[which(KPI_Form$Completion_Date == Ordered_Dates[1]),]
+#KPI_Form_Today <- KPI_Form[which(KPI_Form$Completion_Date == Ordered_Dates[1]),]
+
+KPI_Form_Today  <- KPI_Form[which(KPI_Form$Completion_Date == as.Date(Today) | (KPI_Form$Completion_Date == as.Date(Yesterday) & KPI_Form$Completion_Hour >= "17:00:00")),]
 
 Today_Date_KPI <- format(Today, format = "%a %m/%d/%y")
 #split the data into 3 datasets
