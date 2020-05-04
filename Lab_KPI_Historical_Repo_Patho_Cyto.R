@@ -40,16 +40,28 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 setwd(user_wd)
 
-file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^(KPI REPORT\\ - \\RAW DATA V3).+(2020)\\-(01|02|03){1}\\-[0-9]{2}")
+file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^(KPI REPORT\\ - \\RAW DATA V4).+(2020)\\-(01|02|03|04|05){1}\\-[0-9]{2}")
 
 SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
+
+for (i in (1: length(SP_list))){
+  #check if any of the dates was imported as char
+  if (is.character(SP_list[[i]]$Collection_Date)){
+    SP_list[[i]]$Collection_Date <- as.numeric(SP_list[[i]]$Collection_Date)
+    SP_list[[i]]$Collection_Date <- as.Date(SP_list[[i]]$Collection_Date, origin = "1899-12-30")
+    SP_list[[i]]$Collection_Date <- as.POSIXct(SP_list[[i]]$Collection_Date,tz="", format='%m/%d/%y %I:%M %p')
+  } else {
+    SP_list[[i]]$Collection_Date <- SP_list[[i]]$Collection_Date
+  }
+}
+  
 
 SP_Dataframe_combined <- bind_rows(SP_list)
 SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility ==  "Page -1 of 1",]
 
-cyto_gyn_combined <- SP_Dataframe_combined[which(SP_Dataframe_combined$spec_group == "CYTO GYN"),]
-write.csv(cyto_gyn_combined, "cyto_gyn_combined.csv")
-unique_case_numbers <- unique(cyto_gyn_combined$Case_no) 
+#cyto_gyn_combined <- SP_Dataframe_combined[which(SP_Dataframe_combined$spec_group == "CYTO GYN"),]
+#write.csv(cyto_gyn_combined, "cyto_gyn_combined.csv")
+#unique_case_numbers <- unique(cyto_gyn_combined$Case_no) 
   
 # Import analysis reference data starting with test codes for SCC and Sunquest
 # reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
@@ -67,9 +79,10 @@ TAT_Targets <- data.frame(read_excel(reference_file, sheet = "AP_TAT Targets"), 
 #Upload the exclusion vs inclusion criteria associated with the GI codes
 GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAsFactors = FALSE)
 
-# create an extra column for old Fcaility and change the facility from MSSM to MSH 
+# create an extra column for old Facility and change the facility from MSSM to MSH 
 SP_Dataframe_combined$Facility_Old <- SP_Dataframe_combined$Facility
-SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "MSS"] <- "MSH" 
+SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "MSS"] <- "MSH"
+SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "STL"] <- "SL"
 
 #------------------------------Extract the All Breast, GI Specimens, cyto gyn and cyto nongyn Data Only------------------------------#
 
@@ -77,8 +90,17 @@ SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "MSS"] <- "
 
 SP_Dataframe_combined_Exc <- merge(x = SP_Dataframe_combined, y= GI_Codes, all.x = TRUE)
 
-SP_Dataframe_combined_Exc <- SP_Dataframe_combined_Exc[which(((SP_Dataframe_combined_Exc$spec_group=="GI") &(SP_Dataframe_combined_Exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | SP_Dataframe_combined_Exc$spec_group=="Breast" | SP_Dataframe_combined_Exc$spec_group=="CYTO NONGYN" | SP_Dataframe_combined_Exc$spec_group=="CYTO GYN"),]
+Cytology <- SP_Dataframe_combined_Exc[which((SP_Dataframe_combined_Exc$spec_group=="CYTO NONGYN" | SP_Dataframe_combined_Exc$spec_group=="CYTO GYN") & SP_Dataframe_combined_Exc$spec_sort_order=="A"),]
 
+#find case numbers with GI_Code = exclude
+Exclude_GI_Codes_DF <- SP_Dataframe_combined_Exc[which((SP_Dataframe_combined_Exc$spec_group=="GI") & (SP_Dataframe_combined_Exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Exclude")),]
+Must_Exclude_CNum <- unique(Exclude_GI_Codes_DF$Case_no)
+
+Surgical_Pathology<- SP_Dataframe_combined_Exc[which((((SP_Dataframe_combined_Exc$spec_group=="GI") & (!(SP_Dataframe_combined_Exc$Case_no %in% Must_Exclude_CNum))) | (SP_Dataframe_combined_Exc$spec_group=="Breast")) & SP_Dataframe_combined_Exc$spec_sort_order=="A"),]
+
+#SP_Dataframe_combined_Exc <- SP_Dataframe_combined_Exc[which(((SP_Dataframe_combined_Exc$spec_group=="GI") &(SP_Dataframe_combined_Exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | SP_Dataframe_combined_Exc$spec_group=="Breast" | SP_Dataframe_combined_Exc$spec_group=="CYTO NONGYN" | SP_Dataframe_combined_Exc$spec_group=="CYTO GYN"),]
+
+SP_Dataframe_combined_New <- rbind(Cytology, Surgical_Pathology)
 #------------------------------Data Pre-Processing------------------------------#
 ############Create a function for Data pre-processing############
 
@@ -113,7 +135,7 @@ pre_processing_historical <- function(Raw_Data){
   return(Summarized_Table)
 }
 
-Historical_Data_Summarized <- pre_processing_historical(SP_Dataframe_combined_Exc)
+Historical_Data_Summarized <- pre_processing_historical(SP_Dataframe_combined_New)
 colnames(Historical_Data_Summarized) <- c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr", "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target", "Patient_metric_target", "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std","Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med", "Patient_metric_std")
 write.csv(Historical_Data_Summarized, "Historical_Repo_Surgical_Pathology.csv")
 
