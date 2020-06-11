@@ -1543,7 +1543,7 @@ rownames(Formatted_Never_Event) <- NULL
 #table one is the comments only while table two is the details
 
 Good_Catch <- Formatted_Never_Event[,c(1,7)]
-Good_Catch[is.na(Good_Catch)] <- 0
+Good_Catch[is.na(Good_Catch)] <- "No Issues Reported"
 
 #Good_Catch_New <- Good_Catch[which(!(is.na(Good_Catch$X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable.))),]
 
