@@ -40,7 +40,7 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 setwd(user_wd)
 
-file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^(KPI REPORT\\ - \\RAW DATA V4).+(2020)\\-(01|02|03|04|05){1}\\-[0-9]{2}")
+file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^(KPI REPORT\\ - \\RAW DATA V4).+(2020)\\-(01|02|03|04|05|06){1}\\-[0-9]{2}")
 
 SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
 
@@ -137,7 +137,10 @@ pre_processing_historical <- function(Raw_Data){
 
 Historical_Data_Summarized <- pre_processing_historical(SP_Dataframe_combined_New)
 colnames(Historical_Data_Summarized) <- c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr", "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target", "Patient_metric_target", "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std","Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med", "Patient_metric_std")
-write.csv(Historical_Data_Summarized, "Historical_Repo_Surgical_Pathology.csv")
+
+#main historical repo
+csvFileName <- paste0(user_wd,"\\AP & Cytology Historical Repo\\", "Historical_Repo_Surgical_Pathology","_",Today,".csv")
+write.csv(Historical_Data_Summarized, csvFileName)
 
 
 
