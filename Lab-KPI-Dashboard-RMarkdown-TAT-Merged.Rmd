@@ -664,13 +664,16 @@ pre_processing_pp <- function(Raw_Data){
     
     Raw_Data_New_Lab_Metric_V2 <- summarise(group_by(Raw_Data_New,spec_group,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)))
     
+        Summarized_Table <- summarise(group_by(Raw_Data_New,Spec_code, spec_group, Facility,Patient.Setting, Rev_ctr,as.Date(signed_out_date),weekdays(as.Date(signed_out_date)),Received.to.signed.out.target..Days.,Collected.to.signed.out.target..Days.),  No_Cases_Signed = n(), Lab_Metric_TAT_Avg = round(mean(Received_to_signed_out, na.rm = TRUE),0), Lab_Metric_TAT_med = round(median(Received_to_signed_out, na.rm = TRUE),0), Lab_Metric_TAT_sd = round(sd(Received_to_signed_out, na.rm = TRUE),1), Lab_Metric_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)), Patient_Metric_TAT_avg=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))), Patient_Metric_TAT_med = round(median(Collection_to_signed_out, na.rm = TRUE),0), Patient_Metric_TAT_sd =round(sd(Collection_to_signed_out, na.rm = TRUE),1))
+
+    
     #here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
     
     Processed_Data_Table <- left_join(full_join(Raw_Data_New_Cases_Signed, Raw_Data_New_Lab_Metric), Raw_Data_New_Patient_Metric, by = c("spec_group", "Patient.Setting"))
     Processed_Data_Table <- Processed_Data_Table[!(Processed_Data_Table$Patient.Setting == "Other"),]
     Processed_Data_Table_V2 <- left_join(full_join(Raw_Data_New_Cases_Signed, Raw_Data_New_Lab_Metric_V2), Raw_Data_New_Patient_Metric, by = c("spec_group", "Patient.Setting"))
     Processed_Data_Table_V2 <- Processed_Data_Table_V2[!(Processed_Data_Table_V2$Patient.Setting == "Other"),]
-    Return_Tables <- list(Processed_Data_Table, Processed_Data_Table_V2,Raw_Data_New_Cases_Signed_Stratified,Raw_Data_New) 
+    Return_Tables <- list(Processed_Data_Table, Processed_Data_Table_V2,Raw_Data_New_Cases_Signed_Stratified,Raw_Data_New,Summarized_Table) 
   }
   return(Return_Tables)
 }
@@ -749,6 +752,41 @@ Backlog_Accessioned_Table_New2 <- merge(x = Table_Template_backlog_Accessioned[1
 Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
 
 ```
+
+```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE}
+
+#1. import the historical repo
+Historical_Repo <- read.csv("J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\AP & Cytology Historical Repo\\Historical_Repo_Surgical_Pathology.csv", stringsAsFactors = FALSE)
+
+Historical_Repo$X <- NULL
+#Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%Y')
+#2. append all the summary tables together
+Cytology_Table_Weekday_Summarized <- pre_processing_pp(Cytology_Weekday_Raw)[[5]]
+#Cytology_Table_Not_Weekday_Summarized <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[5]]
+Surgical_Pathology_Table_Weekday_Summarized <- pre_processing_pp(Surgical_Pathology_Weekday)[[5]]
+#Surgical_Pathology_Table_Not_Weekday_Summarized <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[5]]
+#current_summary <- rbind(Cytology_Table_Weekday_Summarized, Cytology_Table_Not_Weekday_Summarized, Surgical_Pathology_Table_Weekday_Summarized, Surgical_Pathology_Table_Not_Weekday_Summarized)
+
+current_summary <- rbind(Cytology_Table_Weekday_Summarized, Surgical_Pathology_Table_Weekday_Summarized)
+
+current_summary <- as.data.frame(current_summary)
+#standardize the name
+colnames(current_summary) <- c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr", "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target", "Patient_metric_target", "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std","Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med", "Patient_metric_std")
+#make sure the data types for both dataframes are the same
+common <- names(Historical_Repo)[names(Historical_Repo) %in% names(current_summary)]
+Historical_Repo[common] <- lapply(common, function(x) {
+  match.fun(paste0("as.", class(current_summary[[x]])))(Historical_Repo[[x]])
+})
+
+#3. combine the current summary with the historical repo and write them into a csv file
+Historical_Repo_Updated <- rbind(Historical_Repo, current_summary)
+
+csvFileName <- paste0(user_directory,"/AP & Cytology Historical Repo/", "Historical_Repo_Surgical_Pathology_test","_",Today,".csv")
+
+write.csv(Historical_Repo_Updated,csvFileName)
+
+```
+
 
 ```{r Custom Functions for subsetting and summarizing data for SCC and Sunquest dashboard tables, warning = FALSE, message = FALSE, echo = FALSE}
 # # Custom function to clean and format summarized data (used in "subsetting and summarizing function"lab_sub_summarize" function beflore)
