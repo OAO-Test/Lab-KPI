@@ -83,8 +83,14 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 ```{r Import all data, warning = FALSE, message = FALSE, echo = FALSE}
 # Select file/folder path for easier file selection and navigation
 # user_wd <- choose.dir(caption = "Select your working directory")
-user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
-user_path <- paste0(user_wd, "\\*.*")
+#user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
+#user_path <- paste0(user_wd, "\\*.*")
+if (list.files("J://") == "Presidents") {
+  user_directory <- "J:/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+} else {
+  user_directory <- "J:/deans/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+}
+user_path <- paste0(user_directory, "/*.*")
 
 
 #------------------------------Read Excel sheets------------------------------#
@@ -539,26 +545,35 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 ```
 
 ```{r Custom function for preprocessing raw Powerpath data and calling function, warning = FALSE, message = FALSE, echo = FALSE}
+#standardize column names
+#GI_codes_column_name <- c("Specimen_code", "GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.")
+#colnames(GI_Codes) <- GI_codes_column_name
 # create an extra column for old Fcaility and change the facility from MSSM to MSH 
 PP_Weekday$Facility_Old <- PP_Weekday$Facility
 PP_Weekday$Facility[PP_Weekday$Facility_Old == "MSS"] <- "MSH" 
-
+PP_Weekday$Facility[PP_Weekday$Facility_Old == "STL"] <- "SL"
 #------------------------------Extract the Cytology GYN and NON-GYN Data Only------------------------------#
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
-
-Cytology_Weekday_Raw <- PP_Weekday[which(PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN"),]
-Cytology_Not_Weekday_Raw <- PP_Not_Weekday[which(PP_Not_Weekday$spec_group=="CYTO NONGYN" | PP_Not_Weekday$spec_group=="CYTO GYN"),]
-
+Cytology_Weekday_Raw <- PP_Weekday[which((PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
+Cytology_Not_Weekday_Raw <- PP_Not_Weekday[which((PP_Not_Weekday$spec_group=="CYTO NONGYN" | PP_Not_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
 #------------------------------Extract the All Breast and GI Specimens Data Only------------------------------#
-
 #Merge the exclusion/inclusion cloumn into the modified powerpath Dataset for weekdays and not weekdays
+PP_Weekday <- merge(x = PP_Weekday, y= GI_Codes, all.x = TRUE)
+#find case numbers with GI_Code = exclude
+Exclude_GI_Codes_DF <- PP_Weekday[which((PP_Weekday$spec_group=="GI") & (PP_Weekday$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Exclude")),]
+Must_Exclude_CNum <- unique(Exclude_GI_Codes_DF$Case_no)
+#this dataframe has all the GI specimens and biopsies that should be excluded 
+#it includes any biopsy that came with another excluded code
+#this DF is only for our reference
+Must_Exclude_CNum_df <- PP_Weekday[which(PP_Weekday$Case_no %in% Must_Exclude_CNum),]
+Surgical_Pathology_Weekday <- PP_Weekday[which((((PP_Weekday$spec_group=="GI") & (!(PP_Weekday$Case_no %in% Must_Exclude_CNum))) | (PP_Weekday$spec_group=="Breast")) & PP_Weekday$spec_sort_order=="A"),]
+#PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday, y= GI_Codes, all.x = TRUE)
+#find MRNs with GI_Code = exclude
+#Must_Exclude_MRN_Not_Weekday <- PP_Not_Weekday_Excl[which((PP_Not_Weekday_Excl$spec_group=="GI") & (PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Exclude")),]
+#Must_Exclude_MRN_Not_Weekday <- unique(Must_Exclude_MRN_Not_Weekday$MRN)
+#Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") & (!(PP_Not_Weekday_Excl$MRN %in% Must_Exclude_MRN_Not_Weekday)) & (PP_Not_Weekday_Excl$spec_sort_order=="A")) | ((PP_Not_Weekday_Excl$spec_group=="Breast") & (PP_Not_Weekday_Excl$spec_sort_order=="A"))),]
 
-PP_Weekday_Excl <- merge(x = PP_Weekday, y= GI_Codes, all.x = TRUE)
-Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group=="GI") &(PP_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Weekday_Excl$spec_group=="Breast"),]
-
-PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday, y= GI_Codes, all.x = TRUE)
-Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
 
 #-----------Reporting Dates-----------#
 #1. Weekday Date
@@ -645,18 +660,13 @@ pre_processing_pp <- function(Raw_Data){
 }
 
 Cytology_Table_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[1]]
-Cytology_Table_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[1]]
 Cytology_Table_Weekday_V2 <- pre_processing_pp(Cytology_Weekday_Raw)[[2]]
-Cytology_Table_Not_Weekday_V2 <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[2]]
 Cytology_Stratified_Vol_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[3]]
-Cytology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[3]]
 Cytology_Table_Weekday_Raw <- pre_processing_pp(Cytology_Weekday_Raw)[[4]]
 
 
 Surgical_Pathology_Table_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[1]]
-Surgical_Pathology_Table_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[1]]
 Surgical_Pathology_Stratified_Vol_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[3]]
-Surgical_Pathology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[3]]
 Surgical_Pathology_Table_Weekday_Raw <- pre_processing_pp(Surgical_Pathology_Weekday)[[4]]
 
 ```
@@ -721,7 +731,7 @@ Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
 
 ```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE}
 user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
-setwd(user_wd)
+  setwd(user_wd)
 
 #1. import the historical repo
 Historical_Repo <- read.csv("J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Historical_Repo_Surgical_Pathology_test.csv", stringsAsFactors = FALSE)
