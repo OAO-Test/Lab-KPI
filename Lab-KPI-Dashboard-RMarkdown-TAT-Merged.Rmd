@@ -782,11 +782,15 @@ historical_30_day_period <- Historical_Repo_Updated_weekdays[which(Historical_Re
 #summarized the data to plot it correctly
 historical_30_day_period_sum <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility,Patient_setting), Lab_metric_within_target = format(round(mean(as.numeric(Lab_metric_within_target), na.rm = TRUE), 2)), Patient_metric_avg = format(round(mean(as.numeric(Patient_metric_avg), na.rm = TRUE),0)),No_cases_signed_out = sum(No_cases_signed_out))
 
-historical_30_day_period_sum$Lab_metric_within_target <- as.numeric(historical_30_day_period_sum$Lab_metric_within_target)
+Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct, tz="" ,format='%m/%d/%y %I:%M %p')
 
-historical_30_day_period_sum$Patient_metric_avg <- as.numeric(historical_30_day_period_sum$Patient_metric_avg)
+historical_30_day_period_sum[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")] <- lapply(historical_30_day_period_sum[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")], as.numeric)
 
-historical_30_day_period_sum$No_cases_signed_out <- as.numeric(historical_30_day_period_sum$No_cases_signed_out)
+#historical_30_day_period_sum$Lab_metric_within_target <- as.numeric(historical_30_day_period_sum$Lab_metric_within_target)
+
+#historical_30_day_period_sum$Patient_metric_avg <- as.numeric(historical_30_day_period_sum$Patient_metric_avg)
+
+#historical_30_day_period_sum$No_cases_signed_out <- as.numeric(historical_30_day_period_sum$No_cases_signed_out)
 
 historical_30_day_period_sum_vol <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility),No_cases_signed_out = sum(No_cases_signed_out))
 
