@@ -389,8 +389,156 @@ correct_result_dates <- function(data, number_days) {
 
 
 
+# Custom function for preprocessing daily Sunquest data -----------------
+preprocess_sun_daily <- function(raw_sun_daily) {
+  
+  # Remove duplicates
+  raw_sun_daily <- unique(raw_sun_daily)
+  
+  # Sunquest lookup references ----------------------------------------------
+  # Crosswalk labs included and remove out of scope labs
+  raw_sun_daily <- left_join(raw_sun_daily, test_code[ , c("Test", "SUN_TestCode", "Division")], 
+                        by = c("TestCode" = "SUN_TestCode"))
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(TestCode = as.factor(TestCode),
+           Division = as.factor(Division),
+           TestIncl = ifelse(is.na(Test), FALSE, TRUE))
+  
+  # Remove out of scope labs
+  raw_sun_daily <- raw_sun_daily %>%
+    filter(TestIncl)
+  
+  # Crosswalk units and identify ICUs
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(LocandName = paste(LocCode, LocName))
+  raw_sun_daily <- left_join(raw_sun_daily, sun_icu[ , c("Concatenate", "ICU")], by = c("LocandName" = "Concatenate"))
+  raw_sun_daily[is.na(raw_sun_daily$ICU), "ICU"] <- FALSE
+  
+  # Crosswalk unit type
+  raw_sun_daily <- left_join(raw_sun_daily, sun_setting, by = c("LocType" = "LocType"))
+  # Crosswalk site name
+  raw_sun_daily <- left_join(raw_sun_daily, mshs_site, by = c("HospCode" = "DataSite"))
+  
+  # Sunquest data formatting --------------------------------------------
+  raw_sun_daily[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
+             "LocType", "LocCode", "LocName",
+             "PhysName", "SHIFT",
+             "ReceiveTech", "ResultTech", "PerformingLabCode",
+             "Test", "LocandName", "Setting", "SettingRollUp", "Site")] <- lapply(raw_sun_daily[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
+                                                                                             "LocType", "LocCode", "LocName",
+                                                                                             "PhysName", "SHIFT",
+                                                                                             "ReceiveTech", "ResultTech", "PerformingLabCode",
+                                                                                             "Test", "LocandName", "Setting", "SettingRollUp", "Site")], as.factor)
+  
+  # Add NA as factor level for SpecimenPriority since many specimens are submitted without a priority
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(SpecimenPriority = addNA(SpecimenPriority))
+  
+  # Fix any timestamps that weren't imported correctly and then format as date/time
+  raw_sun_daily[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- lapply(raw_sun_daily[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")], function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
+  
+  raw_sun_daily[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- lapply(raw_sun_daily[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")],
+                                                                                                 as.POSIXct, tz = "UTC", format = "%m/%d/%Y %H:%M:%S")
+  
+  # Add a column for Resulted date for later use in repository
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(ResultedDate = as.Date(ResultDateTime, format = "%m/%d/%Y"))
+  
+  
+  
+  # Sunquest data preprocessing --------------------------------------------------
+  # Update patient setting to reflect ICU/Non-ICU and update priorities for ED and ICU labs
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(MasterSetting = ifelse(SettingRollUp == "ED", "ED",
+                                  ifelse(SettingRollUp == "Amb", "Amb",
+                                         ifelse(SettingRollUp == "IP" & ICU == TRUE, "ICU",
+                                                ifelse(SettingRollUp == "IP" & ICU == FALSE, "IP Non-ICU", "Other")))),
+           DashboardSetting = ifelse(MasterSetting == "ED" | MasterSetting == "ICU", "ED & ICU", MasterSetting))
+  
+  # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(AdjPriority = ifelse(MasterSetting != "ED" & MasterSetting != "ICU" & is.na(SpecimenPriority), "Routine",
+                                ifelse(MasterSetting == "ED" | MasterSetting == "ICU" | SpecimenPriority == "S", "Stat", "Routine")),
+           DashboardPriority = ifelse(tat_targets$Priority[match(Test, tat_targets$Test)] == "All", "All", AdjPriority))
+  
+  # Calculate turnaround times
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(CollectToReceive = ReceiveDateTime - CollectDateTime,
+           ReceiveToResult = ResultDateTime - ReceiveDateTime,
+           CollectToResult = ResultDateTime - CollectDateTime)
+  
+  raw_sun_daily[c("CollectToReceive", "ReceiveToResult", "CollectToResult")] <- lapply(raw_sun_daily[c("CollectToReceive", "ReceiveToResult", "CollectToResult")], as.numeric, units = "mins")
+  
+  # Identify add on orders as orders placed more than 5 min after specimen received
+  # Identify specimens with missing collections times as those with collection time defaulted to order time
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(AddOnMaster = ifelse(difftime(OrderDateTime, ReceiveDateTime, units = "mins") > 5, "AddOn", "Original"),
+           MissingCollect = ifelse(CollectDateTime == OrderDateTime, TRUE, FALSE))
+  
+  # Determine target TAT based on test, priority, and patient setting
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(Concate1 = paste(Test, DashboardPriority),
+           Concate2 = paste(Test, DashboardPriority, MasterSetting),
+           ReceiveResultTarget = ifelse(!is.na(match(Concate2, tat_targets$Concate)), 
+                                        tat_targets$ReceiveToResultTarget[match(Concate2, tat_targets$Concate)],
+                                        ifelse(!is.na(match(Concate1, tat_targets$Concate)), 
+                                               tat_targets$ReceiveToResultTarget[match(Concate1, tat_targets$Concate)],
+                                               tat_targets$ReceiveToResultTarget[match(Test, tat_targets$Concate)])),
+           CollectResultTarget = ifelse(!is.na(match(Concate2, tat_targets$Concate)), 
+                                        tat_targets$CollectToResultTarget[match(Concate2, tat_targets$Concate)],
+                                        ifelse(!is.na(match(Concate1, tat_targets$Concate)), 
+                                               tat_targets$CollectToResultTarget[match(Concate1, tat_targets$Concate)],
+                                               tat_targets$CollectToResultTarget[match(Test, tat_targets$Concate)])),
+           ReceiveResultInTarget = ReceiveToResult <= ReceiveResultTarget,
+           CollectResultInTarget = CollectToResult <= CollectResultTarget)
+  
+  # Identify and remove duplicate tests
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(Concate3 = paste(PtNumber, HISOrderNumber, TSTName,
+                            CollectDateTime, ReceiveDateTime, ResultDateTime))
+  
+  raw_sun_daily <- raw_sun_daily[!duplicated(raw_sun_daily$Concate3), ]
+  
+  
+  # Identify which labs to include in TAT analysis
+  # Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
+  raw_sun_daily <- raw_sun_daily %>%
+    mutate(TATInclude = ifelse(AddOnMaster != "Original" | MasterSetting == "Other" | CollectToResult < 0 | 
+                                 ReceiveToResult < 0 | is.na(CollectToResult) | is.na(ReceiveToResult), FALSE, TRUE))
+  
+  sun_daily_master <- raw_sun_daily[ ,c("LocCode", "LocName", "LocandName",
+                              "HISOrderNumber", "PhysName", "PtNumber", "SHIFT",
+                              "TSTName", "Test", "Division", "SpecimenPriority",
+                              "Site", "ICU", "LocType",
+                              "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
+                              "AdjPriority", "DashboardPriority",
+                              "OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime",
+                              "ResultedDate",
+                              "CollecttoReceive", "ReceivetoResult", "CollecttoResult",
+                              "AddOnMaster", "MissingCollect",
+                              "ReceiveResultTarget", "CollectResultTarget",
+                              "ReceiveResultInTarget", "CollectResultInTarget",
+                              "TATInclude")]
+  
+  colnames(sun_daily_master) <- c("LocCode", "LocName", "LocConcat",
+                             "OrderID", "RequestMD", "MSMRN", "WorkShift",
+                             "TestName", "Test", "Division", "OrderPriority",
+                             "Site", "ICU", "LocType",
+                             "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
+                             "AdjPriority", "DashboardPriority",
+                             "OrderTime", "CollectTime", "ReceiveTime", "ResultTime",
+                             "ResultDate",
+                             "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT",
+                             "AddOnMaster", "MissingCollect",
+                             "ReceiveResultTarget", "CollectResultTarget",
+                             "ReceiveResultInTarget", "CollectResultInTarget",
+                             "TATInclude")
+  
+  sun_daily_list <- list(raw_sun_daily, sun_daily_master)
+  
+}
 
-# Custom function for preprocessing monthly Sunquest data
+# Custom function for preprocessing monthly Sunquest data -----------------------
 preprocess_sun_monthly <- function(raw_sun_monthly) {
   
   # Remove duplicates
@@ -524,163 +672,23 @@ preprocess_sun_monthly <- function(raw_sun_monthly) {
                                      "ReceiveResultInTarget", "CollectResultInTarget", 
                                      "TATInclude")
   
-  sun_monthly_master[c("LocConcat", "RequestMD", "WorkShift", "AdjPriority", "AddOnMaster")] <-
-    lapply(sun_monthly_master[c("LocConcat", "RequestMD", "WorkShift", "AdjPriority", "AddOnMaster")], as.factor)
-  
-  sun_monthly_master$Site <- factor(sun_monthly_master$Site, levels = site_order)
-  sun_monthly_master$Test <- factor(sun_monthly_master$Test, levels = cp_micro_lab_order)
-  sun_monthly_master$MasterSetting <- factor(sun_monthly_master$MasterSetting, levels = pt_setting_order)
-  sun_monthly_master$DashboardSetting <- factor(sun_monthly_master$DashboardSetting, levels = pt_setting_order2)
-  sun_monthly_master$DashboardPriority <- factor(sun_monthly_master$DashboardPriority, levels = dashboard_priority_order)
+  # sun_monthly_master[c("LocConcat", "RequestMD", "WorkShift", "AdjPriority", "AddOnMaster")] <-
+  #   lapply(sun_monthly_master[c("LocConcat", "RequestMD", "WorkShift", "AdjPriority", "AddOnMaster")], as.factor)
+  # 
+  # sun_monthly_master$Site <- factor(sun_monthly_master$Site, levels = site_order)
+  # sun_monthly_master$Test <- factor(sun_monthly_master$Test, levels = cp_micro_lab_order)
+  # sun_monthly_master$MasterSetting <- factor(sun_monthly_master$MasterSetting, levels = pt_setting_order)
+  # sun_monthly_master$DashboardSetting <- factor(sun_monthly_master$DashboardSetting, levels = pt_setting_order2)
+  # sun_monthly_master$DashboardPriority <- factor(sun_monthly_master$DashboardPriority, levels = dashboard_priority_order)
   
   sun_monthly_list <- list(raw_sun_monthly, sun_monthly_master)
   
   
 }
 
-monthly_test <- mapply(preprocess_sun_monthly, sun_monthly_list)
+sun_daily_preprocessed <- mapply(preprocess_sun_daily, sun_daily_list)
 
-
-
-## SUNQUEST DATA PROCESSING FOR DAILY REPORTS ----------
-raw_sun <- sun
-# Sunquest lookup references ----------------------------------------------
-# Crosswalk labs included and remove out of scope labs
-raw_sun <- left_join(raw_sun, test_code[ , c("Test", "SUN_TestCode", "Division")], by = c("TestCode" = "SUN_TestCode"))
-raw_sun$TestCode <- as.factor(raw_sun$TestCode)
-raw_sun$Division <- as.factor(raw_sun$Division)
-raw_sun$TestIncl <- ifelse(is.na(raw_sun$Test), FALSE, TRUE)
-raw_sun <- raw_sun[raw_sun$TestIncl == TRUE, ]
-# Crosswalk units and identify ICUs
-raw_sun$LocandName <- paste(raw_sun$LocCode, raw_sun$LocName)
-raw_sun <- left_join(raw_sun, sun_icu[ , c("Concatenate", "ICU")], by = c("LocandName" = "Concatenate"))
-raw_sun[is.na(raw_sun$ICU), "ICU"] <- FALSE
-# Crosswalk unit type
-raw_sun <- left_join(raw_sun, sun_setting, by = c("LocType" = "LocType"))
-# Crosswalk site name
-raw_sun <- left_join(raw_sun, mshs_site, by = c("HospCode" = "DataSite"))
-
-# Sunquest data formatting --------------------------------------------
-raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
-            "LocType", "LocCode", "LocName",
-            "PhysName", "SHIFT",
-            "ReceiveTech", "ResultTech", "PerformingLabCode",
-            "Test", "LocandName", "Setting", "SettingRollUp", "Site")] <- lapply(raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
-                                                                                           "LocType", "LocCode", "LocName",
-                                                                                           "PhysName", "SHIFT",
-                                                                                           "ReceiveTech", "ResultTech", "PerformingLabCode",
-                                                                                           "Test", "LocandName", "Setting", "SettingRollUp", "Site")], as.factor)
-
-# Add NA as factor level for SpecimenPriority since many specimens are submitted without a priority
-raw_sun$SpecimenPriority <- addNA(raw_sun$SpecimenPriority)
-
-# Fix any timestamps that weren't imported correctly and then format as date/time
-raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- lapply(raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")], function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
-
-raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- lapply(raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")],
-                                                                                                as.POSIXlt, tz = "", format = "%m/%d/%Y %H:%M:%S")
-
-# Add a column for Resulted date for later use in repository
-raw_sun$ResultedDate <- as.Date(raw_sun$ResultDateTime, format = "%m/%d/%Y")
-
-
-
-# Sunquest data preprocessing --------------------------------------------------
-# Update patient setting to reflect ICU/Non-ICU and update priorities for ED and ICU labs
-raw_sun$MasterSetting <- ifelse(raw_sun$SettingRollUp == "ED", "ED",
-                                  ifelse(raw_sun$SettingRollUp == "Amb", "Amb",
-                                         ifelse(raw_sun$SettingRollUp == "IP" & raw_sun$ICU == TRUE, "ICU",
-                                                ifelse(raw_sun$SettingRollUp == "IP" & raw_sun$ICU == FALSE, "IP Non-ICU", "Other"))))
-raw_sun$DashboardSetting <- ifelse(raw_sun$MasterSetting == "ED" | raw_sun$MasterSetting == "ICU", "ED & ICU", raw_sun$MasterSetting)
-
-# Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
-raw_sun$AdjPriority <- ifelse(raw_sun$MasterSetting != "ED" & raw_sun$MasterSetting != "ICU" & is.na(raw_sun$SpecimenPriority), "Routine",
-                                ifelse(raw_sun$MasterSetting == "ED" | raw_sun$MasterSetting == "ICU" | raw_sun$SpecimenPriority == "S", "Stat", "Routine"))
-raw_sun$DashboardPriority <- ifelse(tat_targets$Priority[match(raw_sun$Test, tat_targets$Test)] == "All", "All", raw_sun$AdjPriority)
-
-# Calculate turnaround times
-raw_sun$CollectToReceive <- raw_sun$ReceiveDateTime - raw_sun$CollectDateTime
-raw_sun$ReceiveToResult <- raw_sun$ResultDateTime - raw_sun$ReceiveDateTime
-raw_sun$CollectToResult <- raw_sun$ResultDateTime - raw_sun$CollectDateTime
-raw_sun[c("CollectToReceive", "ReceiveToResult", "CollectToResult")] <- lapply(raw_sun[c("CollectToReceive", "ReceiveToResult", "CollectToResult")], as.numeric, units = "mins")
-
-# Identify add on orders as orders placed more than 5 min after specimen received
-raw_sun$AddOnMaster <- ifelse(difftime(raw_sun$OrderDateTime, raw_sun$ReceiveDateTime, units = "mins") > 5, "AddOn", "Original")
-
-# Identify specimens with missing collections times as those with collection time defaulted to order time
-raw_sun$MissingCollect <- ifelse(raw_sun$CollectDateTime == raw_sun$OrderDateTime, TRUE, FALSE)
-
-# Determine target TAT based on test, priority, and patient setting
-raw_sun$Concate1 <- paste(raw_sun$Test, raw_sun$DashboardPriority)
-raw_sun$Concate2 <- paste(raw_sun$Test, raw_sun$DashboardPriority, raw_sun$MasterSetting)
-
-raw_sun$ReceiveResultTarget <- ifelse(!is.na(match(raw_sun$Concate2, tat_targets$Concate)), tat_targets$ReceiveToResultTarget[match(raw_sun$Concate2, tat_targets$Concate)],
-                                        ifelse(!is.na(match(raw_sun$Concate1, tat_targets$Concate)), tat_targets$ReceiveToResultTarget[match(raw_sun$Concate1, tat_targets$Concate)],
-                                               tat_targets$ReceiveToResultTarget[match(raw_sun$Test, tat_targets$Concate)]))
-
-raw_sun$CollectResultTarget <- ifelse(!is.na(match(raw_sun$Concate2, tat_targets$Concate)), tat_targets$CollectToResultTarget[match(raw_sun$Concate2, tat_targets$Concate)],
-                                        ifelse(!is.na(match(raw_sun$Concate1, tat_targets$Concate)), tat_targets$CollectToResultTarget[match(raw_sun$Concate1, tat_targets$Concate)],
-                                               tat_targets$CollectToResultTarget[match(raw_sun$Test, tat_targets$Concate)]))
-
-raw_sun$ReceiveResultInTarget <- ifelse(raw_sun$ReceiveToResult <= raw_sun$ReceiveResultTarget, TRUE, FALSE)
-raw_sun$CollectResultInTarget <- ifelse(raw_sun$CollectToResult <= raw_sun$CollectResultTarget, TRUE, FALSE)
-
-# Identify and remove duplicate tests
-raw_sun$Concate3 <- paste(raw_sun$PtNumber,
-                            raw_sun$HISOrderNumber, raw_sun$TSTName,
-                            raw_sun$CollectDateTime, raw_sun$ReceiveDateTime, raw_sun$ResultDateTime)
-
-raw_sun <- raw_sun[!duplicated(raw_sun$Concate3), ]
-
-
-# Identify which labs to include in TAT analysis
-# Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
-raw_sun$TATInclude <- ifelse(raw_sun$AddOnMaster != "Original" | raw_sun$MasterSetting == "Other" | raw_sun$CollectToResult < 0 | raw_sun$ReceiveToResult < 0 | is.na(raw_sun$CollectToResult) | is.na(raw_sun$ReceiveToResult), FALSE, TRUE)
-
-sun_master <- raw_sun[ ,c("LocCode", "LocName", "LocandName",
-                            "HISOrderNumber", "PhysName", "PtNumber", "SHIFT",
-                            "TSTName", "Test", "Division", "SpecimenPriority",
-                            "Site", "ICU", "LocType",
-                            "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
-                            "AdjPriority", "DashboardPriority",
-                            "OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime",
-                            "ResultedDate",
-                            "CollecttoReceive", "ReceivetoResult", "CollecttoResult",
-                            "AddOnMaster", "MissingCollect",
-                            "ReceiveResultTarget", "CollectResultTarget",
-                            "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")]
-
-colnames(sun_master) <- c("LocCode", "LocName", "LocConcat",
-                            "OrderID", "RequestMD", "MSMRN", "WorkShift",
-                            "TestName", "Test", "Division", "OrderPriority",
-                            "Site", "ICU", "LocType",
-                            "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
-                            "AdjPriority", "DashboardPriority",
-                            "OrderTime", "CollectTime", "ReceiveTime", "ResultTime",
-                            "ResultDate",
-                            "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT",
-                            "AddOnMaster", "MissingCollect",
-                            "ReceiveResultTarget", "CollectResultTarget",
-                            "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sun_monthly_preprocessed <- mapply(preprocess_sun_monthly, sun_monthly_list)
 
 
 # # Count total rows in all reports to compare after incorrect dates are removed
