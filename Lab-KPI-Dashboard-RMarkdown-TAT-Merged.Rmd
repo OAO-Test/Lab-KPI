@@ -730,21 +730,18 @@ Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
 ```
 
 ```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE}
-user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
-  setwd(user_wd)
 
 #1. import the historical repo
-Historical_Repo <- read.csv("J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Historical_Repo_Surgical_Pathology_test.csv", stringsAsFactors = FALSE)
+Historical_Repo <- read.csv(paste0(user_directory,"/AP & Cytology Historical Repo/" ,"Historical_Repo_Surgical_Pathology","_",Yesterday,".csv"), stringsAsFactors = FALSE)
+
 Historical_Repo$X <- NULL
 #Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%Y')
 
 #2. append all the summary tables together
 Cytology_Table_Weekday_Summarized <- pre_processing_pp(Cytology_Weekday_Raw)[[5]]
-Cytology_Table_Not_Weekday_Summarized <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[5]]
 Surgical_Pathology_Table_Weekday_Summarized <- pre_processing_pp(Surgical_Pathology_Weekday)[[5]]
-Surgical_Pathology_Table_Not_Weekday_Summarized <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[5]]
 
-current_summary <- rbind(Cytology_Table_Weekday_Summarized, Cytology_Table_Not_Weekday_Summarized, Surgical_Pathology_Table_Weekday_Summarized, Surgical_Pathology_Table_Not_Weekday_Summarized)
+current_summary <- rbind(Cytology_Table_Weekday_Summarized, Surgical_Pathology_Table_Weekday_Summarized)
 
 current_summary <- as.data.frame(current_summary)
 
@@ -760,7 +757,10 @@ Historical_Repo[common] <- lapply(common, function(x) {
 #3. combine the current summary with the historical repo and write them into a csv file
 Historical_Repo_Updated <- rbind(Historical_Repo, current_summary)
 
-write.csv(Historical_Repo_Updated , "Historical_Repo_Surgical_Pathology_test.csv")
+csvFileName <- paste0(user_directory,"/AP & Cytology Historical Repo/", "Historical_Repo_Surgical_Pathology","_",Today,".csv")
+
+write.csv(Historical_Repo_Updated,csvFileName)
+
 
 ```
 
