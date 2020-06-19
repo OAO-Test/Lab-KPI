@@ -144,9 +144,17 @@ resulted_volume_graph <- function(data, test_name, site_name) {
 tat_and_volume_plot <- function(data_tat, test_name, site_name, lab_priority, metric) {
   # 
   # Subset turnaround time and volume data based on test, site, and priority
-  data_tat_plot <- data_tat[data_tat$ResultDate >= start_date & data_tat$Test == test_name & data_tat$Site == site_name & data_tat$DashboardPriority == lab_priority, ]
+  data_tat_plot <- data_tat %>%
+    filter(ResultDate >= start_date & 
+             Test == test_name & 
+             Site == site_name & 
+             DashboardPriority == lab_priority)
 
-  data_vol_plot <- dashboard_vol_summary[dashboard_vol_summary$ResultDate >= start_date & dashboard_vol_summary$Test == test_name & dashboard_vol_summary$Site == site_name & dashboard_vol_summary$DashboardPriority == lab_priority, ]
+  data_vol_plot <- dashboard_vol_summary %>%
+    filter(ResultDate >= start_date & 
+             Test == test_name & 
+             Site == site_name & 
+             DashboardPriority == lab_priority)
   # 
   # Create printable metric name based on selected metric
   metric_name <- ifelse(metric == "ReceiveResultPercent", "Receive to Result", ifelse(metric == "CollectResultPercent", "Collect to Result", "Error"))
@@ -206,13 +214,17 @@ tat_and_volume_plot <- function(data_tat, test_name, site_name, lab_priority, me
 
 ```{r Custom function for stepping through stratified TAT data, echo = FALSE, warning = FALSE, message = FALSE}
 stratified_data_for_plots <- function(tat_data, test) {
-  test_df <- tat_data[tat_data$Test == test & tat_data$ResultDate >= start_date, ]
+  test_df <- tat_data %>% 
+    filter(Test == test,
+           ResultDate >= start_date)
   sites <- unique(test_df$Site)
   for (site in sites) {
-    site_df <- test_df[test_df$Site == site, ]
+    site_df <- test_df %>%
+      filter(Site == site)
     priorities <- unique(site_df$DashboardPriority)
     for (priority in priorities) {
-      priority_df <- site_df[site_df$DashboardPriority == priority, ]
+      priority_df <- site_df %>%
+        filter(DashboardPriority == priority)
       # print(tat_percentage_graph(data = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "ReceiveResultPercent"))
       # print(tat_percentage_graph(data = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "CollectResultPercent"))
       print(tat_and_volume_plot(data_tat = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "ReceiveResultPercent"))
@@ -277,9 +289,12 @@ stratified_data_for_plots(tat_data = dashboard_tat_filter, test = "C. diff")
 # Summarize data based on site and priority
 dashboard_defect_summary <- dashboard_tat_filter %>%
   group_by(Site, ResultDate, Division, Test, DashboardPriority) %>%
-  summarize(ResultedVolume = sum(ResultedVolume), ResultedVolumeWithTAT = sum(ResultedVolumeWithTAT),
-            ReceiveResultInTarget = sum(ReceiveResultInTarget), CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultDefects = ResultedVolumeWithTAT - ReceiveResultInTarget, ReceiveResultDefectRate = ReceiveResultDefects / ResultedVolumeWithTAT)
+  summarize(ResultedVolume = sum(ResultedVolume), 
+            ResultedVolumeWithTAT = sum(ResultedVolumeWithTAT),
+            ReceiveResultInTarget = sum(ReceiveResultInTarget), 
+            CollectResultInTarget = sum(CollectResultInTarget),
+            ReceiveResultDefects = ResultedVolumeWithTAT - ReceiveResultInTarget, 
+            ReceiveResultDefectRate = ReceiveResultDefects / ResultedVolumeWithTAT)
 
 dashboard_defect_summary <- dashboard_defect_summary[!is.na(dashboard_defect_summary$ReceiveResultDefectRate), ]
 ```
@@ -289,7 +304,11 @@ dashboard_defect_summary <- dashboard_defect_summary[!is.na(dashboard_defect_sum
 receive_result_pchart <- function(data_defect, test_name, site_name, lab_priority) {
   # 
   # Subset turnaround time and volume data based on test, site, and priority
-  data_defect_plot <- data_defect[data_defect$ResultDate >= start_date & data_defect$Test == test_name & data_defect$Site == site_name & data_defect$DashboardPriority == lab_priority, ]
+  data_defect_plot <- data_defect %>%
+    filter(ResultDate >= start_date & 
+             Test == test_name & 
+             Site == site_name & 
+             DashboardPriority == lab_priority)
   # Calculate center line
   center_line <- mean(QC_Lines(data = data_defect_plot$ReceiveResultDefectRate, n = data_defect_plot$ResultedVolumeWithTAT, method = "p")$pBar)
   # 
@@ -318,17 +337,21 @@ receive_result_pchart <- function(data_defect, test_name, site_name, lab_priorit
 ```{r Iterate through defect rate data and plot p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 
 stratified_data_for_pcharts <- function(defect_data, test) {
-  test_df <- defect_data[defect_data$Test == test & defect_data$ResultDate >= start_date, ]
+  test_df <- defect_data %>%
+    filter(Test == test & 
+             ResultDate >= start_date)
   sites <- unique(test_df$Site)
 
   for (site in sites) {
     # print(site)
     # print(test)
-    site_df <- test_df[test_df$Site == site, ]
+    site_df <- test_df %>%
+      filter(Site == site)
     priorities <- unique(site_df$DashboardPriority)
     for (priority in priorities) {
       # print(priority)
-      priority_df <- site_df[site_df$DashboardPriority == priority, ]
+      priority_df <- site_df %>%
+        filter(DashboardPriority == priority)
       # Determine average resulted volume over last 30 days to see if p-chart is valid
       avg_resulted_volume <- mean(priority_df$ResultedVolumeWithTAT[priority_df$ResultDate >= start_date])
       # print(avg_resulted_volume)
