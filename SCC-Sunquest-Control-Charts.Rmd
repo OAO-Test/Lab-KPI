@@ -57,17 +57,20 @@ mshs_colors = c("#221f72", "#00AEFF", "#D80B8C", "#7f7f7f")
 ```{r Format historical repository for plotting, echo = FALSE, warning = FALSE, message = FALSE}
 
 dashboard_tat_summary <- scc_sun_hist %>%
-  group_by(Site, ResultDate, Division, Test, DashboardPriority, DashboardSetting, ReceiveResultTarget, CollectResultTarget) %>%
-  summarize(ResultedVolume = sum(TotalResulted), ResultedVolumeWithTAT = sum(TotalResultedTAT), ReceiveResultInTarget = sum(TotalReceiveResultInTarget), CollectResultInTarget = sum(TotalCollectResultInTarget))
+  group_by(Site, ResultDate, Division, Test, 
+           DashboardPriority, DashboardSetting, 
+           ReceiveResultTarget, CollectResultTarget) %>%
+  summarize(ResultedVolume = sum(TotalResulted), 
+            ResultedVolumeWithTAT = sum(TotalResultedTAT), 
+            ReceiveResultInTarget = sum(TotalReceiveResultInTarget), 
+            CollectResultInTarget = sum(TotalCollectResultInTarget)) %>%
+  mutate(ReceiveResultDefects = ResultedVolumeWithTAT - ReceiveResultInTarget,
+         CollectResultDefects = ResultedVolumeWithTAT - CollectResultInTarget,
+         ReceiveResultPercent = ReceiveResultInTarget / ResultedVolumeWithTAT,
+         CollectResultPercent = CollectResultInTarget / ResultedVolumeWithTAT,
+         SafeThreshold = ifelse(Test == "Rapid Flu" | Test == "C. diff", 1.0, 0.95),
+         NotSafeThreshold = ifelse(Test == "Rapid Flu" | Test == "C. diff", 0.9, 0.8))
 
-dashboard_tat_summary$ReceiveResultDefects <- dashboard_tat_summary$ResultedVolumeWithTAT - dashboard_tat_summary$ReceiveResultInTarget
-dashboard_tat_summary$CollectResultDefects <- dashboard_tat_summary$ResultedVolumeWithTAT - dashboard_tat_summary$CollectResultInTarget
-
-dashboard_tat_summary$ReceiveResultPercent <- dashboard_tat_summary$ReceiveResultInTarget / dashboard_tat_summary$ResultedVolumeWithTAT
-dashboard_tat_summary$CollectResultPercent <- dashboard_tat_summary$CollectResultInTarget / dashboard_tat_summary$ResultedVolumeWithTAT
-
-dashboard_tat_summary$SafeThreshold <- ifelse(dashboard_tat_summary$Test == "Rapid Flu" | dashboard_tat_summary$Test == "C. diff", 1.0, 0.95)
-dashboard_tat_summary$NotSafeThreshold <- ifelse(dashboard_tat_summary$Test == "Rapid Flu" | dashboard_tat_summary$Test == "C. diff", 0.9, 0.8)
 
 # Summarize volume data
 # dashboard_vol_summary <- scc_sun_hist %>%
@@ -82,16 +85,21 @@ dashboard_vol_summary <- scc_sun_hist %>%
 
 ```{r Filter unused TAT combinations, echo = FALSE, warning = FALSE, message = FALSE}
 # Manually remove patient settings or combinations not represented in efficiency indicator dashboards
-dashboard_tat_filter <- dashboard_tat_summary
-dashboard_tat_filter <- dashboard_tat_filter[!(dashboard_tat_filter$DashboardPriority == "Other" | dashboard_tat_filter$DashboardSetting == "Other" |
-                                                             ((dashboard_tat_filter$Test == "Troponin" | dashboard_tat_filter$Test == "Lactate WB") & dashboard_tat_filter$DashboardSetting == "Amb") |
-                                                             (dashboard_tat_filter$Test == "C. diff" & dashboard_tat_filter$DashboardSetting == "Amb")), ]
+dashboard_tat_filter <- dashboard_tat_summary %>%
+  filter(!(DashboardPriority == "Other" | DashboardSetting == "Other" | 
+             ((Test == "Troponin" | Test == "Lactate WB") & DashboardSetting == "Amb") |
+             (Test == "C. diff" & DashboardSetting == "Amb")))
 
+# Convert characters to factors
 dashboard_tat_filter$Site <- factor(dashboard_tat_filter$Site, levels = site_order)
 dashboard_tat_filter$Test <- factor(dashboard_tat_filter$Test, levels = cp_micro_lab_order)
 dashboard_tat_filter$DashboardPriority <- factor(dashboard_tat_filter$DashboardPriority, levels = dashboard_priority_order)
 dashboard_tat_filter$DashboardSetting <- factor(dashboard_tat_filter$DashboardSetting, levels = dashboard_pt_setting)
-dashboard_tat_filter <- dashboard_tat_filter[order(dashboard_tat_filter$Test, dashboard_tat_filter$Site, dashboard_tat_filter$DashboardPriority, dashboard_tat_filter$DashboardSetting, dashboard_tat_filter$ResultDate), ]
+
+# Sort data frame
+dashboard_tat_filter <- dashboard_tat_filter %>%
+  arrange(Test, Site, DashboardPriority, DashboardSetting, ResultDate)
+
 ```
 
 ```{r Custom function for graphing TAT percentage, echo = FALSE, warning = FALSE, message = FALSE}
