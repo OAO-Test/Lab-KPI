@@ -198,7 +198,7 @@ tat_and_volume_plot <- function(data_tat, test_name, site_name, lab_priority, me
 
 ```{r Custom function for stepping through stratified TAT data, echo = FALSE, warning = FALSE, message = FALSE}
 stratified_data_for_plots <- function(tat_data, test) {
-  test_df <- tat_data[tat_data$Test == test, ]
+  test_df <- tat_data[tat_data$Test == test & tat_data$ResultDate >= start_date, ]
   sites <- unique(test_df$Site)
   for (site in sites) {
     site_df <- test_df[test_df$Site == site, ]
@@ -310,7 +310,7 @@ receive_result_pchart <- function(data_defect, test_name, site_name, lab_priorit
 ```{r Iterate through defect rate data and plot p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 
 stratified_data_for_pcharts <- function(defect_data, test) {
-  test_df <- defect_data[defect_data$Test == test, ]
+  test_df <- defect_data[defect_data$Test == test & defect_data$ResultDate >= start_date, ]
   sites <- unique(test_df$Site)
 
   for (site in sites) {
