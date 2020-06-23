@@ -45,9 +45,11 @@ if (initial_run == TRUE) {
   
   # Pattern for daily Sunquest reports
   sun_daily_pattern = c("^(KPI_Daily_TAT_Report ){1}(2020)\\-[0-9]{2}-[0-9]{2}.xls", "^(KPI_Daily_TAT_Report_Updated ){1}(2020)\\-[0-9]{2}-[0-9]{2}.xls")
+
   # file_list_sun_daily <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_Daily_TAT_Report ){1}(2020)\\-[0-9]{2}-[0-9]{2}.xls")
   file_list_sun_daily <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = paste0(sun_daily_pattern, collapse = "|"))
   file_list_sun_monthly <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = "^(KPI_TAT Report_){1}[A-z]+\\s(2020.xlsx)")
+
   # Read in data reports from possible date range
   scc_list <- lapply(file_list_scc, function(x) read_excel(path = paste0(user_wd, "\\SCC CP Reports\\", x)))
   sun_daily_list <- lapply(file_list_sun_daily, function(x) (read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x),
@@ -115,278 +117,6 @@ pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Custom function for preprocessing daily Sunquest data -----------------
@@ -845,12 +575,7 @@ correct_result_dates <- function(data, number_days) {
 }
 
 
-sun_daily_preprocessed <- mapply(preprocess_sun_daily, sun_daily_list)
-
-sun_monthly_preprocessed <- mapply(preprocess_sun_monthly, sun_monthly_list)
-
-scc_daily_preprocessed <- mapply(preprocess_scc, scc_list)
-
+# Add logic for different scenarios where there may be empty data sets ----------------
 
 sun_daily_bind <- NULL
 
@@ -858,26 +583,53 @@ sun_monthly_bind <- NULL
 
 scc_daily_bind <- NULL
 
-for (i in seq(from = 2, to = length(sun_daily_preprocessed), by = 2)) {
-  sun_daily_bind <- rbind(sun_daily_bind, sun_daily_preprocessed[[i]])
-}
-
-for (i in seq(from = 2, to = length(sun_monthly_preprocessed), by = 2)) {
-  sun_monthly_bind <- rbind(sun_monthly_bind, sun_monthly_preprocessed[[i]])
-}
-
-
-
-for (i in seq(from = 2, to = length(scc_daily_preprocessed), by = 2)) {
-  # Remove any labs from incorrect dates
-  updated_data <- correct_result_dates(scc_daily_preprocessed[[i]], 1)
+# Compile preprocessed Sunquest daily data, if any exists -----------------------------
+if (length(sun_daily_list) != 0) {
+  # Preprocess Sunquest daily raw data using custom function
+  sun_daily_preprocessed <- mapply(preprocess_sun_daily, sun_daily_list)
   
-  # Compile all dates
-  scc_daily_bind <- rbind(scc_daily_bind, updated_data)
+  # Bind daily reports into one data frame
+  for (i in seq(from = 2, to = length(sun_daily_preprocessed2), by = 2)) {
+    sun_daily_bind <- rbind(sun_daily_bind, sun_daily_preprocessed[[i]])
+  }
+  
+} else {
+  sun_daily_preprocessed <- NULL
 }
 
+# Compile preprocessed Sunquest monthly data, if any exists ----------------------------
+if (length(sun_monthly_list) != 0) {
+  # Preprocess Sunquest monthly raw data using custom function
+  sun_monthly_preprocessed <- mapply(preprocess_sun_monthly, sun_monthly_list)
+  
+  # Bind monthly reports into one data frame
+  for (i in seq(from = 2, to = length(sun_monthly_preprocessed), by = 2)) {
+    sun_monthly_bind <- rbind(sun_monthly_bind, sun_monthly_preprocessed[[i]])
+  }
+  
+} else {
+  sun_monthly_preprocessed <- NULL
+}
 
+# Compile processed SCC daily data, if any exists --------------------------------------
+if (length(scc_list) != 0) {
+  # Preprocess SCC daily raw data using custom function
+  scc_daily_preprocessed <- mapply(preprocess_scc, scc_list)
+  
+  # Remove any labs with incorrect dates then bind daily reports into one data frame
+  for (i in seq(from = 2, to = length(scc_daily_preprocessed), by = 2)) {
+    # Remove any labs from incorrect dates
+    updated_data <- correct_result_dates(scc_daily_preprocessed[[i]], 1)
+    
+    # Compile all dates
+    scc_daily_bind <- rbind(scc_daily_bind, updated_data)
+  }
+  
+} else {
+  scc_daily_preprocessed2 <- NULL
+}
 
+# Bind together all SCC and Sunquest data --------------------------------------
 bind_all_data <- rbind(sun_daily_bind, sun_monthly_bind, scc_daily_bind)
 
 
