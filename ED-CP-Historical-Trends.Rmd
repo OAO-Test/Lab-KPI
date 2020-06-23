@@ -1,13 +1,13 @@
 ---
 title: "ED Laboratory Efficiency Indicators: 30 Day Lookback"
-date: "2/24/2020"
+date: "06/22/2020"
 output: html_document
 ---
 
 <h2><span style="color: red;">Draft - Not for Distribution</span></h2>
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
 ```{r Install and load packages, echo = FALSE, warning = FALSE, message = FALSE}
@@ -129,7 +129,7 @@ tat_percentage_graph <- function(data, test_name, site_name, lab_priority, metri
 ```
 
 ```{r Test TAT percentage graph}
-tat_percentage_graph(data = dashboard_tat_summary, test_name = "BUN", site_name = "MSH",  metric = "ReceiveResultPercent")
+# tat_percentage_graph(data = dashboard_tat_summary, test_name = "BUN", site_name = "MSH",  metric = "ReceiveResultPercent")
 
 
 ```
@@ -159,7 +159,7 @@ resulted_volume_graph <- function(data, test_name, site_name) {
 
 ```{r Test volume plot}
 
-resulted_volume_graph(data = dashboard_vol_summary, test = "BUN", site = "MSQ")
+# resulted_volume_graph(data = dashboard_vol_summary, test = "BUN", site = "MSQ")
 
 ```
 
@@ -244,86 +244,7 @@ tat_and_volume_plot <- function(data_tat, test_name, site_name, metric) {
 ```
 
 ```{r Test combined plotting function}
-
-  # 
-  # Subset turnaround time and volume data based on test, site, and priority
-  data_tat_plot <- dashboard_tat_summary %>%
-    filter(ResultDate >= start_date & 
-             Test == "Troponin" & 
-             Site == "MSH")
-
-  data_vol_plot <- dashboard_vol_summary %>%
-    filter(ResultDate >= start_date & 
-             Test == "Troponin" & 
-             Site == "MSH")
-  # 
-  # Create printable metric name based on selected metric
-  metric <- "ReceiveResultPercent"
-  metric_name <- ifelse(metric == "ReceiveResultPercent", "Receive to Result", ifelse(metric == "CollectResultPercent", "Collect to Result", "Error"))
-  
-  metric_target <- ifelse(metric == "ReceiveResultPercent", unique(data_tat_plot$ReceiveResultTarget), ifelse(metric == "CollectResultPercent", unique(data_tat_plot$CollectResultTarget), "Error"))
-  #
-  # Determine scale factor for secondary axis based on maximum resulted volume
-  base10 <- floor(log10(max(data_vol_plot$ResultedVolume)))
-  scale <- ceiling(max(data_vol_plot$ResultedVolume)/(10^(base10-1)))*10^(base10-1)
-  #
-  # Create plot and standard settings
-  ggplot() +
-    # Plot safe, at risk, not safe thresholds
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
-                  ymin = -Inf, ymax = min(data_tat_plot$NotSafeThreshold), 
-                  fill = "Not Safe", alpha = "Not Safe")) +
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
-                  ymin = min(data_tat_plot$NotSafeThreshold), ymax = min(data_tat_plot$SafeThreshold), 
-                  fill = "At Risk", alpha = "At Risk"), show.legend = FALSE) +
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
-                  ymin = min(data_tat_plot$SafeThreshold), ymax = 1, 
-                  fill = "Safe", alpha = "Safe"), show.legend = FALSE) + 
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
-                  ymin = 1, ymax = Inf, fill = "N/A", 
-                  alpha = "N/A"), show.legend = FALSE) +
-    
-    # Plot percentage of labs within turnaround time target
-    geom_point(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "MasterSetting"), size = 3) +
-    geom_line(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "MasterSetting"), linetype = "dashed") +
-    
-    # Plot resulted volume on secondary axis
-    geom_point(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/scale, size = "Volume"), 
-               color = "#959595", shape = 18) +
-    geom_line(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/scale, linetype = "Volume"), 
-              color = "#959595") +
-    # Specify graph labels and themes
-    labs(title = paste0("MSH", " ", "Troponin", " ", metric_name, ":\n", "Percentage of ED Labs within Target TAT (", metric_target, " min)"), 
-         x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting", 
-         fill = "Status", alpha = "Status", linetype = "Resulted Volume", size = "Resulted Volume") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
-          legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
-          axis.text.x = element_text(angle = 30, hjust = 1)) +
-    # Specify fills, shapes, and lines mappings and legends
-    scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green", "N/A" = "grey"), 
-                      breaks=c("Not Safe","At Risk","Safe")) +
-    scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.25, "At Risk" = 0.25, "Safe" = 0.25, "N/A" = 0.5), 
-                       breaks=c("Not Safe","At Risk","Safe")) +
-    scale_color_manual(name = "Percent Within Target", values = mshs_colors, labels = "All ED Labs") +
-    scale_size_manual(name = "Resulted Volume", values = 2, labels = "All ED Labs") + 
-    scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = "All ED Labs") +
-    
-    # Reorder legends
-    guides(color = guide_legend(order = 1, nrow = length(unique(data_tat_plot$MasterSetting)), title.vjust = 1), shape = guide_legend(order = 1, nrow = length(unique(data_tat_plot$MasterSetting)), title.vjust = 1), fill = guide_legend(order = 3, nrow = 3, title.vjust = 1), alpha = guide_legend(order = 3, nrow = 3, title.vjust = 1), 
-           size = guide_legend(order = 2, title.vjust = 1), linetype = guide_legend(order = 2, title.vjust = 1)) +
-    # Specify axis properties
-    scale_x_date(limits = c(start_date -1, max(data_tat_plot$ResultDate)+1), 
-                 breaks = seq(start_date, max(data_tat_plot$ResultDate), by = 3), date_minor_breaks = "1 day", 
-                 date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
-    scale_y_continuous(limits = c(0, 1), breaks = seq(from = 0, to = 1, length.out = 5), expand = c(0, 0, 0.05, 0), labels = percent_format(accuracy = 1), 
-                       sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
-
-
-
-
-
-tat_and_volume_plot(dashboard_tat_summary, test = "Troponin", site = "MSH", metric = "ReceiveResultPercent")
+# tat_and_volume_plot(dashboard_tat_summary, test = "Troponin", site = "MSH", metric = "ReceiveResultPercent")
 
 
 ```
@@ -362,43 +283,43 @@ stratified_data_for_plots <- function(tat_data, test) {
 ```{r Troponin historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_summary, test = "Troponin")
 ```
-<h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory. </h6>
+<h6> TAT percentages include ED labs with valid turnaround times. Resulted volumes include all resulted labs. </h6>
 
 ### Lactate WB
 ```{r Lactate WB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_summary, test = "Lactate WB")
 ```
-<h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory. </h6>
+<h6> TAT percentages include ED labs with valid turnaround times. Resulted volumes include all resulted labs. </h6>
 
 ### BUN
 ```{r BUN historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_summary, test = "BUN")
 ```
-<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> TAT percentages include ED labs with valid turnaround times. Resulted volumes include all resulted labs. </h6>
 
 ### HGB
 ```{r HGB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_summary, test = "HGB")
 ```
-<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> TAT percentages include ED labs with valid turnaround times. Resulted volumes include all resulted labs. </h6>
 
 ### PT
 ```{r PT historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_summary, test = "PT")
 ```
-<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> TAT percentages include ED labs with valid turnaround times. Resulted volumes include all resulted labs. </h6>
 
 ### Rapid Flu
 ```{r Rapid Flu historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_summary, test = "Rapid Flu")
 ```
-<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> TAT percentages include ED labs with valid turnaround times. Resulted volumes include all resulted labs. </h6>
 
 ### C. diff
 ```{r C. diff historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 stratified_data_for_plots(tat_data = dashboard_tat_summary, test = "C. diff")
 ```
-<h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> TAT percentages include ED labs with valid turnaround times. Resulted volumes include all resulted labs. </h6>
 
 
 <!-- ## Control Charts of Non-Compliant Labs {.tabset} -->
@@ -538,7 +459,7 @@ The data presented here is based on the compilation of historical data.
 ### Efficiency Indicator Historical Performance
 Turnaround time percentages within target includes labs with valid turnaround times (ie, labs with missing timestamps or negative turnaround times excluded). Resulted volume includes all labs for each site regardless of turnaround time, order priority, or setting to reflect demand on laboratory resources.
 
-All ED and ICU labs are treated as stat, regardless of documented priority. 
+All ED labs are treated as stat, regardless of documented priority. 
 
 **Troponin & Lactate WB:** All labs treated as stat. Settings included in turnaround time analysis are ED, ICU, and Inpatient Non-ICU. All settings included in resulted volume.
 
@@ -549,20 +470,20 @@ All ED and ICU labs are treated as stat, regardless of documented priority.
 **C. diff:** All labs treated as stat. Turnaround time for ambulatory c. diff labs not tracked but included in total resulted volume. 
 
 
-### Control Charts of Non-Compliant Labs
-These control charts are p-charts used to track non-compliant labs. Non-compliant labs are defined as those labs that do not meet the target turnaround times from receipt in laboratory to result. Only labs with valid turnaround times are included in this analysis. 
+<!-- ### Control Charts of Non-Compliant Labs -->
+<!-- These control charts are p-charts used to track non-compliant labs. Non-compliant labs are defined as those labs that do not meet the target turnaround times from receipt in laboratory to result. Only labs with valid turnaround times are included in this analysis.  -->
 
-Percentage of non-compliant labs calculated as: $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$ 
+<!-- Percentage of non-compliant labs calculated as: $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$  -->
 
-Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. 
+<!-- Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$.  -->
 
-Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+<!-- Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$. -->
 
-**Troponin & Lactate WB:** All labs treated as stat. Settings included in analysis are ED, ICU, and Inpatient Non-ICU.
+<!-- **Troponin & Lactate WB:** All labs treated as stat. Settings included in analysis are ED, ICU, and Inpatient Non-ICU. -->
 
-**BUN, HGB, & PT:** All labs from ED and ICU are treated as stat; otherwise lab priority is based on documented priority.
+<!-- **BUN, HGB, & PT:** All labs from ED and ICU are treated as stat; otherwise lab priority is based on documented priority. -->
 
-**Rapid Flu:** All labs treated as stat.
+<!-- **Rapid Flu:** All labs treated as stat. -->
 
-**C. diff:** All labs treated as stat. Turnaround time analysis does not include ambulatory labs.
+<!-- **C. diff:** All labs treated as stat. Turnaround time analysis does not include ambulatory labs. -->
 
