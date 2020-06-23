@@ -37,7 +37,7 @@ user_path <- paste0(user_wd, "\\*.*")
 setwd(user_wd)
 
 # Import data for two scenarious - first time compiling repository and updating repository -----------------------
-initial_run <- TRUE
+initial_run <- FALSE
 
 if (initial_run == TRUE) {
   # Find list of data reports from 2020
@@ -80,16 +80,26 @@ if (initial_run == TRUE) {
   date_range <- seq(from = last_date + 2, to = todays_date, by = "day")
   # Find list of data reports from date range
   file_list_scc <- list.files(path = paste0(user_wd, "\\SCC CP Reports"), pattern = paste0("^(Doc){1}.+", date_range, ".xlsx", collapse = "|"))
-  file_list_sun <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = paste0("^(KPI_Daily_TAT_Report ){1}", date_range, ".xls", collapse = "|"))
+  
+  # Pattern for daily Sunquest reports
+  sun_daily_pattern = c(paste0("^(KPI_Daily_TAT_Report ){1}", date_range, ".xls", collapse = "|"), 
+                        paste0("^(KPI_Daily_TAT_Report_Updated ){1}", date_range, ".xls", collapse = "|"))
+  
+  file_list_sun_daily <- list.files(path = paste0(user_wd, "\\SUN CP Reports"), pattern = paste0(sun_daily_pattern, collapse = "|"))
   # Read in data reports from possible date range
   scc_list <- lapply(file_list_scc, function(x) read_excel(path = paste0(user_wd, "\\SCC CP Reports\\", x)))
-  sun_list <- lapply(file_list_sun, function(x) suppressWarnings(read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x))))
+  sun_daily_list <- lapply(file_list_sun_daily, function(x) (read_excel(path = paste0(user_wd, "\\SUN CP Reports\\", x),
+                                                                  col_types = c("text", "text", "text", "text", "text", 
+                                                                                "text", "text", "text", "text", 
+                                                                                "numeric", "numeric", "numeric", "numeric", "numeric",
+                                                                                "text", "text", "text", "text", "text", 
+                                                                                "text", "text", "text", "text", "text", 
+                                                                                "text", "text", "text", "text", "text", 
+                                                                                "text", "text", "text", "text", "text", "text"))))
+  
+  # Create empty list for Sunquest monthly report
+  sun_monthly_list <- NULL
 }
-
-
-
-
-
 
 
 # Import analysis reference data starting with test codes for SCC and Sunquest --------------------------------------
@@ -589,7 +599,7 @@ if (length(sun_daily_list) != 0) {
   sun_daily_preprocessed <- mapply(preprocess_sun_daily, sun_daily_list)
   
   # Bind daily reports into one data frame
-  for (i in seq(from = 2, to = length(sun_daily_preprocessed2), by = 2)) {
+  for (i in seq(from = 2, to = length(sun_daily_preprocessed), by = 2)) {
     sun_daily_bind <- rbind(sun_daily_bind, sun_daily_preprocessed[[i]])
   }
   
@@ -626,7 +636,7 @@ if (length(scc_list) != 0) {
   }
   
 } else {
-  scc_daily_preprocessed2 <- NULL
+  scc_daily_preprocessed <- NULL
 }
 
 # Bind together all SCC and Sunquest data --------------------------------------
@@ -651,11 +661,15 @@ if (initial_run == TRUE) {
   scc_sun_repo <- scc_sun_all_days_subset
 } else {
   # Format existing repository for binding
-  existing_repo$Site <- factor(existing_repo$Site, levels = site_order)
-  existing_repo$Test <- factor(existing_repo$Test, levels = cp_micro_lab_order)
-  existing_repo$MasterSetting <- factor(existing_repo$MasterSetting, levels = pt_setting_order)
-  existing_repo$DashboardSetting <- factor(existing_repo$DashboardSetting, levels = pt_setting_order2)
-  existing_repo$DashboardPriority <- factor(existing_repo$DashboardPriority, levels = dashboard_priority_order)
+  # existing_repo$Site <- factor(existing_repo$Site, levels = site_order)
+  # existing_repo$Test <- factor(existing_repo$Test, levels = cp_micro_lab_order)
+  # existing_repo$MasterSetting <- factor(existing_repo$MasterSetting, levels = pt_setting_order)
+  # existing_repo$DashboardSetting <- factor(existing_repo$DashboardSetting, levels = pt_setting_order2)
+  # existing_repo$DashboardPriority <- factor(existing_repo$DashboardPriority, levels = dashboard_priority_order)
+  
+  # Convert ResultDate from date-time to date
+  existing_repo <- existing_repo %>%
+    mutate(ResultDate = date(ResultDate))
   # 
   # Bind new data with repository
   scc_sun_repo <- rbind(existing_repo, scc_sun_all_days_subset)
