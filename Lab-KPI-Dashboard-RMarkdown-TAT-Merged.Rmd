@@ -537,15 +537,32 @@ if (is.null(SQ_Not_Weekday) & is.null(SQ_Not_Weekday)) {
   scc_sun_not_wday_master <- scc_sun_not_wday_list[[3]]
 }
 
-# Remove labs from master data frame that were resulted at exactly midnight on next morning
-scc_sun_wday_master <- scc_sun_wday_master[!(scc_sun_wday_master$ResultDate > min(scc_sun_wday_master$ResultDate)), ]
+# Remove labs from master data frame that were resulted at exactly midnight on next morning or prior day
+# Custom function to determine correct number of dates
+correct_scc_result_dates <- function(data, number_days) {
+  all_resulted_dates_vol <- data %>%
+    select(MSMRN, ResultDate) %>%
+    group_by(ResultDate) %>%
+    summarize(VolLabs = n()) %>%
+    arrange(desc(VolLabs)) %>%
+    ungroup()
+  
+  correct_dates <- all_resulted_dates_vol$ResultDate[1:number_days]
+  
+  new_data <- data[data$ResultDate %in% correct_date, ]
+  
+  return(new_data)
+}
+
+# Update preprocessed data to only include correct dates ----------------------
+scc_sun_wday_master <- correct_scc_result_dates(scc_sun_wday_master, 1)
 
 if (scenario == 1) {
-  scc_sun_not_wday_master <- scc_sun_not_wday_master[!(scc_sun_not_wday_master$ResultDate > (min(scc_sun_not_wday_master$ResultDate) + 2)), ]
+  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 3)
 } else if (scenario == 2) {
-  scc_sun_not_wday_master <- scc_sun_not_wday_master[!(scc_sun_not_wday_master$ResultDate > (min(scc_sun_not_wday_master$ResultDate) + 1)), ]
+  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 2)
 } else if (scenario == 3) {
-  scc_sun_not_wday_master <- scc_sun_not_wday_master[!(scc_sun_not_wday_master$ResultDate > min(scc_sun_not_wday_master$ResultDate)), ]
+  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 1)
 }
 
 
@@ -577,7 +594,7 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 }
 
 # Summarize data for export to historical repo
-scc_sun_all_days_subset <- scc_sun_all_days_master %>%
+scc_sun_all_days_subset <- scc_sun_all_days %>%
   group_by(Site, ResultDate, Test, Division, 
            Setting, SettingRollUp, MasterSetting, DashboardSetting,
            OrderPriority, AdjPriority, DashboardPriority,
