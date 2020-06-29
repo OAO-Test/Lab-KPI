@@ -50,12 +50,12 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 # Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-Today <- as.timeDate(as.Date("01/28/2020", format = "%m/%d/%Y"))
+Today <- as.timeDate(as.Date("06/26/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
 # Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("01/27/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("06/25/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -212,12 +212,15 @@ sun_wday <- SQ_Weekday
 
 cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu", "C. diff")
 
-site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")
+site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
+
+# Variable  to determine if a historical repository exists for SCC and Sunquest data
+existing_scc_sun_repo <- TRUE
 
 # To Be Updated in Analysis reference file
 #-----------Patient Setting Excel File-----------#
@@ -549,7 +552,7 @@ correct_scc_result_dates <- function(data, number_days) {
   
   correct_dates <- all_resulted_dates_vol$ResultDate[1:number_days]
   
-  new_data <- data[data$ResultDate %in% correct_date, ]
+  new_data <- data[data$ResultDate %in% correct_dates, ]
   
   return(new_data)
 }
@@ -599,12 +602,34 @@ scc_sun_all_days_subset <- scc_sun_all_days %>%
            Setting, SettingRollUp, MasterSetting, DashboardSetting,
            OrderPriority, AdjPriority, DashboardPriority,
            ReceiveResultTarget, CollectResultTarget) %>%
-  summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), TotalReceiveResultInTarget = sum(ReceiveResultInTarget[TATInclude == TRUE]), TotalCollectResultInTarget = sum(CollectResultInTarget[TATInclude == TRUE]), TotalAddOnOrder = sum(AddOnMaster == "AddOn"), TotalMissingCollections = sum(MissingCollect))
+  summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), 
+            TotalReceiveResultInTarget = sum(ReceiveResultInTarget[TATInclude == TRUE]), 
+            TotalCollectResultInTarget = sum(CollectResultInTarget[TATInclude == TRUE]), 
+            TotalAddOnOrder = sum(AddOnMaster == "AddOn"), 
+            TotalMissingCollections = sum(MissingCollect)) %>%
+  arrange(Site, ResultDate) %>%
+  ungroup()
 
-scc_sun_repo <- rbind(scc_sun_all_days_subset)
+# Import existing historical repository if one exists
+if (existing_scc_sun_repo == FALSE) {
+  scc_sun_repo <- scc_sun_all_days_subset
+} else {
+  existing_repo <- read_excel(choose.files(default = user_path, caption = "Select SCC and Sunquest Historical Repository"),
+                              sheet = 1, col_names = TRUE)
+  
+  # Convert ResultDate from date-time to date
+  existing_repo <- existing_repo %>%
+    mutate(ResultDate  = date(ResultDate))
+  
+  # Bind new data with existing repository
+  scc_sun_repo <- rbind(existing_repo, scc_sun_all_days_subset)
+  
+  # Remove any duplicates
+  scc_sun_repo <- unique(scc_sun_repo)
+}
 
 # Add data to historical repository
-write_xlsx(scc_sun_all_days_subset, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Hist Repo Test", Sys.Date(), ".xlsx"))
+write_xlsx(scc_sun_all_days_subset, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Test Export", Sys.Date(), ".xlsx"))
 
 
 test_results <- scc_sun_all_days_subset %>%
@@ -896,7 +921,7 @@ lab_sub_summarize <- function(x, LabDivision) {
 # Custom function for styling kable tables
 chem_hem_micro_kable <- function(data) {
   kable(data, format = "html", escape = FALSE, align = "c", 
-        col.names = c("Test & Priority", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
+        col.names = c("Test & Priority", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "Target", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
   kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
   column_spec(column = c(1, 9, 17), border_right = "thin solid lightgray") %>%
   add_header_above(c(" ", "Receive to Result Within Target" = (ncol(data)-1)/2, "Collect to Result Within Target" = (ncol(data)-1)/2), background = c("white", "#00AEEF", "#221f72"), color = "white", line = FALSE, font_size = 13) %>%
@@ -1260,7 +1285,7 @@ missing_collect_table <- dcast(missing_collect, "Percentage of Specimens" ~ Site
 
 missing_collect_table %>%
   kable(format = "html", escape = FALSE, align = "c",  
-        col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
+        col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
   kable_styling(bootstrap = "hover", position = "float_left", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Percentage of Labs with Missing Collect Times" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
@@ -1277,7 +1302,7 @@ add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
 
 add_on_table %>%
   kable(format = "html", escape = FALSE, align = "c", 
-        col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL"), color = "gray") %>%
+        col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"), color = "gray") %>%
   kable_styling(bootstrap = "hover", position = "right", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Volume of Add On Labs" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
@@ -1357,7 +1382,7 @@ lab_volume_summarize <- function(x, LabDivision) {
 
 lab_vol_kable_format <- function(table_data) {
   kable(table_data, format = "html", escape = FALSE, align = "c", 
-        col.names = c("Test & Priority", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
+        col.names = c("Test & Priority", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
   kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
   column_spec(column = c(1, 8), border_right = "thin solid lightgray") %>%
   add_header_above(c(" " = 1, "Resulted Lab Volume" = (ncol(table_data)-1)), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
@@ -1583,7 +1608,7 @@ missing_collect_table_not_wday <- dcast(missing_collect_not_wday, "Percentage of
 
 missing_collect_table_not_wday %>%
   kable(format = "html", escape = FALSE, align = "c",  
-        col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL")) %>%
+        col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
   kable_styling(bootstrap = "hover", position = "float_left", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Percentage of Labs with Missing Collect Times" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
@@ -1599,7 +1624,7 @@ add_on_table_not_wday <- dcast(add_on_volume_not_wday, Test ~ Site, value.var = 
 
 add_on_table_not_wday %>%
   kable(format = "html", escape = FALSE, align = "c",
-        col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL"), color = "gray") %>%
+        col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"), color = "gray") %>%
   kable_styling(bootstrap = "hover", position = "right", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Volume of Add On Labs" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
