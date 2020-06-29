@@ -628,8 +628,12 @@ if (existing_scc_sun_repo == FALSE) {
   scc_sun_repo <- unique(scc_sun_repo)
 }
 
+# Determine earliest and latest date in repository for use in file name
+start_date <- format(min(scc_sun_repo$ResultDate), "%m-%d-%y")
+end_date <- format(max(scc_sun_repo$ResultDate), "%m-%d-%y")
+
 # Add data to historical repository
-write_xlsx(scc_sun_all_days_subset, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Test Export", Sys.Date(), ".xlsx"))
+write_xlsx(scc_sun_repo, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Hist Repo Test ", start_date, " to ", end_date, " Created ", Sys.Date(), ".xlsx"))
 
 
 test_results <- scc_sun_all_days_subset %>%
