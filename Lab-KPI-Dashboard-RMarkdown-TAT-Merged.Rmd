@@ -52,6 +52,7 @@ rm(list = ls())
 #Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
 Today <- as.timeDate(as.Date("03/12/2020", format = "%m/%d/%Y"))
 
+Today_Date_KPI <- format(Today, format = "%a %m/%d/%y")
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
 #Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
@@ -753,7 +754,7 @@ Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
 
 ```
 
-```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE}
+```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE, eval = FALSE}
 
 #1. import the historical repo
 Historical_Repo <- read.csv("J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\AP & Cytology Historical Repo\\Historical_Repo_Surgical_Pathology.csv", stringsAsFactors = FALSE)
@@ -1382,7 +1383,7 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 
 ## {-} `r #End tabset`
 
-```{r Lab KPI Form for Qualitative Indicators, echo=FALSE, message=FALSE, warning=FALSE}
+```{r Lab KPI Form for Qualitative Indicators, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 #read the excel sheet that is generated from office form responses
 KPI_Form <- data.frame(read_excel(choose.files(caption = "Select the KPI form generated today"), 1), stringsAsFactors = FALSE)
 
@@ -1397,7 +1398,6 @@ KPI_Form$Completion_Hour <- format(KPI_Form$Completion.time, format = "%H:%M:%S"
 
 KPI_Form_Today  <- KPI_Form[which(KPI_Form$Completion_Date == as.Date(Today) | (KPI_Form$Completion_Date == as.Date(Yesterday) & KPI_Form$Completion_Hour >= "17:00:00")),]
 
-Today_Date_KPI <- format(Today, format = "%a %m/%d/%y")
 #split the data into 3 datasets
 
 # the first dataset representes the following: CP/AP/CPA/4LABS
@@ -1556,8 +1556,10 @@ Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
 
 ## **Operational and Quality Indicators** {.tabset}
 ### Operational Indicators
+<h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
 #### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r Today_Date_KPI`)*
-```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE}
+
+```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 
 Formatted_Clinical_Labs_Melt_New3%>%
     select(everything()) %>%
@@ -1575,8 +1577,10 @@ Comments_Clinical_Labs %>%
 
 
 ### Laboratory Information System
+<h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
 #### *Operational Indicators for LIS (Submitted on `r Today_Date_KPI`)*
-```{r Qualitative Indicators for LIS, echo=FALSE, message=FALSE, warning=FALSE}
+
+```{r Qualitative Indicators for LIS, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 Formatted_LIS_New2%>%
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("","Staffing","Service Change", "Preplanned Downtime")) %>%
@@ -1586,9 +1590,10 @@ Formatted_LIS_New2%>%
 
 
 ### Quality Indicators
+<h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
 #### Never Events 
 ##### *Reported Never Events for Each Division/Facility (Submitted on `r Today_Date_KPI`)*
-```{r Lab KPI Form for Never Events, echo=FALSE, message=FALSE, warning=FALSE}
+```{r Lab KPI Form for Never Events, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 Never_Events_Only %>%
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("Facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results")) %>%
@@ -1604,7 +1609,7 @@ Never_Events_Comments %>%
 
 #### Good Catches
 ##### *Reported Good Catches for Each Division/Facility (Submitted on `r Today_Date_KPI`)*
-```{r Lab KPI Form for Good Catches, echo=FALSE, message=FALSE, warning=FALSE}
+```{r Lab KPI Form for Good Catches, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 Good_Catch %>%
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = c("Facility", "Good Catch Comment")) %>%
