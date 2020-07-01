@@ -782,7 +782,7 @@ Historical_Repo[common] <- lapply(common, function(x) {
 #3. combine the current summary with the historical repo and write them into a csv file
 Historical_Repo_Updated <- rbind(Historical_Repo, current_summary)
 
-csvFileName <- paste0(user_directory,"/AP & Cytology Historical Repo/", "Historical_Repo_Surgical_Pathology_test","_",Today,".csv")
+csvFileName <- paste0(user_directory,"/AP & Cytology Historical Repo/", "Historical_Repo_Surgical_Pathology","_",Today,".csv")
 
 write.csv(Historical_Repo_Updated,csvFileName)
 
