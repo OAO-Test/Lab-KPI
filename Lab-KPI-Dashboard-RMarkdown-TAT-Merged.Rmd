@@ -752,6 +752,8 @@ Backlog_Accessioned_Table_New2 <- merge(x = Table_Template_backlog_Accessioned[1
 
 Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
 
+#added this line to delete the cyto gyn from the table until we get correct data
+Backlog_Accessioned_Table_New3 <- Backlog_Accessioned_Table_New2[-c(1),]
 ```
 
 ```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE, eval = FALSE}
@@ -1046,6 +1048,10 @@ Surgical_Pathology_Stratified_Vol_Weekday_New2$spec_group[Surgical_Pathology_Str
 #Surgical_Pathology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Volume(Table_Template_Patho_Vol, Surgical_Pathology_Stratified_Vol_Not_Weekday,pathology_volume_column_order)
 Cytology_Stratified_Vol_Weekday_New2 <- Table_Merging_Volume(Table_Template_Cyto_Vol
 , Cytology_Stratified_Vol_Weekday,cytology_volume_column_order)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+Cytology_Stratified_Vol_Weekday_New3 <- Cytology_Stratified_Vol_Weekday_New2[-c(1,2),]
+
 Cytology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Volume(Table_Template_Cyto_Vol
 , Cytology_Stratified_Vol_Not_Weekday,cytology_volume_column_order)
 
@@ -1094,6 +1100,10 @@ Conditional_Formatting_Cyto <- function(Table_New2){
 }
 
 Cytology_Table_Weekday_New3 <- Conditional_Formatting_Cyto(Cytology_Table_Weekday_New2)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+Cytology_Table_Weekday_New4 <- Cytology_Table_Weekday_New3[-c(1,2),]
+
 Cytology_Table_Not_Weekday_New3 <- Conditional_Formatting_Cyto(Cytology_Table_Not_Weekday_New2)
 
 Conditional_Formatting_Cyto_V2 <- function(Table_New2_V2){
@@ -1132,6 +1142,9 @@ Conditional_Formatting_Cyto_V2 <- function(Table_New2_V2){
 
 Cytology_Table_Weekday_New3_V2 <- Conditional_Formatting_Cyto_V2(Cytology_Table_Weekday_New2_V2)
 Cytology_Table_Not_Weekday_New3_V2 <- Conditional_Formatting_Cyto_V2(Cytology_Table_Not_Weekday_New2_V2)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+Cytology_Table_Weekday_New3_V3 <- Cytology_Table_Weekday_New3_V2[-c(1,2),]
 
 Conditional_Formatting_Patho <- function(Table_New2){
   if (is.null(Table_New2)){
@@ -1371,12 +1384,17 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_c
 
 
 ### Cytology
+<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
 #### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
 ```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
+#Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+rownames(Cytology_Table_Weekday_New3_V3) <- NULL
+Table_Formatting_V2(Cytology_Table_Weekday_New3_V3)
 ```
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
@@ -1705,9 +1723,14 @@ Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, patholog
 ```
 
 ### Cytology   
+<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
-Backlog_Accessioned_Table_New2 %>% 
+#Backlog_Accessioned_Table_New2
+
+#added this line to delete the cyto gyn from the table until we get correct data
+rownames(Backlog_Accessioned_Table_New3) <- NULL
+Backlog_Accessioned_Table_New3 %>% 
   kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume", "25th Percentile", "50th Percentile", "Maximum")) %>%
   kable_styling(bootstrap_options = "hover", full_width = TRUE, position = "center", row_label_position = "c", font_size = 11) %>%
   column_spec(2, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
@@ -1720,7 +1743,12 @@ Backlog_Accessioned_Table_New2 %>%
 
 #### *Cytology Signed Out Cases Volume (As of `r wday_result_date`)*
 ```{r Cytology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2, cytology_volume_column_names)
+#Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2, cytology_volume_column_names)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+rownames(Cytology_Stratified_Vol_Weekday_New3) <- NULL
+Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New3, cytology_volume_column_names)
+
 ```
 
 `r #End tabset`
