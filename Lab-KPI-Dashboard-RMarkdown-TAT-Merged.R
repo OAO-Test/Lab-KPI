@@ -20,6 +20,7 @@ output:
 #install.packages("stringr")
 #install.packages("writexl")
 
+
 #-------------------------------Required packages-------------------------------#
 
 #Required packages: run these everytime you run the code
@@ -39,16 +40,20 @@ library(writexl)
 
 ```
 
+
+
+<h1><span style = "color:red">Draft - Not For Distribution</h1>
+
 ```{r global_options, echo=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 ```
-
 
 ```{r Determine date, warning = FALSE, message = FALSE, echo = FALSE}
 #Clear existing history
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
+
 Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
 # Today <- as.timeDate(as.Date("06/26/2020", format = "%m/%d/%Y"))
 
@@ -56,6 +61,7 @@ Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
 #get yesterday's DOW
 Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
 # Yesterday <- as.timeDate(as.Date("06/25/2020", format = "%m/%d/%Y"))
+
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -75,115 +81,123 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 
 #### *Dashboard Creation Date: `r format(Today, "%m/%d/%Y")`*
 
+
 ```{r Import all data, warning = FALSE, message = FALSE, echo = FALSE}
 # Select file/folder path for easier file selection and navigation
 # user_wd <- choose.dir(caption = "Select your working directory")
-user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
-user_path <- paste0(user_wd, "\\*.*")
-setwd(user_wd)
+#user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
+#user_path <- paste0(user_wd, "\\*.*")
+
+if (list.files("J://") == "Presidents") {
+  user_directory <- "J:/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+} else {
+  user_directory <- "J:/deans/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+}
+user_path <- paste0(user_directory, "/*.*")
 
 
 #------------------------------Read Excel sheets------------------------------#
-#The if-statement below helps in determining how many excel files are required
+# The if-statement below determines the number of raw data files to import based on the day of week and holidays.
+# The user is then prompted to select each file from the relevant folder.
 
 if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){ # Scenario 1: Mon Holiday or Friday Holiday (Need to select 4 files)
   # Save scenario
   scenario <- 1
   # Import SCC data
-  SCC_Holiday_Monday_or_Friday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE)
-  SCC_Sunday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
-  SCC_Saturday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
+  SCC_Holiday_Monday_or_Friday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE)
+  SCC_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
+  SCC_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
   SCC_Not_Weekday <- rbind(SCC_Holiday_Monday_or_Friday, SCC_Sunday, SCC_Saturday)
-  SCC_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
   # 
   # Import Sunquest data
-  SQ_Holiday_Monday_or_Friday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE))
-  SQ_Sunday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE))
-  SQ_Saturday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE))
+  SQ_Holiday_Monday_or_Friday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE))
+  SQ_Sunday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE))
+  SQ_Saturday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE))
   #Merge the weekend data with the holiday data in one data frame
   SQ_Not_Weekday <- rbind(SQ_Holiday_Monday_or_Friday, SQ_Sunday, SQ_Saturday)
-  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
+  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
   #
   # Import Powerpath data
-  PP_Holiday_Monday_or_Friday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Recent Holiday"), skip = 1, 1)
+  PP_Holiday_Monday_or_Friday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Recent Holiday"), skip = 1, 1)
   PP_Holiday_Monday_or_Friday  <- PP_Holiday_Monday_or_Friday[-nrow(PP_Holiday_Monday_or_Friday),]
-  PP_Sunday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Sunday"), skip = 1, 1)
+  PP_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Sunday"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Saturday"), skip = 1, 1)
+  PP_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Saturday"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
   PP_Not_Weekday <- data.frame(rbind(PP_Holiday_Monday_or_Friday ,PP_Sunday,PP_Saturday),stringsAsFactors = FALSE)
-  PP_Weekday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
+  PP_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),],stringsAsFactors = FALSE)
 } else if ((Holiday_Det) & (Yesterday_Day =="Sun")){ # Scenario 2: Regular Monday (Need to select 3 files)
-  #
   # Save scenario
   scenario <- 2
+  #
   # Import SCC data
-  SCC_Sunday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
-  SCC_Saturday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
+  SCC_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
+  SCC_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
   SCC_Not_Weekday <- rbind(SCC_Sunday,SCC_Saturday)
-  SCC_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
   #
   # Import Sunquest data
-  SQ_Sunday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE))
-  SQ_Saturday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE))
+  SQ_Sunday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE))
+  SQ_Saturday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE))
   #Merge the weekend data with the holiday data in one data frame
   SQ_Not_Weekday <- rbind(SQ_Sunday,SQ_Saturday)
-  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
+  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
   #
   # Import Powerpath data
-  PP_Sunday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Sunday"), skip = 1, 1)
+  PP_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Sunday"), skip = 1, 1)
   PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Saturday"), skip = 1, 1)
+  PP_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Saturday"), skip = 1, 1)
   PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
   #Merge the weekend data with the holiday data in one data frame
   PP_Not_Weekday <- data.frame(rbind(PP_Sunday,PP_Saturday),stringsAsFactors = FALSE)
-  PP_Weekday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
+  PP_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 } else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sun"))){ #Scenario 3: Midweek holiday (Need to select 2 files)
-  #
   # Save scenario
   scenario <- 3
+  #
   # Import SCC data
-  SCC_Holiday_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE)
+  SCC_Holiday_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE)
   SCC_Not_Weekday <- SCC_Holiday_Weekday
-  SCC_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
   #
   # Import Sunquest data
-  SQ_Holiday_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE))
+  SQ_Holiday_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE))
   SQ_Not_Weekday <- SQ_Holiday_Weekday
-  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select Sunquest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
+  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
   #
   # Import Powerpath data
-  PP_Holiday_Weekday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Recent Holiday"), skip = 1, 1)
+  PP_Holiday_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Recent Holiday"), skip = 1, 1)
   PP_Holiday_Weekday <- PP_Holiday_Weekday[-nrow(PP_Holiday_Weekday),]
   PP_Not_Weekday <- data.frame(PP_Holiday_Weekday, stringsAsFactors = FALSE)
-  PP_Weekday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
+  PP_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
 } else { #Scenario 4: Tue-Fri without holidays (Need to select 1 file)
-  #
   # Save scenario
   scenario <- 4
+  #
   # Import SCC data
-  SCC_Weekday <- read_excel(choose.files(default = user_path, caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
   SCC_Not_Weekday <- NULL
   #
   # Import Sunquest data
-  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = user_path, caption = "Select SunQuest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
+  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select SunQuest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
   SQ_Not_Weekday <- NULL
   #
   # Import Powerpath data
-  PP_Weekday <- read_excel(choose.files(default = user_path, caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
+  PP_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
   PP_Not_Weekday <- NULL
 }
 
 #-----------Cytology Backlog Excel Files-----------#
 #For the backlog files the read excel is starting from the second row and remove last row
-Cytology_Backlog_Raw <- read_excel(choose.files(default = user_path, caption = "Select Cytology Backlog Report"),skip =1 , 1)
+Cytology_Backlog_Raw <- read_excel(choose.files(default = paste0(user_directory, "/Cytology Backlog Reports/*.*"), caption = "Select Cytology Backlog Report"),skip =1 , 1)
 Cytology_Backlog_Raw <- data.frame(Cytology_Backlog_Raw[-nrow(Cytology_Backlog_Raw),], stringsAsFactors = FALSE)
 ```
 
@@ -191,8 +205,7 @@ Cytology_Backlog_Raw <- data.frame(Cytology_Backlog_Raw[-nrow(Cytology_Backlog_R
 # CP and Micro --------------------------------
 # Import analysis reference data starting with test codes for SCC and Sunquest
 # reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
-reference_file <- choose.files(default = user_path, caption = "Select analysis reference file")
-
+reference_file <- choose.files(default = paste0(user_directory, "/Code Reference/*.*"), caption = "Select analysis reference file")
 test_code <- read_excel(reference_file, sheet = "TestNames")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
@@ -213,14 +226,12 @@ sun_wday <- SQ_Weekday
 cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu", "C. diff")
 
 site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
+
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
-
-# Variable  to determine if a historical repository exists for SCC and Sunquest data
-existing_scc_sun_repo <- TRUE
 
 # To Be Updated in Analysis reference file
 #-----------Patient Setting Excel File-----------#
@@ -235,34 +246,31 @@ TAT_Targets <- data.frame(read_excel(reference_file, sheet = "AP_TAT Targets"), 
 GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAsFactors = FALSE)
 
 #-----------Create table template for Cyto/Path-----------#
-columns <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x", "MSS.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y", "MSS.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
-columns_V2 <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_Out_within_target","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")
-columns_V3 <- c("spec_group","Patient.Setting","BIMC", "MSH", "MSQ", "MSS","NYEE","PACC","R","SL", "KH")
 
 #Cyto
-Table_Template_Cyto <- data.frame(matrix(ncol=21, nrow = 4)) 
-colnames(Table_Template_Cyto) <- columns
+Table_Template_Cyto <- data.frame(matrix(ncol=19, nrow = 4)) 
+colnames(Table_Template_Cyto) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
 Table_Template_Cyto[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto[2] <- c('IP', 'Amb')
 
-Table_Template_Cyto_V2 <- data.frame(matrix(ncol=13, nrow = 4)) 
-colnames(Table_Template_Cyto_V2) <- columns_V2
+Table_Template_Cyto_V2 <- data.frame(matrix(ncol=12, nrow = 4)) 
+colnames(Table_Template_Cyto_V2) <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_Out_within_target","BIMC", "MSH", "MSQ","NYEE","PACC","R","SL", "KH")
 Table_Template_Cyto_V2[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto_V2[2] <- c('IP', 'Amb')
 
-Table_Template_Cyto_Vol <- data.frame(matrix(ncol=11, nrow = 4)) 
-colnames(Table_Template_Cyto_Vol) <- columns_V3
+Table_Template_Cyto_Vol <- data.frame(matrix(ncol=10, nrow = 4)) 
+colnames(Table_Template_Cyto_Vol) <- c("spec_group","Patient.Setting","BIMC", "MSH", "MSQ","NYEE","PACC","R","SL", "KH")
 Table_Template_Cyto_Vol[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto_Vol[2] <- c('IP', 'Amb')
 
 #Patho
-Table_Template_Patho <- data.frame(matrix(ncol=21, nrow = 4)) 
-colnames(Table_Template_Patho) <- columns
+Table_Template_Patho <- data.frame(matrix(ncol=17, nrow = 4)) 
+colnames(Table_Template_Patho) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y","PACC.y","R.y","SL.y", "KH.y")
 Table_Template_Patho[1] <- c('Breast','Breast','GI', 'GI')
 Table_Template_Patho[2] <- c('IP', 'Amb')
 
-Table_Template_Patho_Vol <- data.frame(matrix(ncol=11, nrow = 4)) 
-colnames(Table_Template_Patho_Vol) <- columns_V3
+Table_Template_Patho_Vol <- data.frame(matrix(ncol=9, nrow = 4)) 
+colnames(Table_Template_Patho_Vol) <- c("spec_group","Patient.Setting","BIMC", "MSH", "MSQ", "PACC","R","SL", "KH")
 Table_Template_Patho_Vol[1] <- c('Breast','Breast','GI', 'GI')
 Table_Template_Patho_Vol[2] <- c('IP', 'Amb')
 ```
@@ -276,6 +284,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_scc <- left_join(raw_scc, test_code[ , c("Test", "SCC_TestID", "Division")], by = c("TEST_ID" = "SCC_TestID"))
   raw_scc$TEST_ID <- as.factor(raw_scc$TEST_ID)
   raw_scc$Division <- as.factor(raw_scc$Division)
+  
   raw_scc <- raw_scc %>%
     mutate(TestIncl = ifelse(is.na(raw_scc$Test), FALSE, TRUE))
   
@@ -373,6 +382,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
     mutate(Concate3 = paste(LAST_NAME, FIRST_NAME,
                             ORDER_ID, TEST_NAME, 
                             COLLECTION_DATE, RECEIVE_DATE, VERIFIED_DATE))
+
   
   raw_scc <- raw_scc[!duplicated(raw_scc$Concate3), ]
   
@@ -410,6 +420,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                             "ReceiveResultTarget", "CollectResultTarget", 
                             "ReceiveResultInTarget", "CollectResultInTarget", 
                             "TATInclude")
+
   
   ## SUNQUEST DATA PROCESSING ----------
   # Sunquest lookup references ----------------------------------------------
@@ -618,7 +629,6 @@ if (scenario == 1) {
 }
 
 
-
 # Determine resulted date for weekday labs
 wday_dates_df <- scc_sun_wday_master[ , "ResultDate"]
 wday_result_date <- format(unique(wday_dates_df$ResultDate), format = "%a %m/%d/%y")
@@ -659,23 +669,19 @@ scc_sun_all_days_subset <- scc_sun_all_days %>%
   arrange(Site, ResultDate) %>%
   ungroup()
 
-# Import existing historical repository if one exists
-if (existing_scc_sun_repo == FALSE) {
-  scc_sun_repo <- scc_sun_all_days_subset
-} else {
-  existing_repo <- read_excel(choose.files(default = user_path, caption = "Select SCC and Sunquest Historical Repository"),
+existing_repo <- read_excel(choose.files(default = user_path, caption = "Select SCC and Sunquest Historical Repository"),
                               sheet = 1, col_names = TRUE)
   
-  # Convert ResultDate from date-time to date
-  existing_repo <- existing_repo %>%
-    mutate(ResultDate  = date(ResultDate))
+# Convert ResultDate from date-time to date
+existing_repo <- existing_repo %>%
+   mutate(ResultDate  = date(ResultDate))
   
-  # Bind new data with existing repository
-  scc_sun_repo <- rbind(existing_repo, scc_sun_all_days_subset)
+# Bind new data with existing repository
+scc_sun_repo <- rbind(existing_repo, scc_sun_all_days_subset)
   
-  # Remove any duplicates
-  scc_sun_repo <- unique(scc_sun_repo)
-}
+# Remove any duplicates
+scc_sun_repo <- unique(scc_sun_repo)
+
 
 # Determine earliest and latest date in repository for use in file name
 start_date <- format(min(scc_sun_repo$ResultDate), "%m-%d-%y")
@@ -689,28 +695,51 @@ test_results <- scc_sun_all_days_subset %>%
   group_by(Site, Test, DashboardPriority, DashboardSetting) %>%
   summarize(ReceiveResultPercent = sum(TotalReceiveResultInTarget)/sum(TotalResultedTAT)*100, CollectResultPercent = sum(TotalCollectResultInTarget)/sum(TotalResultedTAT)*100)
 
-
-
 ```
 
 
 ```{r Custom function for preprocessing raw Powerpath data and calling function, warning = FALSE, message = FALSE, echo = FALSE}
+#standardize column names
+#GI_codes_column_name <- c("Specimen_code", "GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.")
+#colnames(GI_Codes) <- GI_codes_column_name
+# create an extra column for old Fcaility and change the facility from MSSM to MSH 
+PP_Weekday$Facility_Old <- PP_Weekday$Facility
+PP_Weekday$Facility[PP_Weekday$Facility_Old == "MSS"] <- "MSH" 
+PP_Weekday$Facility[PP_Weekday$Facility_Old == "STL"] <- "SL"
 #------------------------------Extract the Cytology GYN and NON-GYN Data Only------------------------------#
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
 
-Cytology_Weekday_Raw <- PP_Weekday[which(PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN"),]
-Cytology_Not_Weekday_Raw <- PP_Not_Weekday[which(PP_Not_Weekday$spec_group=="CYTO NONGYN" | PP_Not_Weekday$spec_group=="CYTO GYN"),]
+Cytology_Weekday_Raw <- PP_Weekday[which((PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
+
+Cytology_Not_Weekday_Raw <- PP_Not_Weekday[which((PP_Not_Weekday$spec_group=="CYTO NONGYN" | PP_Not_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
 
 #------------------------------Extract the All Breast and GI Specimens Data Only------------------------------#
 
 #Merge the exclusion/inclusion cloumn into the modified powerpath Dataset for weekdays and not weekdays
 
-PP_Weekday_Excl <- merge(x = PP_Weekday, y= GI_Codes, all.x = TRUE)
-Surgical_Pathology_Weekday <- PP_Weekday_Excl[which(((PP_Weekday_Excl$spec_group=="GI") &(PP_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Weekday_Excl$spec_group=="Breast"),]
+PP_Weekday <- merge(x = PP_Weekday, y= GI_Codes, all.x = TRUE)
 
-PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday, y= GI_Codes, all.x = TRUE)
-Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") &(PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | PP_Not_Weekday_Excl$spec_group=="Breast"),]
+#find case numbers with GI_Code = exclude
+Exclude_GI_Codes_DF <- PP_Weekday[which((PP_Weekday$spec_group=="GI") & (PP_Weekday$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Exclude")),]
+
+Must_Exclude_CNum <- unique(Exclude_GI_Codes_DF$Case_no)
+
+#this dataframe has all the GI specimens and biopsies that should be excluded 
+#it includes any biopsy that came with another excluded code
+#this DF is only for our reference
+Must_Exclude_CNum_df <- PP_Weekday[which(PP_Weekday$Case_no %in% Must_Exclude_CNum),]
+
+Surgical_Pathology_Weekday <- PP_Weekday[which((((PP_Weekday$spec_group=="GI") & (!(PP_Weekday$Case_no %in% Must_Exclude_CNum))) | (PP_Weekday$spec_group=="Breast")) & PP_Weekday$spec_sort_order=="A"),]
+
+#PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday, y= GI_Codes, all.x = TRUE)
+
+#find MRNs with GI_Code = exclude
+#Must_Exclude_MRN_Not_Weekday <- PP_Not_Weekday_Excl[which((PP_Not_Weekday_Excl$spec_group=="GI") & (PP_Not_Weekday_Excl$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Exclude")),]
+
+#Must_Exclude_MRN_Not_Weekday <- unique(Must_Exclude_MRN_Not_Weekday$MRN)
+
+#Surgical_Pathology_Not_Weekday <- PP_Not_Weekday_Excl[which(((PP_Not_Weekday_Excl$spec_group=="GI") & (!(PP_Not_Weekday_Excl$MRN %in% Must_Exclude_MRN_Not_Weekday)) & (PP_Not_Weekday_Excl$spec_sort_order=="A")) | ((PP_Not_Weekday_Excl$spec_group=="Breast") & (PP_Not_Weekday_Excl$spec_sort_order=="A"))),]
 
 #-----------Reporting Dates-----------#
 #1. Weekday Date
@@ -748,6 +777,14 @@ pre_processing_pp <- function(Raw_Data){
 
     #vlookup targets based on spec_group and patient setting
     Raw_Data_New <- merge(x=Raw_Data_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
+
+    #check if any of the dates was imported as char
+    if (is.character(Raw_Data_New$Collection_Date)){
+      Raw_Data_New$Collection_Date <- as.numeric(Raw_Data_New$Collection_Date)
+      Raw_Data_New$Collection_Date <- as.Date(Raw_Data_New$Collection_Date, origin = "1899-12-30")
+    } else {
+      Raw_Data_New$Collection_Date <- Raw_Data_New$Collection_Date
+    }
     
     #Change all Dates into POSIXct format to start the calculations
     
@@ -768,6 +805,8 @@ pre_processing_pp <- function(Raw_Data){
 
     Raw_Data_New_Cases_Signed_Stratified <- summarise(group_by(Raw_Data_New,spec_group, Facility, Patient.Setting), No_Cases_Signed = n())    
     Raw_Data_New_Cases_Signed_Stratified <- dcast(Raw_Data_New_Cases_Signed_Stratified, spec_group + Patient.Setting ~ Facility, value.var = "No_Cases_Signed" )
+
+    Raw_Data_New_Cases_Signed_Stratified[is.na(Raw_Data_New_Cases_Signed_Stratified)] <- 0
         
     Raw_Data_New_Patient_Metric <- summarise(group_by(Raw_Data_New,spec_group, Facility,Patient.Setting), Avg_Collection_to_Signed_out=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))))
     
@@ -780,6 +819,9 @@ pre_processing_pp <- function(Raw_Data){
     Raw_Data_New_Lab_Metric <- dcast(Raw_Data_New_Lab_Metric, spec_group + Patient.Setting ~ Facility, value.var = "Received_to_Signed_out_within_target" )
     
     Raw_Data_New_Lab_Metric_V2 <- summarise(group_by(Raw_Data_New,spec_group,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)))
+
+    Summarized_Table <- summarise(group_by(Raw_Data_New,Spec_code, spec_group, Facility,Patient.Setting, Rev_ctr,as.Date(signed_out_date),weekdays(as.Date(signed_out_date)),Received.to.signed.out.target..Days.,Collected.to.signed.out.target..Days.),  No_Cases_Signed = n(), Lab_Metric_TAT_Avg = round(mean(Received_to_signed_out, na.rm = TRUE),0), Lab_Metric_TAT_med = round(median(Received_to_signed_out, na.rm = TRUE),0), Lab_Metric_TAT_sd = round(sd(Received_to_signed_out, na.rm = TRUE),1), Lab_Metric_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)), Patient_Metric_TAT_avg=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))), Patient_Metric_TAT_med = round(median(Collection_to_signed_out, na.rm = TRUE),0), Patient_Metric_TAT_sd =round(sd(Collection_to_signed_out, na.rm = TRUE),1))
+
     
     #here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
     
@@ -787,7 +829,7 @@ pre_processing_pp <- function(Raw_Data){
     Processed_Data_Table <- Processed_Data_Table[!(Processed_Data_Table$Patient.Setting == "Other"),]
     Processed_Data_Table_V2 <- left_join(full_join(Raw_Data_New_Cases_Signed, Raw_Data_New_Lab_Metric_V2), Raw_Data_New_Patient_Metric, by = c("spec_group", "Patient.Setting"))
     Processed_Data_Table_V2 <- Processed_Data_Table_V2[!(Processed_Data_Table_V2$Patient.Setting == "Other"),]
-    Return_Tables <- list(Processed_Data_Table, Processed_Data_Table_V2,Raw_Data_New_Cases_Signed_Stratified) 
+    Return_Tables <- list(Processed_Data_Table, Processed_Data_Table_V2,Raw_Data_New_Cases_Signed_Stratified,Raw_Data_New,Summarized_Table) 
   }
   return(Return_Tables)
 }
@@ -798,11 +840,14 @@ Cytology_Table_Weekday_V2 <- pre_processing_pp(Cytology_Weekday_Raw)[[2]]
 Cytology_Table_Not_Weekday_V2 <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[2]]
 Cytology_Stratified_Vol_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[3]]
 Cytology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[3]]
+Cytology_Table_Weekday_Raw <- pre_processing_pp(Cytology_Weekday_Raw)[[4]]
 
 Surgical_Pathology_Table_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[1]]
-Surgical_Pathology_Table_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[1]]
+#Surgical_Pathology_Table_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[1]]
 Surgical_Pathology_Stratified_Vol_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[3]]
-Surgical_Pathology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[3]]
+#Surgical_Pathology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[3]]
+Surgical_Pathology_Table_Weekday_Raw <- pre_processing_pp(Surgical_Pathology_Weekday)[[4]]
+
 
 ```
 
@@ -826,7 +871,7 @@ Cytology_Backlog[c("Case_created_date","Collection_Date","Received_Date","signed
 Cytology_Backlog$Backlog <- bizdays(Cytology_Backlog$Case_created_date, Today)-1
 
 #Case Volume
-Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days., na.rm = TRUE),2)))
+Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days., na.rm = TRUE),0)), percentile_25th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.25, na.rm = TRUE))), percentile_50th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.5, na.rm = TRUE))), Maximum = format(ceiling(max(Backlog[Backlog > Received.to.signed.out.target..Days.], na.rm = TRUE))))
 
 Cytology_Backlog_Volume$spec_group <- factor(Cytology_Backlog_Volume$spec_group, levels = c("CYTO GYN", "CYTO NONGYN"))
 
@@ -853,8 +898,9 @@ Cytology_Accessioned_Vol3$Cyto_Acc_Vol2 <- NULL
 Backlog_Accessioned_Table <- merge(x = Cytology_Accessioned_Vol3, y = Cytology_Backlog_Volume, all = TRUE)
 
 #as extra precaution
-Table_Template_backlog_Accessioned <- data.frame(matrix(ncol=3, nrow = 2)) 
-colnames(Table_Template_backlog_Accessioned) <- c("spec_group", "Total_Accessioned_Volume", "Cyto_Backlog")
+
+Table_Template_backlog_Accessioned <- data.frame(matrix(ncol=6, nrow = 2)) 
+colnames(Table_Template_backlog_Accessioned) <- c("spec_group", "Total_Accessioned_Volume", "Cyto_Backlog", "percentile_25th", "percentile_50th", "Maximum")
 Table_Template_backlog_Accessioned[1] <- c('CYTO GYN','CYTO NONGYN')
 
 Backlog_Accessioned_Table_New <- merge(x = Table_Template_backlog_Accessioned, y=Backlog_Accessioned_Table, all.y=TRUE)
@@ -862,7 +908,44 @@ Backlog_Accessioned_Table_New2 <- merge(x = Table_Template_backlog_Accessioned[1
 
 Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
 
+#added this line to delete the cyto gyn from the table until we get correct data
+Backlog_Accessioned_Table_New3 <- Backlog_Accessioned_Table_New2[-c(1),]
 ```
+
+```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE, eval = FALSE}
+
+#1. import the historical repo
+Historical_Repo <- read.csv("J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\AP & Cytology Historical Repo\\Historical_Repo_Surgical_Pathology.csv", stringsAsFactors = FALSE)
+
+Historical_Repo$X <- NULL
+#Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%Y')
+#2. append all the summary tables together
+Cytology_Table_Weekday_Summarized <- pre_processing_pp(Cytology_Weekday_Raw)[[5]]
+#Cytology_Table_Not_Weekday_Summarized <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[5]]
+Surgical_Pathology_Table_Weekday_Summarized <- pre_processing_pp(Surgical_Pathology_Weekday)[[5]]
+#Surgical_Pathology_Table_Not_Weekday_Summarized <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[5]]
+#current_summary <- rbind(Cytology_Table_Weekday_Summarized, Cytology_Table_Not_Weekday_Summarized, Surgical_Pathology_Table_Weekday_Summarized, Surgical_Pathology_Table_Not_Weekday_Summarized)
+
+current_summary <- rbind(Cytology_Table_Weekday_Summarized, Surgical_Pathology_Table_Weekday_Summarized)
+
+current_summary <- as.data.frame(current_summary)
+#standardize the name
+colnames(current_summary) <- c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr", "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target", "Patient_metric_target", "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std","Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med", "Patient_metric_std")
+#make sure the data types for both dataframes are the same
+common <- names(Historical_Repo)[names(Historical_Repo) %in% names(current_summary)]
+Historical_Repo[common] <- lapply(common, function(x) {
+  match.fun(paste0("as.", class(current_summary[[x]])))(Historical_Repo[[x]])
+})
+
+#3. combine the current summary with the historical repo and write them into a csv file
+Historical_Repo_Updated <- rbind(Historical_Repo, current_summary)
+
+csvFileName <- paste0(user_directory,"/AP & Cytology Historical Repo/", "Historical_Repo_Surgical_Pathology","_",Today,".csv")
+
+write.csv(Historical_Repo_Updated,csvFileName)
+
+```
+
 
 ```{r Custom Functions for subsetting and summarizing data for SCC and Sunquest dashboard tables, warning = FALSE, message = FALSE, echo = FALSE}
 # # Custom function to clean and format summarized data (used in "subsetting and summarizing function"lab_sub_summarize" function beflore)
@@ -1031,11 +1114,6 @@ micro_table <- micro_dashboard2[ , 3:ncol(micro_dashboard2)]
 
 ############Create a function for Table standardization for cyto and patho############
 #To add all the missing rows and columns
-columns_order <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")
-
-columns_order_V2 <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
-
-columns_order_V3 <- c("spec_group","Patient.Setting","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
 
 #Cytology table
 Table_Merging_Cyto <- function(Cytology_Table){
@@ -1049,7 +1127,9 @@ Table_Merging_Cyto <- function(Cytology_Table){
     #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
     Cytology_Table_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
     rows_order_Cyto <- factor(rownames(Cytology_Table_New2),levels = c(2,1,4,3))
-    Cytology_Table_New2 <- Cytology_Table_New2[order(rows_order_Cyto), columns_order]
+
+    Cytology_Table_New2 <- Cytology_Table_New2[order(rows_order_Cyto), c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")]
+
   }
   return(Cytology_Table_New2)
 }
@@ -1064,7 +1144,8 @@ Table_Merging_Cyto_V2 <- function(Cytology_Table_V2){
     #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
     Cytology_Table_New2_V2 <- merge(x = Table_Template_Cyto_V2[c(1,2)], y= Cytology_Table_New_V2, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
     rows_order_Cyto_V2 <- factor(rownames(Cytology_Table_New2_V2),levels = c(2,1,4,3))
-    Cytology_Table_New2_V2 <- Cytology_Table_New2_V2[order(rows_order_Cyto_V2), columns_order_V2]
+
+    Cytology_Table_New2_V2 <- Cytology_Table_New2_V2[order(rows_order_Cyto_V2), c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH","MSQ","BIMC","PACC","KH","R","SL", "NYEE")]
   }
   return(Cytology_Table_New2_V2)
 }
@@ -1087,16 +1168,21 @@ Table_Merging_Patho <- function(Surgical_Pathology_Table){
     #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
     Surgical_Pathology_Table_New2 <- merge(x = Table_Template_Patho[c(1,2)], y= Surgical_Pathology_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
     rows_order_Patho <- factor(rownames(Surgical_Pathology_Table_New2),levels = c(2,1,4,3))
-    Surgical_Pathology_Table_New2 <- Surgical_Pathology_Table_New2[order(rows_order_Patho), columns_order]
+
+    Surgical_Pathology_Table_New2 <- Surgical_Pathology_Table_New2[order(rows_order_Patho), c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "MSH.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y")]
   }
   return(Surgical_Pathology_Table_New2)
 }
 
 Surgical_Pathology_Table_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Weekday)
-Surgical_Pathology_Table_Not_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Not_Weekday)
 
+#Surgical_Pathology_Table_Not_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Not_Weekday)
 
-Table_Merging_Volume <- function(Table_Template_Vol, Vol_Table){
+pathology_volume_column_order <- c("spec_group","Patient.Setting","MSH","MSQ","BIMC","PACC","KH","R","SL")
+
+cytology_volume_column_order <- c("spec_group","Patient.Setting","MSH","MSQ","BIMC","PACC","KH","R","SL", "NYEE") 
+
+Table_Merging_Volume <- function(Table_Template_Vol, Vol_Table, columns_order_V3){
   if (is.null(Vol_Table)){
     Vol_Table_New <- NULL
     Vol_Table_New2 <- NULL
@@ -1109,36 +1195,43 @@ Table_Merging_Volume <- function(Table_Template_Vol, Vol_Table){
     rows_order_Vol <- factor(rownames(Vol_Table_New2),levels = c(2,1,4,3))
     Vol_Table_New2 <- Vol_Table_New2[order(rows_order_Vol), columns_order_V3]
     row.names(Vol_Table_New2) <- NULL
+    Vol_Table_New2[is.na(Vol_Table_New2)] <- 0
   }
   return(Vol_Table_New2)
 }
 
 
-Surgical_Pathology_Stratified_Vol_Weekday_New2 <- Table_Merging_Volume(Table_Template_Patho_Vol
-, Surgical_Pathology_Stratified_Vol_Weekday)
-Surgical_Pathology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Volume(Table_Template_Patho_Vol
-, Surgical_Pathology_Stratified_Vol_Not_Weekday)
+
+Surgical_Pathology_Stratified_Vol_Weekday_New2 <- Table_Merging_Volume(Table_Template_Patho_Vol,Surgical_Pathology_Stratified_Vol_Weekday,pathology_volume_column_order)
+Surgical_Pathology_Stratified_Vol_Weekday_New2$spec_group[Surgical_Pathology_Stratified_Vol_Weekday_New2$spec_group=="GI"] <- "GI Biopsies"
+Surgical_Pathology_Stratified_Vol_Weekday_New2$spec_group[Surgical_Pathology_Stratified_Vol_Weekday_New2$spec_group=="Breast"] <- "All Breast Specimens"
+
+
+#Surgical_Pathology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Volume(Table_Template_Patho_Vol, Surgical_Pathology_Stratified_Vol_Not_Weekday,pathology_volume_column_order)
 Cytology_Stratified_Vol_Weekday_New2 <- Table_Merging_Volume(Table_Template_Cyto_Vol
-, Cytology_Stratified_Vol_Weekday)
+, Cytology_Stratified_Vol_Weekday,cytology_volume_column_order)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+Cytology_Stratified_Vol_Weekday_New3 <- Cytology_Stratified_Vol_Weekday_New2[-c(1,2),]
+
 Cytology_Stratified_Vol_Not_Weekday_New2 <- Table_Merging_Volume(Table_Template_Cyto_Vol
-, Cytology_Stratified_Vol_Not_Weekday)
+, Cytology_Stratified_Vol_Not_Weekday,cytology_volume_column_order)
 
 
 ############Create a function for conditional formatting############
-Conditional_Formatting <- function(Table_New2){
+Conditional_Formatting_Cyto <- function(Table_New2){
   if (is.null(Table_New2)){
     Table_New3 <- NULL
     Table_New4 <- NULL
     Table_New5 <- NULL
   } else {
     
-    Table_New2[,4:21] <- lapply(Table_New2[,4:21], as.numeric)
-    Table_New2[,4:12] <- lapply(Table_New2[,4:12],percent, d=0)
+    Table_New2[,4:19] <- lapply(Table_New2[,4:19], as.numeric)
+    Table_New2[,4:11] <- lapply(Table_New2[,4:11],percent, d=0)
     
     #steps for conditional formatting:
     
-    Table_New3 <- melt(Table_New2, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.y","MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y"))
-    
+    Table_New3 <- melt(Table_New2, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y"))    
     
     Table_New3 <- Table_New3 %>%
       mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), 
@@ -1146,21 +1239,21 @@ Conditional_Formatting <- function(Table_New2){
                                    ifelse(value < 0.8, cell_spec(value, "html", color = "red"), cell_spec(value, "html", color = "orange")))))
     
     
-    Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + MSS.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
+    Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + NYEE.y + PACC.y + R.y + SL.y + KH.y ~ variable )
     
-    Table_New4 <- melt(Table_New3, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x"))
+    Table_New4 <- melt(Table_New3, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x"))
     
     
     Table_New4 <- Table_New4 %>%
       mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), cell_spec(value, "html", color = "black")))
     
-    Table_New4 <- dcast(Table_New4,spec_group + Patient.Setting + No_Cases_Signed + BIMC.x + MSH.x + MSQ.x + MSS.x + NYEE.x + PACC.x + R.x + SL.x + KH.x ~ variable )
+
+    Table_New4 <- dcast(Table_New4,spec_group + Patient.Setting + No_Cases_Signed + BIMC.x + MSH.x + MSQ.x + NYEE.x + PACC.x + R.x + SL.x + KH.x ~ variable )
     
     Table_New5 <- merge(x=Table_New4, y=TAT_Targets[1:3])
     
-    columns_order <- c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","MSH.x", "MSS.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSS.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")
     rows_order <- factor(rownames(Table_New5),levels = c(2,1,4,3))
-    Table_New5 <- Table_New5[order(rows_order), columns_order]
+    Table_New5 <- Table_New5[order(rows_order), c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")]
     Table_New5$Received.to.signed.out.target..Days.<- paste("<= ", Table_New5$Received.to.signed.out.target..Days., "days")
     row.names(Table_New5) <- NULL
     Table_New5$No_Cases_Signed[is.na(Table_New5$No_Cases_Signed)] <- 0
@@ -1168,9 +1261,18 @@ Conditional_Formatting <- function(Table_New2){
   return(Table_New5)
 }
 
-Conditional_Formatting_V2 <- function(Table_New2_V2){
+
+Cytology_Table_Weekday_New3 <- Conditional_Formatting_Cyto(Cytology_Table_Weekday_New2)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+Cytology_Table_Weekday_New4 <- Cytology_Table_Weekday_New3[-c(1,2),]
+
+Cytology_Table_Not_Weekday_New3 <- Conditional_Formatting_Cyto(Cytology_Table_Not_Weekday_New2)
+
+Conditional_Formatting_Cyto_V2 <- function(Table_New2_V2){
   if (is.null(Table_New2_V2)){
     Table_New3_V2 <- NULL
+    Table_New4_V2 <- NULL
   } else {
     
     Table_New2_V2[4] <- lapply(Table_New2_V2[4], as.numeric)
@@ -1182,38 +1284,97 @@ Conditional_Formatting_V2 <- function(Table_New2_V2){
       mutate(Received_to_Signed_out_within_target = ifelse(is.na(Received_to_Signed_out_within_target), cell_spec(Received_to_Signed_out_within_target, "html", color = "lightgray"), 
                             ifelse(Received_to_Signed_out_within_target > 0.9, cell_spec(Received_to_Signed_out_within_target, "html", color  = "green"),
                                    ifelse(Received_to_Signed_out_within_target < 0.8, cell_spec(Received_to_Signed_out_within_target, "html", color = "red"), cell_spec(Received_to_Signed_out_within_target, "html", color = "orange")))))
-    Table_New3_V2 <- merge(x=Table_New3_V2, y=TAT_Targets[1:3])
-    columns_order_V2 <- c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH", "MSS","MSQ","BIMC","PACC","KH","R","SL", "NYEE")
-    rows_order_V2 <- factor(rownames(Table_New3_V2),levels = c(2,1,4,3))
-    Table_New3_V2 <- Table_New3_V2[order(rows_order_V2), columns_order_V2]
-    Table_New3_V2$Received.to.signed.out.target..Days.<- paste("<= ", Table_New3_V2$Received.to.signed.out.target..Days., "days")
-    row.names(Table_New3_V2) <- NULL
+
+    Table_New4_V2 <- melt(Table_New3_V2, id =c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target"))
+    
+    
+    Table_New4_V2 <- Table_New4_V2 %>%
+      mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), cell_spec(value, "html", color = "black")))
+    
+    Table_New4_V2 <- dcast(Table_New4_V2,spec_group + Patient.Setting + No_Cases_Signed + Received_to_Signed_out_within_target ~ variable )
+    
+    Table_New4_V2 <- merge(x=Table_New4_V2, y=TAT_Targets[1:3])
+    rows_order_V2 <- factor(rownames(Table_New4_V2),levels = c(2,1,4,3))
+    Table_New4_V2 <- Table_New4_V2[order(rows_order_V2), c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","Received_to_Signed_out_within_target","MSH","MSQ","BIMC","PACC","KH","R","SL", "NYEE")]
+    Table_New4_V2$Received.to.signed.out.target..Days.<- paste("<= ", Table_New4_V2$Received.to.signed.out.target..Days., "days")
+    row.names(Table_New4_V2) <- NULL
+    Table_New4_V2$No_Cases_Signed[is.na(Table_New4_V2$No_Cases_Signed)] <- 0
   }
-  return(Table_New3_V2)
+  return(Table_New4_V2)
 }
 
-Cytology_Table_Weekday_New3 <- Conditional_Formatting(Cytology_Table_Weekday_New2)
-Cytology_Table_Not_Weekday_New3 <- Conditional_Formatting(Cytology_Table_Not_Weekday_New2)
-Cytology_Table_Weekday_New3_V2 <- Conditional_Formatting_V2(Cytology_Table_Weekday_New2_V2)
-Cytology_Table_Not_Weekday_New3_V2 <- Conditional_Formatting_V2(Cytology_Table_Not_Weekday_New2_V2)
-Surgical_Pathology_Table_Weekday_New3 <- Conditional_Formatting(Surgical_Pathology_Table_Weekday_New2)
-Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting(Surgical_Pathology_Table_Not_Weekday_New2)
+Cytology_Table_Weekday_New3_V2 <- Conditional_Formatting_Cyto_V2(Cytology_Table_Weekday_New2_V2)
+Cytology_Table_Not_Weekday_New3_V2 <- Conditional_Formatting_Cyto_V2(Cytology_Table_Not_Weekday_New2_V2)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+Cytology_Table_Weekday_New3_V3 <- Cytology_Table_Weekday_New3_V2[-c(1,2),]
+
+Conditional_Formatting_Patho <- function(Table_New2){
+  if (is.null(Table_New2)){
+    Table_New3 <- NULL
+    Table_New4 <- NULL
+    Table_New5 <- NULL
+  } else {
+    
+    Table_New2[,4:17] <- lapply(Table_New2[,4:17], as.numeric)
+    Table_New2[,4:10] <- lapply(Table_New2[,4:10],percent, d=0)
+    
+    #steps for conditional formatting:
+    
+    Table_New3 <- melt(Table_New2, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y"))
+    
+    
+    Table_New3 <- Table_New3 %>%
+      mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), 
+                            ifelse(value > 0.9, cell_spec(value, "html", color  = "green"),
+                                   ifelse(value < 0.8, cell_spec(value, "html", color = "red"), cell_spec(value, "html", color = "orange")))))
+    
+    
+    Table_New3 <- dcast(Table_New3,spec_group + Patient.Setting + No_Cases_Signed + BIMC.y + MSH.y + MSQ.y + PACC.y + R.y + SL.y + KH.y ~ variable )
+    
+    Table_New4 <- melt(Table_New3, id =c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x"))
+    
+    
+    Table_New4 <- Table_New4 %>%
+      mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), cell_spec(value, "html", color = "black")))
+    
+    Table_New4 <- dcast(Table_New4,spec_group + Patient.Setting + No_Cases_Signed + BIMC.x + MSH.x + MSQ.x + PACC.x + R.x + SL.x + KH.x ~ variable )
+    
+    Table_New5 <- merge(x=Table_New4, y=TAT_Targets[1:3])
+    rows_order <- factor(rownames(Table_New5),levels = c(2,1,4,3))
+    Table_New5 <- Table_New5[order(rows_order), c("spec_group","Received.to.signed.out.target..Days.","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x","MSH.y","MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y")]
+    Table_New5$Received.to.signed.out.target..Days.<- paste("<= ", Table_New5$Received.to.signed.out.target..Days., "days")
+    row.names(Table_New5) <- NULL
+    Table_New5$No_Cases_Signed[is.na(Table_New5$No_Cases_Signed)] <- 0
+  }
+  return(Table_New5)
+}
+
+Surgical_Pathology_Table_Weekday_New3 <- Conditional_Formatting_Patho(Surgical_Pathology_Table_Weekday_New2)
+#Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting_Patho(Surgical_Pathology_Table_Not_Weekday_New2)
+
+Surgical_Pathology_Table_Weekday_New3$spec_group[Surgical_Pathology_Table_Weekday_New3$spec_group == "GI"] <- "GI Biopsies" 
+Surgical_Pathology_Table_Weekday_New3$spec_group[Surgical_Pathology_Table_Weekday_New3$spec_group == "Breast"] <- "All Breast Specimens"
 
 ```
 
 ```{r Custom function for Anatomic Pathology kable formatting, echo=FALSE, warning = FALSE, message = FALSE}
-Table_Formatting <- function (Table_New3){
+pathology_standardized_column_names <-  c("Case Type","Target","Setting","No. Cases Signed Out","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL")
+
+#cytology_standardized_column_names <-  c("Case Type","Target","Setting","No. Cases Signed Out","MSH", "MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")
+
+Table_Formatting <- function (Table_New3,column_names){
   if (is.null(Table_New3)){
     Table_New3 <- NULL
   } else {
     Table_New3%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
+    kable(escape = F, align = "c", col.names = column_names) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-    add_header_above(c(" "= 4, "Receive to Result within Target (Business Days)"= 9, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
-    column_spec(2:13, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-    column_spec(14:22, background = "#221F72", color = "white", include_thead = TRUE)%>%
-    column_spec(2:22, background = "inherit", color = "inherit")%>%
+    add_header_above(c(" "= 1, "Receive to Result within Target (Business Days)"= 10, "Average Collection to Result TAT (Calendar Days)"=7), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
+    column_spec(2:11, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
+    column_spec(12:18, background = "#221F72", color = "white", include_thead = TRUE)%>%
+    column_spec(2:18, background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = c(1,2))
   }
@@ -1226,30 +1387,35 @@ Table_Formatting_V2 <- function (Table_New3_V2){
   } else {
     Table_New3_V2%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","Centralized Lab","MSH", "MSSM","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
+    kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","Centralized Lab","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-    add_header_above(c(" "= 4, "Receive to Result within Target (Business Days)"= 1, "Average Collection to Result TAT (Calendar Days)"=9), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
+    add_header_above(c(" "= 1, "Receive to Result within Target (Business Days)"= 4, "Average Collection to Result TAT (Calendar Days)"=8), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
     column_spec(2:5, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-    column_spec(6:14, background = "#221F72", color = "white", include_thead = TRUE)%>%
-    column_spec(2:14, background = "inherit", color = "inherit")%>%
+    column_spec(6:13, background = "#221F72", color = "white", include_thead = TRUE)%>%
+    column_spec(2:13, background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = c(1,2))
   }
 }
 
+pathology_volume_column_names <-  c("Case Type","Setting","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL")
+
+cytology_volume_column_names <-  c("Case Type","Setting","MSH", "MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")
+
 #Volume table formatting
-Table_Formatting_Volume <- function (Volume_Table){
+Table_Formatting_Volume <- function (Volume_Table, column_names){
   if (is.null(Volume_Table)){
     Volume_Table <- NULL
   } else {
     Volume_Table%>%
     select(everything()) %>%
-    kable(escape = F, align = "c", col.names = c("Case Type","Setting","MSH", "MSSM", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL", "NYEE")) %>%
+    kable(escape = F, align = "c", col.names = column_names) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-    column_spec(3:11, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-    column_spec(3:11, background = "inherit", color = "inherit")%>%
+    column_spec(3:length(column_names), background = "#00B9F2",color ="white", include_thead = TRUE)%>%
+    column_spec(3:length(column_names), background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = 1)
+    #add_header_above(c(" "= 2, "Cases Signed Out by Home Hospital"= 8), background = c("white", "#00B9F2"), color= "white", font_size = 13)
   }
 }
 
@@ -1371,37 +1537,264 @@ add_on_table %>%
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
 ```{r Surgical Pathology Efficiency Indicator Weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting(Surgical_Pathology_Table_Weekday_New3)
+
+Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_column_names)
 ```
 <h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>
 
 
 ### Cytology
+<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
 #### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
 ```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting(Cytology_Table_Weekday_New3)
-Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
+#Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
+#added this line to delete the cyto gyn from the table until we get correct data
+rownames(Cytology_Table_Weekday_New3_V3) <- NULL
+Table_Formatting_V2(Cytology_Table_Weekday_New3_V3)
 ```
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
 
 ## {-} `r #End tabset`
 
-`r #Create new tabset placeholder for Ops & Quality indicators`
-## **Operational and Quality Indicators** _(Placeholder)_ {.tabset}
-### Clinical & Anatomic Pathology Operational Indicators
-#### _Clinical & Anatomic Pathology Ops Indicator Table Placeholder_
-### Blood Bank Operational Indicators
-#### _Blood Bank Ops Indicator Table Placeholder_
-### Quality Indicators
-#### _Good Catch Table Placeholder_
-### Never Events
-#### _Never Events Table Placeholder_
+```{r Lab KPI Form for Qualitative Indicators, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
+#read the excel sheet that is generated from office form responses
+KPI_Form <- data.frame(read_excel(choose.files(caption = "Select the KPI form generated today"), 1), stringsAsFactors = FALSE)
 
+#Determine the dates within the KPI excel sheet and report only the latest date
+KPI_Form$Completion_Date <- as.Date(as.POSIXct(KPI_Form$Completion.time,tz="",format='%m/%d/%y %I:%M %p'))
+KPI_Form$Completion_Hour <- format(KPI_Form$Completion.time, format = "%H:%M:%S")
+
+#List_of_Dates <-unique(KPI_Form$Completion_Date)
+#Ordered_Dates <- List_of_Dates[rev(order(List_of_Dates))]
+#pick only the newest responses
+#KPI_Form_Today <- KPI_Form[which(KPI_Form$Completion_Date == Ordered_Dates[1]),]
+
+KPI_Form_Today  <- KPI_Form[which(KPI_Form$Completion_Date == as.Date(Today) | (KPI_Form$Completion_Date == as.Date(Yesterday) & KPI_Form$Completion_Hour >= "17:00:00")),]
+
+#split the data into 3 datasets
+
+# the first dataset representes the following: CP/AP/CPA/4LABS
+
+Clinical_Labs_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)"),c(6:14,16)]
+
+# the second dataset represents the LIS indicators
+LIS_Ops_Ind <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility == "Laboratory Information System (LIS)"),c(6,19:21)]
+
+# the third and last dataset is the never events and good catches dataset
+Never_Events <- KPI_Form_Today[which(KPI_Form_Today$Select.your.branch.facility !="Laboratory Information System (LIS)"), c(6,15,17:18)]
+
+####### Start creating and formatting the tables
+
+#first melt the tables to get the values needed in one column:
+
+#1. Clinical labs table
+Clinical_Labs_Melt <- melt(Clinical_Labs_Ops_Ind, id =c( "Select.your.branch.facility", "IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident"))
+
+#2. LIS table
+LIS_Melt <- melt(LIS_Ops_Ind, id =c("Select.your.branch.facility", "LIS...Unplanned.Service.Changes", "LIS.Preplanned.Downtime...If.Applicable."))
+##### create a function to rename the status of the measures to a standard one ( Sfae, Under Stress, and Not Safe)
+
+Renaming <- function(Melted_Dataset){
+  Melted_Dataset[Melted_Dataset == "Green (No issues)"] <- "Safe"
+
+  Melted_Dataset[Melted_Dataset == "Yellow (Safe/Under Stress)"| Melted_Dataset == "Yellow (Delays)" |  Melted_Dataset == "Yellow (Delays in pickup/delivery)" | Melted_Dataset == "Yellow (Shortage with no/minimal significant impact)" | Melted_Dataset == "Yellow (Minor issues/Coordinating with Reference Labs)"] <- "Under Stress"
+
+  Melted_Dataset[Melted_Dataset == "Yellow (Safe/Under Stress)"| Melted_Dataset == "Yellow (Delays)" |  Melted_Dataset == "Yellow (Delays in pickup/delivery)" | Melted_Dataset == "Yellow (Shortage with no/minimal significant impact)" | Melted_Dataset == "Yellow (Minor issues/Coordinating with Reference Labs)"] <- "Under Stress"
+
+  Melted_Dataset[Melted_Dataset== "Red (Severe shortage of consumables)" | Melted_Dataset == "Red (Missed pickups)" | Melted_Dataset == "Red (Not Safe/Risk)" | Melted_Dataset == "Red (Severe shortage that halts activity)"| Melted_Dataset =="Red (Major issues/Requires Immediate Attention)"] <- "Not Safe"
+
+return(Melted_Dataset)
+}
+
+Clinical_Labs_Melt_New <- Renaming(Clinical_Labs_Melt)
+LIS_Melt_New <- Renaming(LIS_Melt)
+
+### create a function to format the data table into the correct colors
+
+Conditional_Formatting_Kpi_Form <- function(Melted_Data_New){
+  Melted_Data_New <- Melted_Data_New %>%
+      mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), 
+                            ifelse((value == "Safe"|value == "None"), cell_spec(value, "html", color  = "green"),
+                                   ifelse((value == "Not Safe" |value == "Present") , cell_spec(value, "html", color = "red"), cell_spec(value, "html", color = "orange")))))
+
+return(Melted_Data_New)  
+  }
+
+Formatted_Clinical_Labs_Melt_New <- Conditional_Formatting_Kpi_Form(Clinical_Labs_Melt_New)
+Formatted_LIS_New <- Conditional_Formatting_Kpi_Form(LIS_Melt_New)
+
+###### --------------- Now decast the melted clinical table --------------- ######
+
+Formatted_Clinical_Labs_Melt_New2 <- dcast(Formatted_Clinical_Labs_Melt_New,  Select.your.branch.facility +IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident ~ variable)
+
+#Change the order of the columns in the table
+
+Columns_Order_Form_Clinical <- c("Select.your.branch.facility", "LabCorp...Consumables", "Vendor.Services..LabLogistics..HealthEx..Reference.Labs..Other.Vendors.", "Environment", "Equipment.Issues..Lab.Equipment..Pneumatic.Tube.System..Others.", "IT.Issues", "Service.Changes", "Acute.Volume.Increase", "Staffing.Issues","IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident")
+
+Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[,Columns_Order_Form_Clinical]
+
+#Change the order of the rows in the table
+
+Rows_Order_Form_Clinical <- factor(rownames(Formatted_Clinical_Labs_Melt_New2),levels = c(11, 4, 3, 9, 10, 1 , 2, 6, 8, 5, 7))
+Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[Rows_Order_Form_Clinical,]
+rownames(Formatted_Clinical_Labs_Melt_New2) <- NULL
+
+#Change the names in the Facility columns to be standardized
+
+rownames(Formatted_Clinical_Labs_Melt_New2) <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "NYEE", "MSSN", "Anatomic Pathology (Centralized)", "Central Processiong & Accessioning (CPA)", "Client Services - 4LABS")
+
+Formatted_Clinical_Labs_Melt_New2$Select.your.branch.facility <- rownames(Formatted_Clinical_Labs_Melt_New2)
+rownames(Formatted_Clinical_Labs_Melt_New2) <- NULL
+
+Formatted_Clinical_Labs_Melt_New3 <- Formatted_Clinical_Labs_Melt_New2[,c(1:9)]
+
+Comments_Clinical_Labs <- Formatted_Clinical_Labs_Melt_New2[,c(1,10)]
+Comments_Clinical_Labs[is.na(Comments_Clinical_Labs)] <- "No Issues Reported (Safe)"
+
+###### --------------- now decast the LIS  table --------------- ######
+Formatted_LIS_New2 <- dcast(Formatted_LIS_New, Select.your.branch.facility + LIS...Unplanned.Service.Changes + LIS.Preplanned.Downtime...If.Applicable. ~ variable)
+Columns_Order_Form_LIS <- c("Select.your.branch.facility","LIS...Staffing.Issues", "LIS...Unplanned.Service.Changes", "LIS.Preplanned.Downtime...If.Applicable.")
+Formatted_LIS_New2 <- Formatted_LIS_New2[,Columns_Order_Form_LIS]
+rownames(Formatted_LIS_New2) <- NULL
+Formatted_LIS_New2[is.na(Formatted_LIS_New2)] <- "None"
+
+###### --------------- Formatting Never Events Table --------------- ######
+
+# added 4 extra columns each one for different never event
+Never_Events["Specimen(s) Lost"] <- NA
+Never_Events["QNS - specimen that cannot be recollected"] <- NA
+Never_Events["Treatment based on mislabeled/misidentified specimen"] <- NA
+Never_Events["Treatment based on false positive/false negative results"] <- NA
+
+#because we have multiple never events in one cell i created a list with these by:
+Splitting_NE_Text <- sapply(Never_Events$NEVER.EVENTS, strsplit,'[;]')
+
+#created a nested for loop with nested if to determine which of these never events are listed
+for (i in 1:nrow(Never_Events)){
+  for (j in 1:length(Splitting_NE_Text[[i]])){
+    if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[5]){
+      Never_Events$`Specimen(s) Lost`[i] = 1
+    } else if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[6]){
+      Never_Events$`QNS - specimen that cannot be recollected`[i] = 1
+      } else if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[7]){
+        Never_Events$`Treatment based on mislabeled/misidentified specimen`[i] = 1
+        } else if (Splitting_NE_Text[[i]][j] == colnames(Never_Events)[8]){
+          Never_Events$`Treatment based on false positive/false negative results`[i] = 1
+        }
+  }
+}
+
+Never_Events$NEVER.EVENTS <- NULL
+
+Never_Events_Melt <- melt(Never_Events, id =c("Select.your.branch.facility", "NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.","X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable."))
+
+Never_Events_Melt$value[is.na(Never_Events_Melt$value)] <- "None"
+Never_Events_Melt$value[Never_Events_Melt$value == 1] <- "Present"
+
+Formatted_Never_Event_Melt <- Conditional_Formatting_Kpi_Form(Never_Events_Melt)
+
+Formatted_Never_Event <- dcast(Formatted_Never_Event_Melt,Select.your.branch.facility+NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.+ X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable. ~ variable)
+
+Never_Events_Column_Order_1 <- c("Select.your.branch.facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results", "NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.", "X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable.")
+
+Formatted_Never_Event <- Formatted_Never_Event[,Never_Events_Column_Order_1]
+
+#Change the order of the rows in the table
+
+Rows_Order_Never_Events <- factor(rownames(Formatted_Never_Event),levels = c(11, 4, 3, 9, 10, 1 , 2, 6, 8, 5, 7))
+Formatted_Never_Event <- Formatted_Never_Event[Rows_Order_Never_Events,]
+rownames(Formatted_Never_Event) <- NULL
+
+#Change the names in the Facility columns to be standardized
+
+rownames(Formatted_Never_Event) <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSSL", "NYEE", "MSSN", "Anatomic Pathology (Centralized)", "Central Processiong & Accessioning (CPA)", "Client Services - 4LABS")
+
+Formatted_Never_Event$Select.your.branch.facility <- rownames(Formatted_Never_Event)
+rownames(Formatted_Never_Event) <- NULL
+
+#Split the table into three
+#table one is the comments only while table two is the details
+
+Good_Catch <- Formatted_Never_Event[,c(1,7)]
+Good_Catch[is.na(Good_Catch)] <- "No Issues Reported"
+
+#Good_Catch_New <- Good_Catch[which(!(is.na(Good_Catch$X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable.))),]
+
+Never_Events_Comments <- Formatted_Never_Event[,c(1,6)]
+Never_Events_Comments[is.na(Never_Events_Comments)] <- "No Issues Reported"
+
+Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
+
+```
+
+## **Operational and Quality Indicators** {.tabset}
+### Operational Indicators
+<h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
+#### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r Today_Date_KPI`)*
+
+```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
+
+Formatted_Clinical_Labs_Melt_New3%>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+Comments_Clinical_Labs %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility","Comments if At Risk or Not Safe")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = TRUE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+```
+
+
+### Laboratory Information System
+<h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
+#### *Operational Indicators for LIS (Submitted on `r Today_Date_KPI`)*
+
+```{r Qualitative Indicators for LIS, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
+Formatted_LIS_New2%>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("","Staffing","Service Change", "Preplanned Downtime")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+```
+
+
+### Quality Indicators
+<h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
+#### Never Events 
+##### *Reported Never Events for Each Division/Facility (Submitted on `r Today_Date_KPI`)*
+```{r Lab KPI Form for Never Events, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
+Never_Events_Only %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+Never_Events_Comments %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility", "Comments if There is a Never Event")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+```
+
+#### Good Catches
+##### *Reported Good Catches for Each Division/Facility (Submitted on `r Today_Date_KPI`)*
+```{r Lab KPI Form for Good Catches, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
+Good_Catch %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c", col.names = c("Facility", "Good Catch Comment")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+```
 ## {-}
+    
 
 `r #Create new tabset`
 ## **Weekday 24-Hour Volume Lookback** {.tabset}
@@ -1436,6 +1829,7 @@ lab_volume_summarize <- function(x, LabDivision) {
 lab_vol_kable_format <- function(table_data) {
   kable(table_data, format = "html", escape = FALSE, align = "c", 
         col.names = c("Test & Priority", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
+
   kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
   column_spec(column = c(1, 8), border_right = "thin solid lightgray") %>%
   add_header_above(c(" " = 1, "Resulted Lab Volume" = (ncol(table_data)-1)), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
@@ -1482,45 +1876,41 @@ lab_vol_kable_format(hem_vol_wday_table)
 ```
 
 ### Surgical Pathology   
-#### *Surgical Pathology Accessioned Cases Volume (As of `r wday_result_date`)*
-```{r Surgical Pathology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2)
+#### *Surgical Pathology Signed Out Cases Volume (As of `r wday_result_date`)*
+```{r Surgical Pathology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, pathology_volume_column_names)
 ```
 
 ### Cytology   
+<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
-Backlog_Accessioned_Table_New2 %>% 
-  kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume")) %>%
-  kable_styling(c("hover","condensed","responsive"), full_width = FALSE, position = "left", row_label_position = "c", font_size = 11) %>%
-  column_spec(2, background = "#00B9F2",include_thead = TRUE)%>%
-  row_spec(1:2, background = "white")%>%
-  column_spec(3, background = "#221F72", include_thead = TRUE)%>%
-  row_spec(1:2, background = "white")%>%
-  row_spec(0, color = "white") %>%
-  column_spec(1, color = "black", include_thead = TRUE)
+#Backlog_Accessioned_Table_New2
+
+#added this line to delete the cyto gyn from the table until we get correct data
+rownames(Backlog_Accessioned_Table_New3) <- NULL
+Backlog_Accessioned_Table_New3 %>% 
+  kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume", "25th Percentile", "50th Percentile", "Maximum")) %>%
+  kable_styling(bootstrap_options = "hover", full_width = TRUE, position = "center", row_label_position = "c", font_size = 11) %>%
+  column_spec(2, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
+  column_spec(3:6, background = "#221F72",color ="white", include_thead = TRUE)%>%
+  column_spec(2:6, background = "inherit", color = "inherit")%>%
+  row_spec(row = 0, font_size = 13)%>%
+  add_header_above(c(" "= 2, "Elapsed Turn Around Time for Backlogged Cases From the Received Time"= 4), background = c("white", "#221F72"), color= "white", font_size = 13)%>%
+  collapse_rows(columns = 1)
 ```
 
-#### *Cytology Accessioned Cases Volume (As of `r wday_result_date`)*
-```{r Cytology Accessioned Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2)
+#### *Cytology Signed Out Cases Volume (As of `r wday_result_date`)*
+```{r Cytology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+#Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2, cytology_volume_column_names)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+rownames(Cytology_Stratified_Vol_Weekday_New3) <- NULL
+Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New3, cytology_volume_column_names)
+
 ```
 
 `r #End tabset`
-## {-}
-
-`r #Create new tabset placeholder for KPI trends`
-## **Month to Date KPI Trends** _(Placeholder)_ {.tabset}
-### Chemistry
-#### _Chemistry KPI Month to Date Trend Placeholder_
-### Hematology
-#### _Hematology KPI Month to Date Trend Placeholder_
-### Microbiology RRL
-#### _Microbiology RRL KPI Month to Date Trend Placeholder_
-### Surgical Pathology
-#### _Surgical Pathology KPI Month to Date Trend Placeholder_
-### Cytology
-#### _Cytology KPI Month to Date Trend Placeholder_
 ## {-}
 
 `r if (include_not_wday != TRUE) {"<!--"}`
@@ -1635,6 +2025,7 @@ chem_hem_micro_kable(micro_tat_vol_table_not_wday)
 
 ### Missing Collections & Add Ons
 #### *Missing Collection Times and Add On Order Volume (Labs Resulted on `r wkend_holiday_result_date`)*
+
 <h5> Missing Collection Status Definitions: <span style = "color:red">Red:</span> >15%, 
 <span style = "color:orange">Yellow:</span> <=15% & >5%, 
 <span style = "color:green">Green:</span> <=5%</h5>
@@ -1688,35 +2079,7 @@ add_on_table_not_wday %>%
 # asis_output('<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
 # ')
 ```
-<h6>*Missing collection time analysis includes analytes represented in Chemistry, Hematology, and Microbiology RRL dashboard TAT analysis from ED, ICU, IP Non-ICU, and ambulatory settings.*</h6>
-
-### Surgical Pathology
-#### *Surgical Pathology KPI (Specimens Resulted on `r wkend_holiday_result_date`)*
-<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
-<span style = "color:orange">Yellow:</span> >=80% & <90%, 
-<span style = "color:green">Green:</span> >=90%</h5>
-```{r Surgical Pathology efficiency indicators for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-# asis_output('<h3> Surgical Pathology  </h3>')
-# asis_output(paste('<h4> *Surgical Pathology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
-# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
-Table_Formatting(Surgical_Pathology_Table_Not_Weekday_New3)
-# asis_output('<h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>')
-```
-<h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>
-
-### Cytology
-#### *Cytology KPI (Specimens Resulted on `r wkend_holiday_result_date`)*
-<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
-<span style = "color:orange">Yellow:</span> >=80% & <90%, 
-<span style = "color:green">Green:</span> >=90%</h5>
-```{r Cytology efficiency indicators for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-# asis_output('<h3> Cytology</h3>')
-# asis_output(paste('<h4> *Cytology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
-# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <90%, <span style = "color:green">Green:</span> >=90%</h5>')
-Table_Formatting(Cytology_Table_Not_Weekday_New3)
-# asis_output('<h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>')
-```
-<h6>*TAT analysis excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
+<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
 
 `r #End tabset`
 ## {-}
@@ -1760,18 +2123,10 @@ rownames(hem_vol_not_wday_table) <- 1:nrow(hem_vol_not_wday_table)
 lab_vol_kable_format(hem_vol_not_wday_table)
 ```
 
-### Surgical Pathology   
-#### *Surgical Pathology Accessioned Cases Volume (As of `r wkend_holiday_result_date`)*
-```{r Surgical Pathology Weekend/Holiday: volume lookback, echo=FALSE, warning=FALSE, message=FALSE}
-Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Not_Weekday_New2)
-```
-
 `r #End tabset`
 ## {-}
 
 `r if (include_not_wday != TRUE) {"-->"}`
 
 <h6> *End of report.* </h6>
-
-
 
