@@ -147,6 +147,7 @@ ggplot() +
   # Specify axis properties
   scale_x_date(name = "Date", labels = date_format("%m/%d/%Y"), limits = c(first_day_in_reporting_period - 1,last_day_in_reporting_period + 1), date_breaks = "3 days", date_minor_breaks = "1 day", expand = c(0, 0, 0, 0))+
   scale_y_continuous(name = "Percentage of Labs",limits = c(0,1), labels = percent, sec.axis = sec_axis(~.*max(data_vol$No_cases_signed_out), name = "Volume of Labs"))
+
 }
 
 
@@ -154,6 +155,78 @@ ggplot() +
 TAT_volume_AP_plot(historical_30_day_period_sum, historical_30_day_period_sum_vol, "Breast", "MSH", "Lab_metric_within_target", 0.8, 0.9)
 
 ```
+
+
+```{r Anatomic Pathology: Avg TAT for patient metric, warning = FALSE, message = FALSE, echo = FALSE}
+
+#we need to create a percent within target graph for cyto and patho
+#the graph will have the split between IP and AMB
+
+TAT_volume_AP_plot <- function(historical_30_day_period_sum, test_name, site_name, metric) {
+  
+  data_tat <- historical_30_day_period_sum[historical_30_day_period_sum$Spec_group == test_name & historical_30_day_period_sum$Facility == site_name,]
+ 
+  # Create printable metric name based on selected metric
+  metric_name <- ifelse(metric == "Lab_metric_within_target", "Receive to Result", ifelse(metric == "Patient_metric_avg", "Collect to Result", "Error"))
+  
+ggplot() +
+
+  # Plot Average lab metric TAT
+  geom_point(data = data_tat, aes_string(x = "Signed_out_date_only", y = metric, shape = "Patient_setting", color = "Patient_setting"), size = 3)+
+  geom_line(data = data_tat, aes_string(x = "Signed_out_date_only", y = metric, shape = "Patient_setting", color = "Patient_setting"), linetype = "dashed")+
+  
+  # Specify graph labels and themes
+  labs(title = paste0(site_name, " ", test_name, " ", metric_name, ":\n", "Average TAT for Laboratory Metric (Days)"), 
+       x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting", linetype = "Resulted Volume", size = "Resulted Volume") +
+  
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
+        legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
+        axis.text.x = element_text(angle = 30, hjust = 1)) +
+ 
+  # Specify fills, shapes, and lines mappings and legends
+  scale_color_manual(name = "Setting", values = mshs_colors) +
+  
+  # Reorder legends
+  guides(color = guide_legend(order = 1, nrow = length(unique(data_tat$Patient_setting)), title.vjust = 1), shape = guide_legend(order = 1, nrow = length(unique(data_tat$Patient_setting)), title.vjust = 1), size = guide_legend(order = 2, title.vjust = 1), linetype = guide_legend(order = 2, title.vjust = 1)) +
+  
+  # Specify axis properties
+  scale_x_date(name = "Date", labels = date_format("%m/%d/%Y"), limits = c(first_day_in_reporting_period - 1,last_day_in_reporting_period + 1), date_breaks = "3 days", date_minor_breaks = "1 day", expand = c(0, 0, 0, 0))+
+  scale_y_continuous(name = "Average TAT (Days)")
+
+}
+
+
+
+TAT_volume_AP_plot(historical_30_day_period_sum,"Breast", "MSH", "Patient_metric_avg")
+
+```
+
+
+
+
+```{r Custom function for graphing resulted lab volume, echo = FALSE, warning = FALSE, message = FALSE}
+# Function for plotting total resulted lab volume
+
+resulted_volume_graph <- function(data, test_name, site_name) {
+  ggplot() +
+    geom_point(data = data[data$Spec_group == test_name & data$Facility == site_name, ], aes(x = Signed_out_date_only, y = No_cases_signed_out, size = "Spec_group"), shape = 16, color = mshs_colors[1]) +
+    geom_line(data = data[data$Spec_group == test_name & data$Facility == site_name, ], aes(x = Signed_out_date_only, y = No_cases_signed_out, linetype = "Spec_group"), color = mshs_colors[1]) +
+    labs(title = paste0(site_name, " ", test_name, " Resulted Lab Volume"), x = "Date",  y = "Volume of Labs", color = "Setting", shape = "Setting") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
+    scale_x_date(name = "Date", labels = date_format("%m/%d/%Y"), limits = c(first_day_in_reporting_period - 1,last_day_in_reporting_period + 1), date_breaks = "3 days", date_minor_breaks = "1 day", expand = c(0, 0, 0, 0))+
+    scale_size_manual(name = "Resulted Volume", values = 2, labels = paste("All Labs, \n All Settings")) + 
+    scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste("All Labs, \n All Settings"))
+}
+
+resulted_volume_graph(historical_30_day_period_sum_vol, "Breast", "MSH")
+
+```
+
+
+
+
 
 
 
