@@ -1,0 +1,159 @@
+---
+title: "Laboratory Efficiency Indicators: 30 Day Lookback"
+date: "7/13/2020"
+output: html_document
+---
+
+```{r Install and load packages, echo = FALSE, warning = FALSE, message = FALSE}
+#Install packages only the first time you run the code
+#install.packages("timeDate")
+#install.packages("lubridate")
+#install.packages("readxl")
+#install.packages("writexl")
+#install.packages("dplyr")
+#install.packages("reshape2")
+#install.packages("knitr")
+#install.packages("kableExtra")
+#install.packages("formattable")
+#install.packages("bizdays")
+#install.packages("rmarkdown")
+#install.packages("stringr")
+#install.packages("tinytex")
+#install.packages("scales")
+#install.packages("gridExtra")
+
+
+#-------------------------------Required packages-------------------------------#
+
+#Required packages: run these everytime you run the code
+library(timeDate)
+library(readxl)
+library(bizdays)
+library(dplyr)
+library(lubridate)
+library(reshape2)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(rmarkdown)
+library(stringr)
+library(writexl)
+library(ggplot2)
+library(gridExtra)
+library(scales)
+library(ggQC)
+```
+
+<h2><span style="color: red;">Draft - Not for Distribution</span></h2>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r Clear history and import relevant data, echo = FALSE, warning = FALSE, message = FALSE}
+rm(list = ls())
+
+user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\AP & Cytology Historical Repo"
+user_path <- paste0(user_wd, "\\*.*")
+
+AP_historical_repo <- read_excel(choose.files(default = user_path, caption = "Select Anatomic Pathology Historical Repository"), sheet=1,  col_names = TRUE)
+
+mshs_colors = c("#221F72", "#00AEFF", "#D80B8C", "#7F7F7F")
+```
+
+
+```{r Format Anatomic Pathology historical repository for plotting, warning = FALSE, message = FALSE, echo = FALSE}
+#exclude weekends
+AP_historical_repo_weekdays <- AP_historical_repo[which(AP_historical_repo$Signed_out_day_only != "Sunday" & AP_historical_repo$Signed_out_day_only != "Saturday"),]
+
+AP_historical_repo_weekdays$Signed_out_date_only <- as.Date(AP_historical_repo_weekdays$Signed_out_date_only)
+
+#determine the 30 business that will be reported
+unique_dates <- unique(AP_historical_repo_weekdays$Signed_out_date_only)
+
+ordered_dates <- unique_dates[rev(order(unique_dates))]
+
+reporting_30_day_period <- ordered_dates[1:30]
+first_day_in_reporting_period <- ordered_dates[30] 
+last_day_in_reporting_period <- ordered_dates[1]
+
+historical_30_day_period <- AP_historical_repo_weekdays[which(AP_historical_repo_weekdays$Signed_out_date_only>=first_day_in_reporting_period),]
+
+#summarized the data to plot it correctly
+historical_30_day_period_sum <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility,Patient_setting), Lab_metric_within_target = format(round(mean(as.numeric(Lab_metric_within_target), na.rm = TRUE), 2)), Patient_metric_avg = format(round(mean(as.numeric(Patient_metric_avg), na.rm = TRUE),0)),No_cases_signed_out = sum(No_cases_signed_out))
+
+historical_30_day_period_sum[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")] <- lapply(historical_30_day_period_sum[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")], as.numeric)
+
+#historical_30_day_period_sum$Lab_metric_within_target <- as.numeric(historical_30_day_period_sum$Lab_metric_within_target)
+
+#historical_30_day_period_sum$Patient_metric_avg <- as.numeric(historical_30_day_period_sum$Patient_metric_avg)
+
+#historical_30_day_period_sum$No_cases_signed_out <- as.numeric(historical_30_day_period_sum$No_cases_signed_out)
+
+historical_30_day_period_sum_vol <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility),No_cases_signed_out = sum(No_cases_signed_out))
+```
+
+
+```{r Anatomic Pathology: plot volume and % TAT within target, warning = FALSE, message = FALSE, echo = FALSE}
+
+#we need to create a percent within target graph for cyto and patho
+#the graph will have the split between IP and AMB
+
+TAT_volume_AP_plot <- function(historical_30_day_period_sum, historical_30_day_period_sum_vol, test_name, site_name, metric, min_at_risk, min_safe) {
+  
+  data_tat <- historical_30_day_period_sum[historical_30_day_period_sum$Spec_group == test_name & historical_30_day_period_sum$Facility == site_name,]
+  
+  data_vol <- historical_30_day_period_sum_vol[historical_30_day_period_sum_vol$Spec_group == test_name & historical_30_day_period_sum_vol$Facility == site_name,]
+ 
+  # Create printable metric name based on selected metric
+  metric_name <- ifelse(metric == "Lab_metric_within_target", "Receive to Result", ifelse(metric == "Patient_metric_avg", "Collect to Result", "Error"))
+  
+ggplot() +
+  # Plot safe, at risk, not safe thresholds
+  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = -Inf, ymax = min_at_risk, fill = "Not Safe", alpha = "Not Safe"))+
+  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = min_at_risk, ymax = min_safe, fill = "At Risk",  alpha = "At Risk"))+
+  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = min_safe, ymax = Inf, fill = "Safe", alpha = "Safe"))+  
+  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = min_safe, ymax = Inf, fill = "N/A", alpha = "N/A"), show.legend = FALSE)+ 
+
+  # Plot resulted volume on secondary axis
+  geom_point(data = data_vol, aes(x = Signed_out_date_only, y = No_cases_signed_out/max(No_cases_signed_out), size = "Spec_group"), shape = 18, color = "#959595")+
+  geom_line(data = data_vol, aes(x = Signed_out_date_only, y = No_cases_signed_out/max(No_cases_signed_out),linetype = "Spec_group"), color = "#959595")+
+  
+  # Plot percentage of labs within turnaround time target
+  geom_point(data = data_tat, aes_string(x = "Signed_out_date_only", y = metric, shape = "Patient_setting", color = "Patient_setting"), size = 3)+
+  geom_line(data = data_tat, aes_string(x = "Signed_out_date_only", y = metric, shape = "Patient_setting", color = "Patient_setting"), linetype = "dashed")+
+  
+  # Specify graph labels and themes
+  labs(title = paste0(site_name, " ", test_name, " ", metric_name, ":\n", "Percentage of Labs within Target TAT"), 
+       x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting", fill = "Status", alpha = "Status", linetype = "Resulted Volume", size = "Resulted Volume") +
+  
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
+        legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
+        axis.text.x = element_text(angle = 30, hjust = 1)) +
+ 
+  # Specify fills, shapes, and lines mappings and legends
+  scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green", "N/A" = "grey"), breaks=c("Not Safe","At Risk","Safe")) +
+  scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.25, "At Risk" = 0.25, "Safe" = 0.25, "N/A" = 0.5), breaks=c("Not Safe","At Risk","Safe")) +
+  
+  scale_color_manual(name = "Setting", values = mshs_colors) +
+  scale_size_manual(name = "Resulted Volume", values = 2, labels = paste("All Labs, \n All Settings")) + 
+  scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste("All Labs, \n All Settings"))+
+  
+  # Reorder legends
+  guides(color = guide_legend(order = 1, nrow = length(unique(data_tat$Patient_setting)), title.vjust = 1), shape = guide_legend(order = 1, nrow = length(unique(data_tat$Patient_setting)), title.vjust = 1), fill = guide_legend(order = 3, nrow = 3, title.vjust = 1), alpha = guide_legend(order = 3, nrow = 3, title.vjust = 1), size = guide_legend(order = 2, title.vjust = 1), linetype = guide_legend(order = 2, title.vjust = 1)) +
+  
+  # Specify axis properties
+  scale_x_date(name = "Date", labels = date_format("%m/%d/%Y"), limits = c(first_day_in_reporting_period - 1,last_day_in_reporting_period + 1), date_breaks = "3 days", date_minor_breaks = "1 day", expand = c(0, 0, 0, 0))+
+  scale_y_continuous(name = "Percentage of Labs",limits = c(0,1), labels = percent, sec.axis = sec_axis(~.*max(data_vol$No_cases_signed_out), name = "Volume of Labs"))
+}
+
+
+
+TAT_volume_AP_plot(historical_30_day_period_sum, historical_30_day_period_sum_vol, "Breast", "MSH", "Lab_metric_within_target", 0.8, 0.9)
+
+```
+
+
+
