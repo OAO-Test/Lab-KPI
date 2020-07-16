@@ -69,6 +69,11 @@ AP_historical_repo_weekdays <- AP_historical_repo[which(AP_historical_repo$Signe
 
 AP_historical_repo_weekdays$Signed_out_date_only <- as.Date(AP_historical_repo_weekdays$Signed_out_date_only)
 
+AP_historical_repo_weekdays$total_none_defects <- round(AP_historical_repo_weekdays$Lab_metric_within_target * AP_historical_repo_weekdays$No_cases_signed_out)
+
+AP_historical_repo_weekdays$total_defects <- AP_historical_repo_weekdays$No_cases_signed_out - AP_historical_repo_weekdays$total_none_defects 
+
+
 #determine the 30 business that will be reported
 unique_dates <- unique(AP_historical_repo_weekdays$Signed_out_date_only)
 
@@ -223,6 +228,51 @@ resulted_volume_graph <- function(data, test_name, site_name) {
 resulted_volume_graph(historical_30_day_period_sum_vol, "Breast", "MSH")
 
 ```
+
+
+```{r summarize data to calculate defects and defect rates for anatomic pathology, warning = FALSE, message = FALSE, echo = FALSE}
+
+historical_30_day_period_defects <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility), No_cases_signed_out = sum(No_cases_signed_out),total_none_defects = sum(total_none_defects), total_defects = sum(total_defects), defective_rate = total_defects/No_cases_signed_out)
+
+```
+
+```{r function for defective rate p-charts for anatomic pathology, echo = FALSE, warning = FALSE, message = FALSE}
+defective_rate_pchart <- function(historical_30_day_period_defects, test_name, site_name) {
+  
+  # Calculate center line
+  center_line <- mean(QC_Lines(data = historical_30_day_period_defects$defective_rate, n = historical_30_day_period_defects$No_cases_signed_out, method = "p")$pBar)
+  
+  # Create plot and standard settings
+  ggplot(data = historical_30_day_period_defects[historical_30_day_period_defects$Spec_group == test_name & historical_30_day_period_defects$Facility == site_name, ], aes(x = Signed_out_date_only, y = defective_rate, n = No_cases_signed_out)) +
+  # Create point and connecting lines for defect rate data
+  geom_point(color = mshs_colors[1], shape = 16, size = 3) +
+  geom_line(color = mshs_colors[1], linetype = "dashed") +
+  # Add centerline, upper, and lower control limit lines
+  stat_QC(method = "p", auto.label = T, color.qc_center = "black") +
+  geom_label(x = max(historical_30_day_period_defects$No_cases_signed_out)+1, y = center_line, vjust = 1.2, hjust = 1, label = paste("CL:", percent(center_line, accuracy = 0.1))) +
+  # Specify graph labels and themes
+  labs(title = paste(site_name, test_name, "All Labs:\n", "Control Chart of Non-Compliant Receive to Result TAT"), x = "Date",  y = "Percent Non-Compliant") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
+          legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
+          axis.text.x = element_text(angle = 30, hjust = 1)) +
+  # Specify axis properties
+  scale_x_date(limits = c(first_day_in_reporting_period -1, max(historical_30_day_period_defects$Signed_out_date_only)+1), breaks = seq(first_day_in_reporting_period, max(historical_30_day_period_defects$Signed_out_date_only), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+  scale_y_continuous(labels = percent_format(accuracy = 1))
+}
+
+defective_rate_pchart(historical_30_day_period_defects, "GI", "MSH")
+
+```
+
+
+
+
+
+
+
+
+
 
 
 
