@@ -64,16 +64,30 @@ mshs_colors = c("#221F72", "#00AEFF", "#D80B8C", "#7F7F7F")
 
 
 ```{r Format Anatomic Pathology historical repository for plotting, warning = FALSE, message = FALSE, echo = FALSE}
-#exclude weekends
-AP_historical_repo_weekdays <- AP_historical_repo[which(AP_historical_repo$Signed_out_day_only != "Sunday" & AP_historical_repo$Signed_out_day_only != "Saturday"),]
+#Exclude weekends
+AP_historical_repo_weekdays <- AP_historical_repo[which(AP_historical_repo$Signed_out_day_only != "Sunday" & AP_historical_repo$Signed_out_day_only != "Saturday" & AP_historical_repo$Patient_setting != "NA"),]
 
 AP_historical_repo_weekdays$Signed_out_date_only <- as.Date(AP_historical_repo_weekdays$Signed_out_date_only)
 
+#Calculate the total none defects
 AP_historical_repo_weekdays$total_none_defects <- round(AP_historical_repo_weekdays$Lab_metric_within_target * AP_historical_repo_weekdays$No_cases_signed_out)
 
+#Calculate the total defects
 AP_historical_repo_weekdays$total_defects <- AP_historical_repo_weekdays$No_cases_signed_out - AP_historical_repo_weekdays$total_none_defects 
 
+#Standardize Facility name 
+AP_historical_repo_weekdays$Facility_Old <- AP_historical_repo_weekdays$Facility
 
+AP_historical_repo_weekdays$Facility[AP_historical_repo_weekdays$Facility == "BIMC"] <- "MSBI"
+AP_historical_repo_weekdays$Facility[AP_historical_repo_weekdays$Facility == "R"] <- "MSW"
+AP_historical_repo_weekdays$Facility[AP_historical_repo_weekdays$Facility == "SL"] <- "MSSL"
+AP_historical_repo_weekdays$Facility[AP_historical_repo_weekdays$Facility == "KH"] <- "MSB"
+
+#Add an extra column to change the facilities for GYN and CYTO GYN for receive to result to Centralized Lab
+AP_historical_repo_weekdays$New_Facility_RTR_CYTO <- AP_historical_repo_weekdays$Facility
+
+AP_historical_repo_weekdays[(AP_historical_repo_weekdays$Spec_group == "CYTO GYN" | AP_historical_repo_weekdays$Spec_group == "CYTO NONGYN"),]$New_Facility_RTR_CYTO <- "Centralized Lab"
+  
 #determine the 30 business that will be reported
 unique_dates <- unique(AP_historical_repo_weekdays$Signed_out_date_only)
 
@@ -86,17 +100,16 @@ last_day_in_reporting_period <- ordered_dates[1]
 historical_30_day_period <- AP_historical_repo_weekdays[which(AP_historical_repo_weekdays$Signed_out_date_only>=first_day_in_reporting_period),]
 
 #summarized the data to plot it correctly
-historical_30_day_period_sum <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility,Patient_setting), Lab_metric_within_target = format(round(mean(as.numeric(Lab_metric_within_target), na.rm = TRUE), 2)), Patient_metric_avg = format(round(mean(as.numeric(Patient_metric_avg), na.rm = TRUE),0)),No_cases_signed_out = sum(No_cases_signed_out))
+historical_30_day_period_sum_RTR <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, New_Facility_RTR_CYTO,Patient_setting), Lab_metric_within_target = format(round(mean(as.numeric(Lab_metric_within_target), na.rm = TRUE), 2)), Patient_metric_avg = format(round(mean(as.numeric(Patient_metric_avg), na.rm = TRUE),0)),No_cases_signed_out = sum(No_cases_signed_out))
 
-historical_30_day_period_sum[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")] <- lapply(historical_30_day_period_sum[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")], as.numeric)
+historical_30_day_period_sum_RTR[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")] <- lapply(historical_30_day_period_sum_RTR[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")], as.numeric)
 
-#historical_30_day_period_sum$Lab_metric_within_target <- as.numeric(historical_30_day_period_sum$Lab_metric_within_target)
+historical_30_day_period_sum_CTR <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility, Patient_setting), Lab_metric_within_target = format(round(mean(as.numeric(Lab_metric_within_target), na.rm = TRUE), 2)), Patient_metric_avg = format(round(mean(as.numeric(Patient_metric_avg), na.rm = TRUE),0)),No_cases_signed_out = sum(No_cases_signed_out))
 
-#historical_30_day_period_sum$Patient_metric_avg <- as.numeric(historical_30_day_period_sum$Patient_metric_avg)
+historical_30_day_period_sum_CTR[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")] <- lapply(historical_30_day_period_sum_CTR[c("Lab_metric_within_target", "Patient_metric_avg", "No_cases_signed_out")], as.numeric)
 
-#historical_30_day_period_sum$No_cases_signed_out <- as.numeric(historical_30_day_period_sum$No_cases_signed_out)
+historical_30_day_period_sum_vol <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, New_Facility_RTR_CYTO),No_cases_signed_out = sum(No_cases_signed_out))
 
-historical_30_day_period_sum_vol <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility),No_cases_signed_out = sum(No_cases_signed_out))
 ```
 
 
@@ -105,21 +118,23 @@ historical_30_day_period_sum_vol <-summarise(group_by(historical_30_day_period, 
 #we need to create a percent within target graph for cyto and patho
 #the graph will have the split between IP and AMB
 
-TAT_volume_AP_plot <- function(historical_30_day_period_sum, historical_30_day_period_sum_vol, test_name, site_name, metric, min_at_risk, min_safe) {
+lab_TAT_volume_AP_plot <- function(historical_30_day_period_sum_RTR, historical_30_day_period_sum_vol, test_name, site_name, metric) {
   
-  data_tat <- historical_30_day_period_sum[historical_30_day_period_sum$Spec_group == test_name & historical_30_day_period_sum$Facility == site_name,]
+  data_tat <- historical_30_day_period_sum_RTR[historical_30_day_period_sum_RTR$Spec_group == test_name & historical_30_day_period_sum_RTR$New_Facility_RTR_CYTO == site_name,]
   
-  data_vol <- historical_30_day_period_sum_vol[historical_30_day_period_sum_vol$Spec_group == test_name & historical_30_day_period_sum_vol$Facility == site_name,]
+  data_vol <- historical_30_day_period_sum_vol[historical_30_day_period_sum_vol$Spec_group == test_name & historical_30_day_period_sum_vol$New_Facility_RTR_CYTO == site_name,]
  
   # Create printable metric name based on selected metric
   metric_name <- ifelse(metric == "Lab_metric_within_target", "Receive to Result", ifelse(metric == "Patient_metric_avg", "Collect to Result", "Error"))
+  # Create printable test name based on selected test
+  test_name <- ifelse(test_name == "Breast", "All Breast Specimen", ifelse(metric == "GI", "GI Biopsies", test_name))
   
 ggplot() +
   # Plot safe, at risk, not safe thresholds
-  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = -Inf, ymax = min_at_risk, fill = "Not Safe", alpha = "Not Safe"))+
-  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = min_at_risk, ymax = min_safe, fill = "At Risk",  alpha = "At Risk"))+
-  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = min_safe, ymax = Inf, fill = "Safe", alpha = "Safe"))+  
-  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = min_safe, ymax = Inf, fill = "N/A", alpha = "N/A"), show.legend = FALSE)+ 
+  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = -Inf, ymax = 0.8, fill = "Not Safe", alpha = "Not Safe"))+
+  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = 0.8, ymax = 0.9, fill = "At Risk",  alpha = "At Risk"))+
+  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = 0.9, ymax = Inf, fill = "Safe", alpha = "Safe"))+  
+  geom_rect(aes(xmin = first_day_in_reporting_period - 1, xmax = last_day_in_reporting_period + 1, ymin = 0.9, ymax = Inf, fill = "N/A", alpha = "N/A"), show.legend = FALSE)+ 
 
   # Plot resulted volume on secondary axis
   geom_point(data = data_vol, aes(x = Signed_out_date_only, y = No_cases_signed_out/max(No_cases_signed_out), size = "Spec_group"), shape = 18, color = "#959595")+
@@ -157,7 +172,7 @@ ggplot() +
 
 
 
-TAT_volume_AP_plot(historical_30_day_period_sum, historical_30_day_period_sum_vol, "Breast", "MSH", "Lab_metric_within_target", 0.8, 0.9)
+lab_TAT_volume_AP_plot(historical_30_day_period_sum, historical_30_day_period_sum_vol, "CYTO GYN", "Centralized Lab", "Lab_metric_within_target")
 
 ```
 
@@ -167,14 +182,16 @@ TAT_volume_AP_plot(historical_30_day_period_sum, historical_30_day_period_sum_vo
 #we need to create a percent within target graph for cyto and patho
 #the graph will have the split between IP and AMB
 
-TAT_volume_AP_plot <- function(historical_30_day_period_sum, test_name, site_name, metric) {
+patient_TAT_AP_plot <- function(historical_30_day_period_sum_CTR, test_name, site_name, metric) {
   
-  data_tat <- historical_30_day_period_sum[historical_30_day_period_sum$Spec_group == test_name & historical_30_day_period_sum$Facility == site_name,]
+  data_tat <- historical_30_day_period_sum_CTR[historical_30_day_period_sum_CTR$Spec_group == test_name & historical_30_day_period_sum_CTR$Facility == site_name,]
  
   # Create printable metric name based on selected metric
   metric_name <- ifelse(metric == "Lab_metric_within_target", "Receive to Result", ifelse(metric == "Patient_metric_avg", "Collect to Result", "Error"))
-  
-ggplot() +
+  # Create printable test name based on selected test
+  test_name <- ifelse(test_name == "Breast", "All Breast Specimen", ifelse(test_name == "GI", "GI Biopsies", test_name))
+
+  ggplot() +
 
   # Plot Average lab metric TAT
   geom_point(data = data_tat, aes_string(x = "Signed_out_date_only", y = metric, shape = "Patient_setting", color = "Patient_setting"), size = 3)+
@@ -203,7 +220,7 @@ ggplot() +
 
 
 
-TAT_volume_AP_plot(historical_30_day_period_sum,"Breast", "MSH", "Patient_metric_avg")
+patient_TAT_AP_plot(historical_30_day_period_sum,"CYTO GYN", "MSH", "Patient_metric_avg")
 
 ```
 
@@ -213,10 +230,16 @@ TAT_volume_AP_plot(historical_30_day_period_sum,"Breast", "MSH", "Patient_metric
 ```{r Custom function for graphing resulted lab volume, echo = FALSE, warning = FALSE, message = FALSE}
 # Function for plotting total resulted lab volume
 
-resulted_volume_graph <- function(data, test_name, site_name) {
+resulted_volume_graph <- function(historical_30_day_period_sum_vol, test_name, site_name) {
+  
+  data_vol <- historical_30_day_period_sum_vol[historical_30_day_period_sum_vol$Spec_group == test_name & historical_30_day_period_sum_vol$New_Facility_RTR_CYTO == site_name,]
+
+  # Create printable test name based on selected test
+  test_name <- ifelse(test_name == "Breast", "All Breast Specimen", ifelse(test_name == "GI", "GI Biopsies", test_name))
+
   ggplot() +
-    geom_point(data = data[data$Spec_group == test_name & data$Facility == site_name, ], aes(x = Signed_out_date_only, y = No_cases_signed_out, size = "Spec_group"), shape = 16, color = mshs_colors[1]) +
-    geom_line(data = data[data$Spec_group == test_name & data$Facility == site_name, ], aes(x = Signed_out_date_only, y = No_cases_signed_out, linetype = "Spec_group"), color = mshs_colors[1]) +
+    geom_point(data = data_vol, aes(x = Signed_out_date_only, y = No_cases_signed_out, size = "Spec_group"), shape = 16, color = mshs_colors[1]) +
+    geom_line(data = data_vol, aes(x = Signed_out_date_only, y = No_cases_signed_out, linetype = "Spec_group"), color = mshs_colors[1]) +
     labs(title = paste0(site_name, " ", test_name, " Resulted Lab Volume"), x = "Date",  y = "Volume of Labs", color = "Setting", shape = "Setting") +
     theme_bw() +
     theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
@@ -225,31 +248,65 @@ resulted_volume_graph <- function(data, test_name, site_name) {
     scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste("All Labs, \n All Settings"))
 }
 
-resulted_volume_graph(historical_30_day_period_sum_vol, "Breast", "MSH")
+resulted_volume_graph(historical_30_day_period_sum_vol, "CYTO NONGYN", "Centralized Lab")
+
+```
+
+```{r function to go through all the facilities for each test, warning = FALSE, message = FALSE, echo = FALSE}
+
+stratified_data_for_AP_charts <- function(historical_30_day_period_sum_RTR, historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, test_name){
+  
+  sites_RTR <- unique(historical_30_day_period_sum_RTR[historical_30_day_period_sum_RTR$Spec_group == test_name,]$New_Facility_RTR_CYTO)
+  
+  sites_CTR <- unique(historical_30_day_period_sum_CTR[historical_30_day_period_sum_CTR$Spec_group == test_name,]$Facility)
+
+  for (site_RTR in sites_RTR){
+    
+    print(lab_TAT_volume_AP_plot(historical_30_day_period_sum_RTR = historical_30_day_period_sum_RTR, historical_30_day_period_sum_vol = historical_30_day_period_sum_vol, test_name = test_name, site_name = site_RTR, metric = "Lab_metric_within_target"))
+  }
+  
+  for (site_CTR in sites_CTR){
+    print(patient_TAT_AP_plot(historical_30_day_period_sum_CTR = historical_30_day_period_sum_CTR, test_name = test_name, site_name = site_CTR, metric = "Patient_metric_avg"))
+  }
+  
+  for (site_RTR in sites_RTR){
+    print(resulted_volume_graph(historical_30_day_period_sum_vol = historical_30_day_period_sum_vol, test_name = test_name, site_name = site_RTR))
+  }
+}
+  
+stratified_data_for_AP_charts(historical_30_day_period_sum_RTR, historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, "CYTO GYN")
+
 
 ```
 
 
+
 ```{r summarize data to calculate defects and defect rates for anatomic pathology, warning = FALSE, message = FALSE, echo = FALSE}
 
-historical_30_day_period_defects <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility), No_cases_signed_out = sum(No_cases_signed_out),total_none_defects = sum(total_none_defects), total_defects = sum(total_defects), defective_rate = total_defects/No_cases_signed_out)
+historical_30_day_period_defects <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, New_Facility_RTR_CYTO), No_cases_signed_out = sum(No_cases_signed_out),total_none_defects = sum(total_none_defects), total_defects = sum(total_defects), defective_rate = total_defects/No_cases_signed_out)
 
 ```
 
 ```{r function for defective rate p-charts for anatomic pathology, echo = FALSE, warning = FALSE, message = FALSE}
 defective_rate_pchart <- function(historical_30_day_period_defects, test_name, site_name) {
   
-  # Calculate center line
-  center_line <- mean(QC_Lines(data = historical_30_day_period_defects$defective_rate, n = historical_30_day_period_defects$No_cases_signed_out, method = "p")$pBar)
+  data_defc <- historical_30_day_period_defects[historical_30_day_period_defects$Spec_group == test_name & historical_30_day_period_defects$New_Facility_RTR_CYTO == site_name,]
+  
+  # Create printable test name based on selected test
+  test_name <- ifelse(test_name == "Breast", "All Breast Specimen", ifelse(test_name == "GI", "GI Biopsies", test_name))
+   
+  # Find the center line for the p-chart using QC_lines 
+  center_line <- mean(QC_Lines(data = data_defc$defective_rate, n = data_defc$No_cases_signed_out, method = "p")$pBar)
   
   # Create plot and standard settings
-  ggplot(data = historical_30_day_period_defects[historical_30_day_period_defects$Spec_group == test_name & historical_30_day_period_defects$Facility == site_name, ], aes(x = Signed_out_date_only, y = defective_rate, n = No_cases_signed_out)) +
+  ggplot(data = data_defc, aes(x = Signed_out_date_only, y = defective_rate, n = No_cases_signed_out)) +
   # Create point and connecting lines for defect rate data
   geom_point(color = mshs_colors[1], shape = 16, size = 3) +
   geom_line(color = mshs_colors[1], linetype = "dashed") +
+  
   # Add centerline, upper, and lower control limit lines
-  stat_QC(method = "p", auto.label = T, color.qc_center = "black") +
-  geom_label(x = max(historical_30_day_period_defects$No_cases_signed_out)+1, y = center_line, vjust = 1.2, hjust = 1, label = paste("CL:", percent(center_line, accuracy = 0.1))) +
+  stat_QC(method = "p", auto.label = TRUE, color.qc_center = "black", limit.txt.label = c("LCL", "UCL")) +
+  geom_label(x = max(data_defc$Signed_out_date_only)+1, y = center_line, vjust = 1.2, hjust = 1, label = paste("CL:", percent(center_line, accuracy = 0.1))) +
   # Specify graph labels and themes
   labs(title = paste(site_name, test_name, "All Labs:\n", "Control Chart of Non-Compliant Receive to Result TAT"), x = "Date",  y = "Percent Non-Compliant") +
   theme_bw() +
@@ -257,15 +314,40 @@ defective_rate_pchart <- function(historical_30_day_period_defects, test_name, s
           legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
           axis.text.x = element_text(angle = 30, hjust = 1)) +
   # Specify axis properties
-  scale_x_date(limits = c(first_day_in_reporting_period -1, max(historical_30_day_period_defects$Signed_out_date_only)+1), breaks = seq(first_day_in_reporting_period, max(historical_30_day_period_defects$Signed_out_date_only), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+  scale_x_date(limits = c(first_day_in_reporting_period -1, max(data_defc$Signed_out_date_only)+1), breaks = seq(first_day_in_reporting_period, max(data_defc$Signed_out_date_only), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
   scale_y_continuous(labels = percent_format(accuracy = 1))
 }
 
-defective_rate_pchart(historical_30_day_period_defects, "GI", "MSH")
+defective_rate_pchart(historical_30_day_period_defects, "CYTO GYN", "Centralized Lab")
 
 ```
 
+```{r function to go through all the facilities for each test for the p-chart, warning = FALSE, message = FALSE, echo = FALSE}
 
+stratified_data_for_AP_p_charts <- function(historical_30_day_period_defects, test_name){
+  
+  sites <- unique(historical_30_day_period_defects[historical_30_day_period_defects$Spec_group == test_name,]$New_Facility_RTR_CYTO)
+    
+  for (site in sites){
+    
+    avg_resulted_volume_AP <- mean(historical_30_day_period_defects[(historical_30_day_period_defects$New_Facility_RTR_CYTO==site & historical_30_day_period_defects$Spec_group==test_name),]$No_cases_signed_out)
+    
+    if (avg_resulted_volume_AP >= 50){
+      print(defective_rate_pchart(historical_30_day_period_defects = historical_30_day_period_defects, test_name = test_name, site_name = site))
+    }
+    else{
+      # Create printable test name based on selected test
+      test_name_new <- ifelse(test_name == "Breast", "All Breast Specimen", ifelse(test_name == "GI", "GI Biopsies", test_name))
+      cat(paste('\n<center><h3><i>', site, test_name_new, "Labs: Insufficient volume for this analysis (n<50).</h3> \n <h4>(Average resulted volume over last 30 days:", round(avg_resulted_volume_AP, digits = 0), "specimens.)", '</i></h4></center>\n\n<br><br>'))
+    }
+  }
+}
+        
+
+  
+stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO NONGYN")
+
+```
 
 
 
