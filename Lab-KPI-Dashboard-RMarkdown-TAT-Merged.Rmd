@@ -1227,7 +1227,7 @@ Conditional_Formatting_Cyto <- function(Table_New2){
   } else {
     
     Table_New2[,4:19] <- lapply(Table_New2[,4:19], as.numeric)
-    Table_New2[,4:11] <- lapply(Table_New2[,4:11],percent, d=0)
+    Table_New2[,4:11] <- lapply(Table_New2[,4:11],percent)
     
     #steps for conditional formatting:
     
