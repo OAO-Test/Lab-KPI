@@ -54,13 +54,13 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 
-Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-# Today <- as.timeDate(as.Date("06/26/2020", format = "%m/%d/%Y"))
+#Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+Today <- as.timeDate(as.Date("07/06/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-# Yesterday <- as.timeDate(as.Date("06/25/2020", format = "%m/%d/%Y"))
+#Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("07/05/2020", format = "%m/%d/%Y"))
 
 
 #Get yesterday's DOW
@@ -706,6 +706,7 @@ test_results <- scc_sun_all_days_subset %>%
 PP_Weekday$Facility_Old <- PP_Weekday$Facility
 PP_Weekday$Facility[PP_Weekday$Facility_Old == "MSS"] <- "MSH" 
 PP_Weekday$Facility[PP_Weekday$Facility_Old == "STL"] <- "SL"
+PP_Weekday$spec_group[PP_Weekday$spec_group == "BREAST"] <- "Breast"
 #------------------------------Extract the Cytology GYN and NON-GYN Data Only------------------------------#
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
@@ -1733,7 +1734,7 @@ Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
 ## **Operational and Quality Indicators** {.tabset}
 ### Operational Indicators
 <h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
-#### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r Today_Date_KPI`)*
+#### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r wday_result_date`)*
 
 ```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 
@@ -1754,7 +1755,7 @@ Comments_Clinical_Labs %>%
 
 ### Laboratory Information System
 <h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
-#### *Operational Indicators for LIS (Submitted on `r Today_Date_KPI`)*
+#### *Operational Indicators for LIS (Submitted on `r wday_result_date`)*
 
 ```{r Qualitative Indicators for LIS, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 Formatted_LIS_New2%>%
@@ -1768,7 +1769,7 @@ Formatted_LIS_New2%>%
 ### Quality Indicators
 <h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
 #### Never Events 
-##### *Reported Never Events for Each Division/Facility (Submitted on `r Today_Date_KPI`)*
+##### *Reported Never Events for Each Division/Facility (Submitted on `r wday_result_date`)*
 ```{r Lab KPI Form for Never Events, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 Never_Events_Only %>%
     select(everything()) %>%
@@ -1784,7 +1785,7 @@ Never_Events_Comments %>%
 ```
 
 #### Good Catches
-##### *Reported Good Catches for Each Division/Facility (Submitted on `r Today_Date_KPI`)*
+##### *Reported Good Catches for Each Division/Facility (Submitted on `r wday_result_date`)*
 ```{r Lab KPI Form for Good Catches, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 Good_Catch %>%
     select(everything()) %>%
