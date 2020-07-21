@@ -13,13 +13,13 @@ library(writexl)
 
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-#Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-Today <- as.timeDate(as.Date("07/20/2020", format = "%m/%d/%Y"))
+Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+#Today <- as.timeDate(as.Date("07/20/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-#Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("07/19/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+#Yesterday <- as.timeDate(as.Date("07/19/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -84,6 +84,7 @@ GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAs
 SP_Dataframe_combined$Facility_Old <- SP_Dataframe_combined$Facility
 SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "MSS"] <- "MSH"
 SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "STL"] <- "SL"
+SP_Dataframe_combined$spec_group[SP_Dataframe_combined$spec_group == "BREAST"] <- "Breast"
 
 #------------------------------Extract the All Breast, GI Specimens, cyto gyn and cyto nongyn Data Only------------------------------#
 

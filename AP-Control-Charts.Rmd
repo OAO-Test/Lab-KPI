@@ -68,6 +68,9 @@ mshs_colors = c("#221F72", "#00AEFF", "#D80B8C", "#7F7F7F")
 AP_historical_repo_weekdays <- AP_historical_repo[which(AP_historical_repo$Signed_out_day_only != "Sunday" & AP_historical_repo$Signed_out_day_only != "Saturday" & AP_historical_repo$Patient_setting != "NA"),]
 
 AP_historical_repo_weekdays$Signed_out_date_only <- as.Date(AP_historical_repo_weekdays$Signed_out_date_only)
+AP_historical_repo_weekdays$Lab_metric_within_target <- as.numeric(AP_historical_repo_weekdays$Lab_metric_within_target)
+AP_historical_repo_weekdays$Patient_metric_avg <- as.numeric(AP_historical_repo_weekdays$Patient_metric_avg)
+AP_historical_repo_weekdays$Lab_metric_avg <- as.numeric(AP_historical_repo_weekdays$Lab_metric_avg)
 
 #Calculate the total none defects
 AP_historical_repo_weekdays$total_none_defects <- round(AP_historical_repo_weekdays$Lab_metric_within_target * AP_historical_repo_weekdays$No_cases_signed_out)
