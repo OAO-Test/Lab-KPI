@@ -915,7 +915,7 @@ Backlog_Accessioned_Table_New3 <- Backlog_Accessioned_Table_New2[-c(1),]
 ```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE, eval = FALSE}
 
 #1. import the historical repo
-Historical_Repo <- read.csv(paste0(user_directory,"/AP & Cytology Historical Repo/" ,"Historical_Repo_Surgical_Pathology","_",Yesterday,".csv"), stringsAsFactors = FALSE)
+Historical_Repo <- read_excel(paste0(user_directory,"/AP & Cytology Historical Repo/" ,"Historical_Repo_Surgical_Pathology","_",Yesterday, ".xlsx"))
 
 Historical_Repo$X <- NULL
 #Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%Y')
@@ -937,13 +937,12 @@ Historical_Repo[common] <- lapply(common, function(x) {
   match.fun(paste0("as.", class(current_summary[[x]])))(Historical_Repo[[x]])
 })
 
-#3. combine the current summary with the historical repo and write them into a csv file
+#3. combine the current summary with the historical repo and write them into a xlsx file
 Historical_Repo_Updated <- rbind(Historical_Repo, current_summary)
 
-csvFileName <- paste0(user_directory,"/AP & Cytology Historical Repo/", "Historical_Repo_Surgical_Pathology","_",Today,".csv")
+xlsxFileName <- paste0(user_directory,"/AP & Cytology Historical Repo/", "Historical_Repo_Surgical_Pathology","_",Today,".xlsx")
 
-write.csv(Historical_Repo_Updated,csvFileName)
-
+write_xlsx(Historical_Repo_Updated,xlsxFileName)
 ```
 
 
