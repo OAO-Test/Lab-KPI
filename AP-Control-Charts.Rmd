@@ -172,7 +172,7 @@ ggplot() +
 
 
 
-lab_TAT_volume_AP_plot(historical_30_day_period_sum, historical_30_day_period_sum_vol, "CYTO GYN", "Centralized Lab", "Lab_metric_within_target")
+#lab_TAT_volume_AP_plot(historical_30_day_period_sum, historical_30_day_period_sum_vol, "CYTO GYN", "Centralized Lab", "Lab_metric_within_target")
 
 ```
 
@@ -220,7 +220,7 @@ patient_TAT_AP_plot <- function(historical_30_day_period_sum_CTR, test_name, sit
 
 
 
-patient_TAT_AP_plot(historical_30_day_period_sum,"CYTO GYN", "MSH", "Patient_metric_avg")
+#patient_TAT_AP_plot(historical_30_day_period_sum,"CYTO GYN", "MSH", "Patient_metric_avg")
 
 ```
 
@@ -248,7 +248,7 @@ resulted_volume_graph <- function(historical_30_day_period_sum_vol, test_name, s
     scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste("All Labs, \n All Settings"))
 }
 
-resulted_volume_graph(historical_30_day_period_sum_vol, "CYTO NONGYN", "Centralized Lab")
+#resulted_volume_graph(historical_30_day_period_sum_vol, "CYTO NONGYN", "Centralized Lab")
 
 ```
 
@@ -274,7 +274,7 @@ stratified_data_for_AP_charts <- function(historical_30_day_period_sum_RTR, hist
   }
 }
   
-stratified_data_for_AP_charts(historical_30_day_period_sum_RTR, historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, "CYTO GYN")
+#stratified_data_for_AP_charts(historical_30_day_period_sum_RTR, historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, "CYTO GYN")
 
 
 ```
@@ -318,7 +318,7 @@ defective_rate_pchart <- function(historical_30_day_period_defects, test_name, s
   scale_y_continuous(labels = percent_format(accuracy = 1))
 }
 
-defective_rate_pchart(historical_30_day_period_defects, "CYTO GYN", "Centralized Lab")
+#defective_rate_pchart(historical_30_day_period_defects, "CYTO GYN", "Centralized Lab")
 
 ```
 
@@ -345,17 +345,75 @@ stratified_data_for_AP_p_charts <- function(historical_30_day_period_defects, te
         
 
   
-stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO NONGYN")
+#stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO NONGYN")
 
 ```
 
 
+# {.tabset}
+
+## Efficiency Indicator Historical Performance {.tabset}
+
+### All Breast Specimens
+```{r All Breast Specimens historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+
+stratified_data_for_AP_charts(historical_30_day_period_sum_RTR, historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, "Breast")
+
+```
+
+### GI Biopsies
+```{r GI Biopsies historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+
+stratified_data_for_AP_charts(historical_30_day_period_sum_RTR, historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, "GI")
+
+```
+
+### Cyto Gyn Specimens
+<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
+```{r Cyto Gyn Specimens historical data, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+
+stratified_data_for_AP_charts(historical_30_day_period_sum_RTR, historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, "CYTO GYN")
+
+```
+
+### Cyto Non-Gyn Specimens
+```{r Cyto Non-Gyn Specimens historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+
+stratified_data_for_AP_charts(historical_30_day_period_sum_RTR, historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, "CYTO NONGYN")
+
+```
 
 
+## Control Charts of Non-Compliant Labs {.tabset}
+### All Breast Specimens
+```{r All Breast Specimens pchart, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+
+stratified_data_for_AP_p_charts(historical_30_day_period_defects, "Breast")
+
+```
+
+### GI Biopsies
+```{r GI Biopsies  pchart, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+
+stratified_data_for_AP_p_charts(historical_30_day_period_defects, "GI")
+
+```
+
+### Cyto Gyn Specimens
+<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
+```{r Cyto Gyn Specimens  pchart, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+
+stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO GYN")
 
 
+```
 
+### Cyto Non-Gyn Specimens
+```{r Cyto Non-Gyn Specimens  pchart, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 
+stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO NONGYN")
+
+```
 
 
 
