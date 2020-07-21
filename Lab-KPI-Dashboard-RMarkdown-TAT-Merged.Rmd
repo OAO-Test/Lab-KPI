@@ -647,7 +647,7 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 }
 ```
 
-```{r Begin combining and summarizing data for historical repository, echo = FALSE, warning = FALSE, message = FALSE}
+```{r Begin combining and summarizing data for historical repository, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
 # Bind weekday and non-weekday data, if any exists
 if (is.null(scc_sun_not_wday_master) == FALSE) {
   scc_sun_all_days <- rbind(scc_sun_wday_master, scc_sun_not_wday_master)
@@ -917,7 +917,7 @@ Backlog_Accessioned_Table_New3 <- Backlog_Accessioned_Table_New2[-c(1),]
 #1. import the historical repo
 Historical_Repo <- read_excel(paste0(user_directory,"/AP & Cytology Historical Repo/" ,"Historical_Repo_Surgical_Pathology","_",Yesterday, ".xlsx"))
 
-Historical_Repo$X <- NULL
+#Historical_Repo$X <- NULL
 #Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%Y')
 
 #2. append all the summary tables together
