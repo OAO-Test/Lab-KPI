@@ -113,6 +113,8 @@ historical_30_day_period_sum_CTR[c("Lab_metric_within_target", "Patient_metric_a
 
 historical_30_day_period_sum_vol <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, New_Facility_RTR_CYTO),No_cases_signed_out = sum(No_cases_signed_out))
 
+historical_30_day_period_sum_vol_CTR <-summarise(group_by(historical_30_day_period, Signed_out_date_only,Spec_group, Facility),No_cases_signed_out = sum(No_cases_signed_out))
+
 ```
 
 
@@ -185,11 +187,11 @@ ggplot() +
 #we need to create a percent within target graph for cyto and patho
 #the graph will have the split between IP and AMB
 
-patient_TAT_AP_plot <- function(historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, test_name, site_name, metric) {
+patient_TAT_AP_plot <- function(historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol_CTR, test_name, site_name, metric) {
   
   data_tat <- historical_30_day_period_sum_CTR[historical_30_day_period_sum_CTR$Spec_group == test_name & historical_30_day_period_sum_CTR$Facility == site_name,]
   
-  data_vol <- historical_30_day_period_sum_vol[historical_30_day_period_sum_vol$Spec_group == test_name & historical_30_day_period_sum_vol$New_Facility_RTR_CYTO == site_name,]
+  data_vol <- historical_30_day_period_sum_vol_CTR[historical_30_day_period_sum_vol_CTR$Spec_group == test_name & historical_30_day_period_sum_vol_CTR$Facility == site_name,]
   
   # Create printable metric name based on selected metric
   metric_name <- ifelse(metric == "Lab_metric_within_target", "Receive to Result", ifelse(metric == "Patient_metric_avg", "Collect to Result", "Error"))
@@ -279,7 +281,7 @@ stratified_data_for_AP_charts <- function(historical_30_day_period_sum_RTR, hist
   }
   
   for (site_CTR in sites_CTR){
-    print(patient_TAT_AP_plot(historical_30_day_period_sum_CTR = historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol = historical_30_day_period_sum_vol, test_name = test_name, site_name = site_CTR, metric = "Patient_metric_avg"))
+    print(patient_TAT_AP_plot(historical_30_day_period_sum_CTR = historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol_CTR = historical_30_day_period_sum_vol_CTR, test_name = test_name, site_name = site_CTR, metric = "Patient_metric_avg"))
   }
   
   for (site_RTR in sites_RTR){
