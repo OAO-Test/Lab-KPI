@@ -185,10 +185,12 @@ ggplot() +
 #we need to create a percent within target graph for cyto and patho
 #the graph will have the split between IP and AMB
 
-patient_TAT_AP_plot <- function(historical_30_day_period_sum_CTR, test_name, site_name, metric) {
+patient_TAT_AP_plot <- function(historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol, test_name, site_name, metric) {
   
   data_tat <- historical_30_day_period_sum_CTR[historical_30_day_period_sum_CTR$Spec_group == test_name & historical_30_day_period_sum_CTR$Facility == site_name,]
- 
+  
+  data_vol <- historical_30_day_period_sum_vol[historical_30_day_period_sum_vol$Spec_group == test_name & historical_30_day_period_sum_vol$New_Facility_RTR_CYTO == site_name,]
+  
   # Create printable metric name based on selected metric
   metric_name <- ifelse(metric == "Lab_metric_within_target", "Receive to Result", ifelse(metric == "Patient_metric_avg", "Collect to Result", "Error"))
   # Create printable test name based on selected test
@@ -196,12 +198,16 @@ patient_TAT_AP_plot <- function(historical_30_day_period_sum_CTR, test_name, sit
 
   ggplot() +
 
+  # Plot resulted volume on secondary axis
+  geom_point(data = data_vol, aes(x = Signed_out_date_only, y = No_cases_signed_out/mean(No_cases_signed_out) , size = "Spec_group"), shape = 18, color = "#959595")+
+  geom_line(data = data_vol, aes(x = Signed_out_date_only, y = No_cases_signed_out/mean(No_cases_signed_out),linetype = "Spec_group"), color = "#959595")+
+    
   # Plot Average lab metric TAT
   geom_point(data = data_tat, aes_string(x = "Signed_out_date_only", y = metric, shape = "Patient_setting", color = "Patient_setting"), size = 3)+
   geom_line(data = data_tat, aes_string(x = "Signed_out_date_only", y = metric, shape = "Patient_setting", color = "Patient_setting"), linetype = "dashed")+
   
   # Specify graph labels and themes
-  labs(title = paste0(site_name, " ", test_name, " ", metric_name, ":\n", "Average TAT for Laboratory Metric (Days)"), 
+  labs(title = paste0(site_name, " ", test_name, " ", metric_name,":\n","Average TAT (Days)"), 
        x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting", linetype = "Resulted Volume", size = "Resulted Volume") +
   
   theme_bw() +
@@ -211,13 +217,16 @@ patient_TAT_AP_plot <- function(historical_30_day_period_sum_CTR, test_name, sit
  
   # Specify fills, shapes, and lines mappings and legends
   scale_color_manual(name = "Setting", values = mshs_colors) +
+  scale_size_manual(name = "Resulted Volume", values = 2, labels = paste("All Labs, \n All Settings")) + 
+  scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste("All Labs, \n All Settings"))+
   
   # Reorder legends
   guides(color = guide_legend(order = 1, nrow = length(unique(data_tat$Patient_setting)), title.vjust = 1), shape = guide_legend(order = 1, nrow = length(unique(data_tat$Patient_setting)), title.vjust = 1), size = guide_legend(order = 2, title.vjust = 1), linetype = guide_legend(order = 2, title.vjust = 1)) +
   
   # Specify axis properties
   scale_x_date(name = "Date", labels = date_format("%m/%d/%Y"), limits = c(first_day_in_reporting_period - 1,last_day_in_reporting_period + 1), date_breaks = "3 days", date_minor_breaks = "1 day", expand = c(0, 0, 0, 0))+
-  scale_y_continuous(name = "Average TAT (Days)")
+  
+  scale_y_continuous(name = "Average TAT (Days)",limits = c(0,max(data_tat$Patient_metric_avg+1)), sec.axis = sec_axis(~.*mean(data_vol$No_cases_signed_out), name = "Volume of Labs"))
 
 }
 
@@ -248,7 +257,8 @@ resulted_volume_graph <- function(historical_30_day_period_sum_vol, test_name, s
     theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
     scale_x_date(name = "Date", labels = date_format("%m/%d/%Y"), limits = c(first_day_in_reporting_period - 1,last_day_in_reporting_period + 1), date_breaks = "3 days", date_minor_breaks = "1 day", expand = c(0, 0, 0, 0))+
     scale_size_manual(name = "Resulted Volume", values = 2, labels = paste("All Labs, \n All Settings")) + 
-    scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste("All Labs, \n All Settings"))
+    scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste("All Labs, \n All Settings"))+
+    scale_y_continuous(limits = c(min(data_vol$No_cases_signed_out-1),max(data_vol$No_cases_signed_out+1)))
 }
 
 #resulted_volume_graph(historical_30_day_period_sum_vol, "CYTO NONGYN", "Centralized Lab")
@@ -269,7 +279,7 @@ stratified_data_for_AP_charts <- function(historical_30_day_period_sum_RTR, hist
   }
   
   for (site_CTR in sites_CTR){
-    print(patient_TAT_AP_plot(historical_30_day_period_sum_CTR = historical_30_day_period_sum_CTR, test_name = test_name, site_name = site_CTR, metric = "Patient_metric_avg"))
+    print(patient_TAT_AP_plot(historical_30_day_period_sum_CTR = historical_30_day_period_sum_CTR, historical_30_day_period_sum_vol = historical_30_day_period_sum_vol, test_name = test_name, site_name = site_CTR, metric = "Patient_metric_avg"))
   }
   
   for (site_RTR in sites_RTR){
