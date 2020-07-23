@@ -357,7 +357,8 @@ stratified_data_for_AP_p_charts <- function(historical_30_day_period_defects, te
     }
   }
 }
-        
+                cat(paste('\n<center><h3><i>', site, test, priority, "Labs: Insufficient volume for this analysis (n<50).</h3> \n <h4>(Average resulted volume over last 30 days:", round(avg_resulted_volume, digits = 0), "specimens.)", '</i></h4></center>\n\n<br><br>'))
+
 
   
 #stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO NONGYN")
