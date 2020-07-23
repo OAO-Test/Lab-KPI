@@ -54,13 +54,13 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 
-#Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-Today <- as.timeDate(as.Date("07/06/2020", format = "%m/%d/%Y"))
+Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+# Today <- as.timeDate(as.Date("07/06/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-#Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("07/05/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+# Yesterday <- as.timeDate(as.Date("07/05/2020", format = "%m/%d/%Y"))
 
 
 #Get yesterday's DOW
@@ -647,7 +647,7 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 }
 ```
 
-```{r Begin combining and summarizing data for historical repository, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
+```{r Begin combining and summarizing data for historical repository, eval = TRUE, echo = FALSE, warning = FALSE, message = FALSE}
 # Bind weekday and non-weekday data, if any exists
 if (is.null(scc_sun_not_wday_master) == FALSE) {
   scc_sun_all_days <- rbind(scc_sun_wday_master, scc_sun_not_wday_master)
@@ -688,7 +688,7 @@ start_date <- format(min(scc_sun_repo$ResultDate), "%m-%d-%y")
 end_date <- format(max(scc_sun_repo$ResultDate), "%m-%d-%y")
 
 # Add data to historical repository
-write_xlsx(scc_sun_repo, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Hist Repo Test ", start_date, " to ", end_date, " Created ", Sys.Date(), ".xlsx"))
+write_xlsx(scc_sun_repo, path = paste0(user_directory, "\\SCC Sunquest Script Repo", "\\Hist Repo Test ", start_date, " to ", end_date, " Created ", Sys.Date(), ".xlsx"))
 
 
 test_results <- scc_sun_all_days_subset %>%
@@ -1421,6 +1421,7 @@ Table_Formatting_Volume <- function (Volume_Table, column_names){
 
 
 ```
+<br>
 ## **Weekday Efficiency Indicators** {.tabset}
 ### Chemistry       
 #### *Chemistry KPI (Labs Resulted on `r wday_result_date`)*
@@ -1731,6 +1732,7 @@ Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
 
 ```
 
+<br>
 ## **Operational and Quality Indicators** {.tabset}
 ### Operational Indicators
 <h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
@@ -1797,6 +1799,7 @@ Good_Catch %>%
     
 
 `r #Create new tabset`
+<br>
 ## **Weekday 24-Hour Volume Lookback** {.tabset}
 
 ```{r Custom function for 24 hour volume lookbacks for Chemistry and Hematology, echo = FALSE, warning = FALSE, message = FALSE}
@@ -1955,6 +1958,7 @@ micro_table_not_wday <- micro_dashboard2_not_wday[ , 3:ncol(micro_dashboard2_not
 
 `r #Begin weekend/holiday dashboard visualizations`
 
+<br>
 ## **Weekend/Holiday Efficiency Indicators** {.tabset}
 ### Chemistry
 #### *Chemistry KPI (Labs Resulted on `r wkend_holiday_result_date`)*
@@ -2085,6 +2089,7 @@ add_on_table_not_wday %>%
 ## {-}
 
 `r #Start new tabset for weekend/holiday volume lookback`
+<br>
 ## **Weekend/Holiday Volume Lookback** {.tabset}
 
 ### Chemistry
