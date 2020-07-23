@@ -1,7 +1,10 @@
 ---
 title: "MSHS Laboratory KPI Dashboard"
 output:
-  html_document
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
 ---
 
 
@@ -42,7 +45,7 @@ library(writexl)
 
 
 
-<h1><span style = "color:red">Draft - Not For Distribution</h1>
+<h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red">
 
 ```{r global_options, echo=FALSE}
 knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
@@ -55,12 +58,12 @@ rm(list = ls())
 # Get today and yesterday's date
 
 Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-# Today <- as.timeDate(as.Date("07/06/2020", format = "%m/%d/%Y"))
+# Today <- as.timeDate(as.Date("07/20/2020", format = "%m/%d/%Y"))
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
 Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-# Yesterday <- as.timeDate(as.Date("07/05/2020", format = "%m/%d/%Y"))
+# Yesterday <- as.timeDate(as.Date("07/19/2020", format = "%m/%d/%Y"))
 
 
 #Get yesterday's DOW
@@ -1547,7 +1550,7 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_c
 
 
 ### Cytology
-<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
+<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
 #### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
@@ -1560,8 +1563,6 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V3)
 ```
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
-
-## {-} `r #End tabset`
 
 ```{r Lab KPI Form for Qualitative Indicators, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 #read the excel sheet that is generated from office form responses
@@ -1738,7 +1739,8 @@ Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
 
 ## **Operational and Quality Indicators** {.tabset}
 ### Operational Indicators
-<h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
+<h4><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h4></span style = "color:red">
+
 #### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r wday_result_date`)*
 
 ```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
@@ -1759,7 +1761,8 @@ Comments_Clinical_Labs %>%
 
 
 ### Laboratory Information System
-<h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
+<h4><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h4></span style = "color:red">
+
 #### *Operational Indicators for LIS (Submitted on `r wday_result_date`)*
 
 ```{r Qualitative Indicators for LIS, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
@@ -1772,7 +1775,8 @@ Formatted_LIS_New2%>%
 
 
 ### Quality Indicators
-<h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
+<h4><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h4></span style = "color:red">
+
 #### Never Events 
 ##### *Reported Never Events for Each Division/Facility (Submitted on `r wday_result_date`)*
 ```{r Lab KPI Form for Never Events, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
@@ -1798,10 +1802,8 @@ Good_Catch %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
     row_spec(row = 0, font_size = 13)
 ```
-## {-}
-    
 
-`r #Create new tabset`
+    
 
 <br />
 
@@ -1890,7 +1892,8 @@ Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, patholog
 ```
 
 ### Cytology   
-<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
+<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
+
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
 #Backlog_Accessioned_Table_New2
@@ -1918,8 +1921,6 @@ Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New3, cytology_volume_co
 
 ```
 
-`r #End tabset`
-## {-}
 
 `r if (include_not_wday != TRUE) {"<!--"}`
 
@@ -2091,8 +2092,7 @@ add_on_table_not_wday %>%
 ```
 <h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
 
-`r #End tabset`
-## {-}
+
 
 `r #Start new tabset for weekend/holiday volume lookback`
 
@@ -2136,10 +2136,20 @@ rownames(hem_vol_not_wday_table) <- 1:nrow(hem_vol_not_wday_table)
 lab_vol_kable_format(hem_vol_not_wday_table)
 ```
 
-`r #End tabset`
-## {-}
 
 `r if (include_not_wday != TRUE) {"-->"}`
+
+## **Assumptions and Methodology** {.tabset}
+
+### Chemistry
+
+### Hematology
+
+### Microbiology RRL
+
+### Surgical Pathology
+
+### Cytology
 
 <h6> *End of report.* </h6>
 
