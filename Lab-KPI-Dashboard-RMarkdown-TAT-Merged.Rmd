@@ -1421,7 +1421,9 @@ Table_Formatting_Volume <- function (Volume_Table, column_names){
 
 
 ```
-<br>
+
+<br />
+
 ## **Weekday Efficiency Indicators** {.tabset}
 ### Chemistry       
 #### *Chemistry KPI (Labs Resulted on `r wday_result_date`)*
@@ -1732,7 +1734,8 @@ Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
 
 ```
 
-<br>
+<br />
+
 ## **Operational and Quality Indicators** {.tabset}
 ### Operational Indicators
 <h1><span style = "color:red">Pending - Scaled Testing of Automated Lab KPI Form</h1>
@@ -1799,7 +1802,9 @@ Good_Catch %>%
     
 
 `r #Create new tabset`
-<br>
+
+<br />
+
 ## **Weekday 24-Hour Volume Lookback** {.tabset}
 
 ```{r Custom function for 24 hour volume lookbacks for Chemistry and Hematology, echo = FALSE, warning = FALSE, message = FALSE}
@@ -1958,7 +1963,8 @@ micro_table_not_wday <- micro_dashboard2_not_wday[ , 3:ncol(micro_dashboard2_not
 
 `r #Begin weekend/holiday dashboard visualizations`
 
-<br>
+<br />
+
 ## **Weekend/Holiday Efficiency Indicators** {.tabset}
 ### Chemistry
 #### *Chemistry KPI (Labs Resulted on `r wkend_holiday_result_date`)*
@@ -2089,7 +2095,9 @@ add_on_table_not_wday %>%
 ## {-}
 
 `r #Start new tabset for weekend/holiday volume lookback`
-<br>
+
+<br />
+
 ## **Weekend/Holiday Volume Lookback** {.tabset}
 
 ### Chemistry
