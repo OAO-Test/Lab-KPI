@@ -675,6 +675,9 @@ if (initial_run == TRUE) {
   scc_sun_repo <- rbind(existing_repo, scc_sun_all_days_subset)
 }
 
+# Remove any duplicates
+scc_sun_repo <- unique(scc_sun_repo)
+
 start_date <- format(min(scc_sun_repo$ResultDate), "%m-%d-%y")
 end_date <- format(max(scc_sun_repo$ResultDate), "%m-%d-%y")
 
