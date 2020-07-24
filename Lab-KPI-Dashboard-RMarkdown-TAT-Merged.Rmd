@@ -1551,6 +1551,7 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_c
 
 ### Cytology
 <h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
+
 #### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
