@@ -1,4 +1,5 @@
 ---
+
 title: "MSHS Laboratory KPI Dashboard"
 output:
   html_document
@@ -20,7 +21,6 @@ output:
 #install.packages("stringr")
 #install.packages("writexl")
 
-
 #-------------------------------Required packages-------------------------------#
 
 #Required packages: run these everytime you run the code
@@ -39,9 +39,6 @@ library(writexl)
 
 
 ```
-
-
-
 <h1><span style = "color:red">Draft - Not For Distribution</h1>
 
 ```{r global_options, echo=FALSE}
@@ -62,7 +59,6 @@ Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
 Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
 # Yesterday <- as.timeDate(as.Date("07/05/2020", format = "%m/%d/%Y"))
 
-
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
 
@@ -81,7 +77,6 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 
 #### *Dashboard Creation Date: `r format(Today, "%m/%d/%Y")`*
 
-
 ```{r Import all data, warning = FALSE, message = FALSE, echo = FALSE}
 # Select file/folder path for easier file selection and navigation
 # user_wd <- choose.dir(caption = "Select your working directory")
@@ -97,6 +92,7 @@ user_path <- paste0(user_directory, "/*.*")
 
 
 #------------------------------Read Excel sheets------------------------------#
+
 # The if-statement below determines the number of raw data files to import based on the day of week and holidays.
 # The user is then prompted to select each file from the relevant folder.
 
@@ -205,6 +201,7 @@ Cytology_Backlog_Raw <- data.frame(Cytology_Backlog_Raw[-nrow(Cytology_Backlog_R
 # CP and Micro --------------------------------
 # Import analysis reference data starting with test codes for SCC and Sunquest
 # reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
+
 reference_file <- choose.files(default = paste0(user_directory, "/Code Reference/*.*"), caption = "Select analysis reference file")
 test_code <- read_excel(reference_file, sheet = "TestNames")
 
@@ -224,6 +221,7 @@ scc_wday <- SCC_Weekday
 sun_wday <- SQ_Weekday
 
 cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu", "C. diff")
+
 
 site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
 
@@ -278,13 +276,14 @@ Table_Template_Patho_Vol[2] <- c('IP', 'Amb')
 
 ```{r Custom Function for preprocessing raw SCC and Sunquest data, warning = FALSE, message = FALSE, echo = FALSE}
 preprocess_scc_sun <- function(raw_scc, raw_sun)  {
+
 # SCC DATA PROCESSING --------------------------
   # SCC lookup references ----------------------------------------------
   # Crosswalk labs included and remove out of scope labs
   raw_scc <- left_join(raw_scc, test_code[ , c("Test", "SCC_TestID", "Division")], by = c("TEST_ID" = "SCC_TestID"))
   raw_scc$TEST_ID <- as.factor(raw_scc$TEST_ID)
   raw_scc$Division <- as.factor(raw_scc$Division)
-  
+
   raw_scc <- raw_scc %>%
     mutate(TestIncl = ifelse(is.na(raw_scc$Test), FALSE, TRUE))
   
@@ -315,6 +314,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
                                                                               "CLINIC_TYPE", "Setting", "SettingRollUp")], as.factor)
   
   # Fix any timestamps that weren't imported correctly and then format as date/time
+
   raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")] <- 
     lapply(raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")], 
            function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
@@ -382,12 +382,12 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
     mutate(Concate3 = paste(LAST_NAME, FIRST_NAME,
                             ORDER_ID, TEST_NAME, 
                             COLLECTION_DATE, RECEIVE_DATE, VERIFIED_DATE))
-
   
   raw_scc <- raw_scc[!duplicated(raw_scc$Concate3), ]
   
   # Identify which labs to include in TAT analysis
   # Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
+
   raw_scc <- raw_scc %>% 
     mutate(TATInclude = ifelse(AddOnMaster != "Original" | MasterSetting == "Other" | 
                                  CollectToResult < 0 | ReceiveToResult < 0 | 
@@ -428,6 +428,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_sun <- left_join(raw_sun, test_code[ , c("Test", "SUN_TestCode", "Division")], by = c("TestCode" = "SUN_TestCode"))
   raw_sun$TestCode <- as.factor(raw_sun$TestCode)
   raw_sun$Division <- as.factor(raw_sun$Division)
+
   raw_sun <- raw_sun %>%
     mutate(TestIncl = ifelse(is.na(Test), FALSE, TRUE))
   
@@ -451,6 +452,7 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
              "LocType", "LocCode", "LocName", 
              "SpecimenPriority", "PhysName", "SHIFT",
              "ReceiveTech", "ResultTech", "PerformingLabCode",
+
              "Test", "LocandName", "Setting", "SettingRollUp", "Site")] <- 
     lapply(raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
                      "LocType", "LocCode", "LocName","SpecimenPriority", "PhysName", 
@@ -579,7 +581,6 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
 }
 ```
 
-
 ```{r Data Preprocessing and Merging for SCC and Sunquest data, message = FALSE, warning = FALSE, echo = FALSE}
 scc_sun_wday_list <- preprocess_scc_sun(SCC_Weekday, SQ_Weekday)
 scc_wday <- scc_sun_wday_list[[1]]
@@ -599,6 +600,7 @@ if (is.null(SQ_Not_Weekday) & is.null(SQ_Not_Weekday)) {
   sun_not_wday <- scc_sun_not_wday_list[[2]]
   scc_sun_not_wday_master <- scc_sun_not_wday_list[[3]]
 }
+
 
 # Remove labs from master data frame that were resulted at exactly midnight on next morning or prior day
 # Custom function to determine correct number of dates
@@ -706,6 +708,7 @@ test_results <- scc_sun_all_days_subset %>%
 PP_Weekday$Facility_Old <- PP_Weekday$Facility
 PP_Weekday$Facility[PP_Weekday$Facility_Old == "MSS"] <- "MSH" 
 PP_Weekday$Facility[PP_Weekday$Facility_Old == "STL"] <- "SL"
+
 PP_Weekday$spec_group[PP_Weekday$spec_group == "BREAST"] <- "Breast"
 #------------------------------Extract the Cytology GYN and NON-GYN Data Only------------------------------#
 #Cytology
@@ -771,6 +774,7 @@ pre_processing_pp <- function(Raw_Data){
     Raw_Data_New_Lab_Metric_V2 <- NULL
     Processed_Data_Table_V2 <-NULL
     Processed_Data_Table <- NULL
+    Summarized_Table <- NULL
     Return_Tables <- NULL
   } else {
     #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
@@ -822,7 +826,6 @@ pre_processing_pp <- function(Raw_Data){
     Raw_Data_New_Lab_Metric_V2 <- summarise(group_by(Raw_Data_New,spec_group,Patient.Setting), Received_to_Signed_out_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)))
 
     Summarized_Table <- summarise(group_by(Raw_Data_New,Spec_code, spec_group, Facility,Patient.Setting, Rev_ctr,as.Date(signed_out_date),weekdays(as.Date(signed_out_date)),Received.to.signed.out.target..Days.,Collected.to.signed.out.target..Days.),  No_Cases_Signed = n(), Lab_Metric_TAT_Avg = round(mean(Received_to_signed_out, na.rm = TRUE),0), Lab_Metric_TAT_med = round(median(Received_to_signed_out, na.rm = TRUE),0), Lab_Metric_TAT_sd = round(sd(Received_to_signed_out, na.rm = TRUE),1), Lab_Metric_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)), Patient_Metric_TAT_avg=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))), Patient_Metric_TAT_med = round(median(Collection_to_signed_out, na.rm = TRUE),0), Patient_Metric_TAT_sd =round(sd(Collection_to_signed_out, na.rm = TRUE),1))
-
     
     #here I will merge number of cases signed, received to result TAT, and acollect to result TAT calcs into one table
     
@@ -836,6 +839,7 @@ pre_processing_pp <- function(Raw_Data){
 }
 
 Cytology_Table_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[1]]
+
 Cytology_Table_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[1]]
 Cytology_Table_Weekday_V2 <- pre_processing_pp(Cytology_Weekday_Raw)[[2]]
 Cytology_Table_Not_Weekday_V2 <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[2]]
@@ -848,7 +852,6 @@ Surgical_Pathology_Table_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday
 Surgical_Pathology_Stratified_Vol_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[3]]
 #Surgical_Pathology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[3]]
 Surgical_Pathology_Table_Weekday_Raw <- pre_processing_pp(Surgical_Pathology_Weekday)[[4]]
-
 
 ```
 
@@ -944,6 +947,7 @@ Historical_Repo_Updated <- rbind(Historical_Repo, current_summary)
 xlsxFileName <- paste0(user_directory,"/AP & Cytology Historical Repo/", "Historical_Repo_Surgical_Pathology","_",Today,".xlsx")
 
 write_xlsx(Historical_Repo_Updated,xlsxFileName)
+
 ```
 
 
@@ -1127,9 +1131,7 @@ Table_Merging_Cyto <- function(Cytology_Table){
     #second step is merging the table with all of the columns with only the first two columns of the template to include all the missing rows
     Cytology_Table_New2 <- merge(x = Table_Template_Cyto[c(1,2)], y= Cytology_Table_New, all.x = TRUE, by = c("spec_group", "Patient.Setting"))
     rows_order_Cyto <- factor(rownames(Cytology_Table_New2),levels = c(2,1,4,3))
-
     Cytology_Table_New2 <- Cytology_Table_New2[order(rows_order_Cyto), c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x","MSQ.x","BIMC.x","PACC.x","KH.x","R.x","SL.x", "NYEE.x","MSH.y", "MSQ.y","BIMC.y","PACC.y","KH.y","R.y","SL.y", "NYEE.y")]
-
   }
   return(Cytology_Table_New2)
 }
@@ -1175,7 +1177,6 @@ Table_Merging_Patho <- function(Surgical_Pathology_Table){
 }
 
 Surgical_Pathology_Table_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Weekday)
-
 #Surgical_Pathology_Table_Not_Weekday_New2 <- Table_Merging_Patho(Surgical_Pathology_Table_Not_Weekday)
 
 pathology_volume_column_order <- c("spec_group","Patient.Setting","MSH","MSQ","BIMC","PACC","KH","R","SL")
@@ -1227,6 +1228,7 @@ Conditional_Formatting_Cyto <- function(Table_New2){
   } else {
     
     Table_New2[,4:19] <- lapply(Table_New2[,4:19], as.numeric)
+
     Table_New2[,4:11] <- lapply(Table_New2[,4:11],percent)
     
     #steps for conditional formatting:
@@ -1247,7 +1249,6 @@ Conditional_Formatting_Cyto <- function(Table_New2){
     Table_New4 <- Table_New4 %>%
       mutate(value = ifelse(is.na(value), cell_spec(value, "html", color = "lightgray"), cell_spec(value, "html", color = "black")))
     
-
     Table_New4 <- dcast(Table_New4,spec_group + Patient.Setting + No_Cases_Signed + BIMC.x + MSH.x + MSQ.x + NYEE.x + PACC.x + R.x + SL.x + KH.x ~ variable )
     
     Table_New5 <- merge(x=Table_New4, y=TAT_Targets[1:3])
@@ -1351,6 +1352,7 @@ Conditional_Formatting_Patho <- function(Table_New2){
 }
 
 Surgical_Pathology_Table_Weekday_New3 <- Conditional_Formatting_Patho(Surgical_Pathology_Table_Weekday_New2)
+
 #Surgical_Pathology_Table_Not_Weekday_New3 <- Conditional_Formatting_Patho(Surgical_Pathology_Table_Not_Weekday_New2)
 
 Surgical_Pathology_Table_Weekday_New3$spec_group[Surgical_Pathology_Table_Weekday_New3$spec_group == "GI"] <- "GI Biopsies" 
@@ -1421,6 +1423,7 @@ Table_Formatting_Volume <- function (Volume_Table, column_names){
 
 
 ```
+
 
 <br />
 
@@ -1524,6 +1527,7 @@ add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
 
 add_on_table %>%
   kable(format = "html", escape = FALSE, align = "c", 
+
         col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"), color = "gray") %>%
   kable_styling(bootstrap = "hover", position = "right", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Volume of Add On Labs" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
@@ -1532,6 +1536,7 @@ add_on_table %>%
   column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
   row_spec(row = 0, font_size =13)
 ```
+
 <h6>*Missing collection time analysis includes analytes represented in Chemistry, Hematology, and Microbiology RRL dashboard TAT analysis from ED, ICU, IP Non-ICU, and ambulatory settings.*</h6>
 
 ### Surgical Pathology
@@ -1547,12 +1552,14 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_c
 
 
 ### Cytology
+
 <h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
 #### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
 ```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
+
 #Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 #added this line to delete the cyto gyn from the table until we get correct data
 rownames(Cytology_Table_Weekday_New3_V3) <- NULL
@@ -1562,6 +1569,7 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V3)
 
 
 ## {-} `r #End tabset`
+
 
 ```{r Lab KPI Form for Qualitative Indicators, echo=FALSE, message=FALSE, warning=FALSE, eval = FALSE}
 #read the excel sheet that is generated from office form responses
@@ -1836,6 +1844,7 @@ lab_volume_summarize <- function(x, LabDivision) {
 
 lab_vol_kable_format <- function(table_data) {
   kable(table_data, format = "html", escape = FALSE, align = "c", 
+
         col.names = c("Test & Priority", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
 
   kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
@@ -1890,6 +1899,7 @@ Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, patholog
 ```
 
 ### Cytology   
+
 <h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
@@ -1904,12 +1914,14 @@ Backlog_Accessioned_Table_New3 %>%
   column_spec(3:6, background = "#221F72",color ="white", include_thead = TRUE)%>%
   column_spec(2:6, background = "inherit", color = "inherit")%>%
   row_spec(row = 0, font_size = 13)%>%
+
   add_header_above(c(" "= 2, "Elapsed Turn Around Time for Backlogged Cases From the Received Time"= 4), background = c("white", "#221F72"), color= "white", font_size = 13)%>%
   collapse_rows(columns = 1)
 ```
 
 #### *Cytology Signed Out Cases Volume (As of `r wday_result_date`)*
 ```{r Cytology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+
 #Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2, cytology_volume_column_names)
 
 #added this line to delete the cyto gyn from the table until we get correct data
@@ -1920,6 +1932,7 @@ Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New3, cytology_volume_co
 
 `r #End tabset`
 ## {-}
+
 
 `r if (include_not_wday != TRUE) {"<!--"}`
 
@@ -1962,6 +1975,7 @@ micro_table_not_wday <- micro_dashboard2_not_wday[ , 3:ncol(micro_dashboard2_not
 ```
 
 `r #Begin weekend/holiday dashboard visualizations`
+
 
 <br />
 
@@ -2034,6 +2048,7 @@ chem_hem_micro_kable(micro_tat_vol_table_not_wday)
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
 ### Missing Collections & Add Ons
+
 #### *Missing Collection Times and Add On Order Volume (Labs Resulted on `r wkend_holiday_result_date`)*
 
 <h5> Missing Collection Status Definitions: <span style = "color:red">Red:</span> >15%, 
@@ -2062,6 +2077,7 @@ missing_collect_table_not_wday <- dcast(missing_collect_not_wday, "Percentage of
 
 missing_collect_table_not_wday %>%
   kable(format = "html", escape = FALSE, align = "c",  
+
         col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
   kable_styling(bootstrap = "hover", position = "float_left", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Percentage of Labs with Missing Collect Times" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
@@ -2078,6 +2094,7 @@ add_on_table_not_wday <- dcast(add_on_volume_not_wday, Test ~ Site, value.var = 
 
 add_on_table_not_wday %>%
   kable(format = "html", escape = FALSE, align = "c",
+
         col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"), color = "gray") %>%
   kable_styling(bootstrap = "hover", position = "right", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Volume of Add On Labs" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
@@ -2135,6 +2152,7 @@ rownames(hem_vol_not_wday_table) <- 1:nrow(hem_vol_not_wday_table)
 
 lab_vol_kable_format(hem_vol_not_wday_table)
 ```
+
 
 `r #End tabset`
 ## {-}
