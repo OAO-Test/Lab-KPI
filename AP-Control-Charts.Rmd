@@ -337,7 +337,7 @@ defective_rate_pchart <- function(historical_30_day_period_defects, test_name, s
 
 ```
 
-```{r function to go through all the facilities for each test for the p-chart, warning = FALSE, message = FALSE, echo = FALSE}
+```{r function to go through all the facilities for each test for the p-chart, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis'}
 
 stratified_data_for_AP_p_charts <- function(historical_30_day_period_defects, test_name){
   
@@ -357,8 +357,6 @@ stratified_data_for_AP_p_charts <- function(historical_30_day_period_defects, te
     }
   }
 }
-                cat(paste('\n<center><h3><i>', site, test, priority, "Labs: Insufficient volume for this analysis (n<50).</h3> \n <h4>(Average resulted volume over last 30 days:", round(avg_resulted_volume, digits = 0), "specimens.)", '</i></h4></center>\n\n<br><br>'))
-
 
   
 #stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO NONGYN")
@@ -402,14 +400,14 @@ stratified_data_for_AP_charts(historical_30_day_period_sum_RTR, historical_30_da
 
 ## Control Charts of Non-Compliant Labs {.tabset}
 ### All Breast Specimens
-```{r All Breast Specimens pchart, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+```{r All Breast Specimens pchart, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", results='asis'}
 
 stratified_data_for_AP_p_charts(historical_30_day_period_defects, "Breast")
 
 ```
 
 ### GI Biopsies
-```{r GI Biopsies  pchart, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+```{r GI Biopsies  pchart, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", results='asis'}
 
 stratified_data_for_AP_p_charts(historical_30_day_period_defects, "GI")
 
@@ -417,7 +415,7 @@ stratified_data_for_AP_p_charts(historical_30_day_period_defects, "GI")
 
 ### Cyto Gyn Specimens
 <h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
-```{r Cyto Gyn Specimens  pchart, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+```{r Cyto Gyn Specimens  pchart, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", results='asis'}
 
 stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO GYN")
 
@@ -425,7 +423,7 @@ stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO GYN")
 ```
 
 ### Cyto Non-Gyn Specimens
-```{r Cyto Non-Gyn Specimens  pchart, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+```{r Cyto Non-Gyn Specimens  pchart, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", results='asis'}
 
 stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO NONGYN")
 
