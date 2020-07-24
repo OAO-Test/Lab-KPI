@@ -796,6 +796,43 @@ stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO NONGYN")
 ```
 
 
+##{-}
+
+## Methodology and Assumptions
+### General Notes
+The data presented here is based on the compilation of historical data.
+
+### Efficiency Indicator Historical Performance
+Turnaround time percentages within target includes labs with valid turnaround times (ie, labs with missing timestamps or negative turnaround times excluded). Resulted volume includes all labs for each site regardless of turnaround time, order priority, or setting to reflect demand on laboratory resources.
+
+All ED and ICU labs are treated as stat, regardless of documented priority. 
+
+**Troponin & Lactate WB:** All labs treated as stat. Settings included in turnaround time analysis are ED, ICU, and Inpatient Non-ICU. All settings included in resulted volume.
+
+**BUN, HGB, & PT:** All labs from ED and ICU are treated as stat; otherwise lab priority is based on documented priority.
+
+**Rapid Flu:** All labs treated as stat. All settings included in resulted volume.
+
+**C. diff:** All labs treated as stat. Turnaround time for ambulatory c. diff labs not tracked but included in total resulted volume. 
+
+
+### Control Charts of Non-Compliant Labs
+These control charts are p-charts used to track non-compliant labs. Non-compliant labs are defined as those labs that do not meet the target turnaround times from receipt in laboratory to result. Only labs with valid turnaround times are included in this analysis. 
+
+Percentage of non-compliant labs calculated as: $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$ 
+
+Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. 
+
+Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+
+**Troponin & Lactate WB:** All labs treated as stat. Settings included in analysis are ED, ICU, and Inpatient Non-ICU.
+
+**BUN, HGB, & PT:** All labs from ED and ICU are treated as stat; otherwise lab priority is based on documented priority.
+
+**Rapid Flu:** All labs treated as stat.
+
+**C. diff:** All labs treated as stat. Turnaround time analysis does not include ambulatory labs.
+
 
 
 
