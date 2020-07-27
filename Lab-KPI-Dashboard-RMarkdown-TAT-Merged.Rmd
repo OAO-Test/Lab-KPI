@@ -57,13 +57,13 @@ rm(list = ls())
 # Get today and yesterday's date
 
 # Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-Today <- as.timeDate(as.Date("07/21/2020", format = "%m/%d/%Y"))
+Today <- as.timeDate(as.Date("07/23/2020", format = "%m/%d/%Y"))
 
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
 # Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("07/20/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("07/22/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
