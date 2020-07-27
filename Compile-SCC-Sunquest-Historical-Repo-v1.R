@@ -31,8 +31,13 @@ library(writexl)
 rm(list = ls())
 
 # Set working directory -------------------------------
-# reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
-user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
+
+if (list.files("J://") == "Presidents") {
+  user_wd <- "J:/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+} else {
+  user_wd <- "J:/deans/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+}
+
 user_path <- paste0(user_wd, "\\*.*")
 setwd(user_wd)
 
@@ -599,9 +604,10 @@ if (length(sun_daily_list) != 0) {
   sun_daily_preprocessed <- mapply(preprocess_sun_daily, sun_daily_list)
   
   # Bind daily reports into one data frame
-  for (i in seq(from = 2, to = length(sun_daily_preprocessed), by = 2)) {
-    sun_daily_bind <- rbind(sun_daily_bind, sun_daily_preprocessed[[i]])
-  }
+  sun_daily_bind <- bind_rows(sun_daily_preprocessed[seq(2, length(sun_daily_preprocessed), by = 2)])
+  # for (i in seq(from = 2, to = length(sun_daily_preprocessed), by = 2)) {
+  #   sun_daily_bind <- rbind(sun_daily_bind, sun_daily_preprocessed[[i]])
+  # }
   
 } else {
   sun_daily_preprocessed <- NULL
@@ -613,9 +619,10 @@ if (length(sun_monthly_list) != 0) {
   sun_monthly_preprocessed <- mapply(preprocess_sun_monthly, sun_monthly_list)
   
   # Bind monthly reports into one data frame
-  for (i in seq(from = 2, to = length(sun_monthly_preprocessed), by = 2)) {
-    sun_monthly_bind <- rbind(sun_monthly_bind, sun_monthly_preprocessed[[i]])
-  }
+  sun_monthly_bind <- bind_rows(sun_monthly_preprocessed[seq(2, length(sun_monthly_preprocessed), by = 2)])
+  # for (i in seq(from = 2, to = length(sun_monthly_preprocessed), by = 2)) {
+  #   sun_monthly_bind <- rbind(sun_monthly_bind, sun_monthly_preprocessed[[i]])
+  # }
   
 } else {
   sun_monthly_preprocessed <- NULL
@@ -627,13 +634,18 @@ if (length(scc_list) != 0) {
   scc_daily_preprocessed <- mapply(preprocess_scc, scc_list)
   
   # Remove any labs with incorrect dates then bind daily reports into one data frame
-  for (i in seq(from = 2, to = length(scc_daily_preprocessed), by = 2)) {
-    # Remove any labs from incorrect dates
-    updated_data <- correct_result_dates(scc_daily_preprocessed[[i]], 1)
-    
-    # Compile all dates
-    scc_daily_bind <- rbind(scc_daily_bind, updated_data)
-  }
+  updated_data <- lapply(scc_daily_preprocessed[seq(2, length(scc_daily_preprocessed), by = 2)], 
+                                                 function(x) correct_result_dates(x, number_days = 1))
+  
+  # Bind all data together
+  scc_daily_bind <- bind_rows(updated_data2)
+  # for (i in seq(from = 2, to = length(scc_daily_preprocessed), by = 2)) {
+  #   # Remove any labs from incorrect dates
+  #   updated_data <- correct_result_dates(scc_daily_preprocessed[[i]], 1)
+  #   
+  #   # Compile all dates
+  #   scc_daily_bind <- rbind(scc_daily_bind, updated_data)
+  # }
   
 } else {
   scc_daily_preprocessed <- NULL
