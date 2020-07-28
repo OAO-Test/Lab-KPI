@@ -348,6 +348,8 @@ cp_stratified_data_for_pcharts <- function(defect_data, test) {
 #Exclude weekends
 AP_historical_repo_weekdays <- AP_historical_repo[which(AP_historical_repo$Signed_out_day_only != "Sunday" & AP_historical_repo$Signed_out_day_only != "Saturday" & AP_historical_repo$Patient_setting != "NA"),]
 
+# Convert characters to factors
+
 AP_historical_repo_weekdays$Signed_out_date_only <- as.Date(AP_historical_repo_weekdays$Signed_out_date_only)
 AP_historical_repo_weekdays$Lab_metric_within_target <- as.numeric(AP_historical_repo_weekdays$Lab_metric_within_target)
 AP_historical_repo_weekdays$Patient_metric_avg <- as.numeric(AP_historical_repo_weekdays$Patient_metric_avg)
@@ -371,7 +373,14 @@ AP_historical_repo_weekdays$Facility[AP_historical_repo_weekdays$Facility == "KH
 AP_historical_repo_weekdays$New_Facility_RTR_CYTO <- AP_historical_repo_weekdays$Facility
 
 AP_historical_repo_weekdays[(AP_historical_repo_weekdays$Spec_group == "CYTO GYN" | AP_historical_repo_weekdays$Spec_group == "CYTO NONGYN"),]$New_Facility_RTR_CYTO <- "Centralized Lab"
-  
+
+ap_site_order <- c("MSH", "MSQ", "MSBI","PACC", "MSB", "MSW", "MSSL", "NYEE")
+ap_site_order_RTR <- c("Centralized Lab","MSH", "MSQ", "MSBI","PACC", "MSB", "MSW", "MSSL", "NYEE")
+
+AP_historical_repo_weekdays$Facility <- factor(AP_historical_repo_weekdays$Facility , levels = ap_site_order)
+
+AP_historical_repo_weekdays$New_Facility_RTR_CYTO <- factor(AP_historical_repo_weekdays$New_Facility_RTR_CYTO, levels = ap_site_order_RTR )
+
 #determine the 30 business that will be reported
 ap_unique_dates <- unique(AP_historical_repo_weekdays$Signed_out_date_only)
 
