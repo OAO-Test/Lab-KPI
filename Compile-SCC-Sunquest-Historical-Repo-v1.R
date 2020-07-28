@@ -80,7 +80,7 @@ if (initial_run == TRUE) {
   # Find last date of resulted lab data in historical repository
   last_date <- as.Date(max(existing_repo$ResultDate), format = "%Y-%m-%d")
   # Determine today's date to determine last possible data report
-  todays_date <- as.Date("2020-07-23", format = "%Y-%m-%d")
+  todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
   # Create vector with possible data report dates
   date_range <- seq(from = last_date + 2, to = todays_date, by = "day")
   # Find list of data reports from date range
