@@ -820,6 +820,11 @@ All ED and ICU labs are treated as stat, regardless of documented priority.
 
 **C. diff:** All labs treated as stat. Turnaround time for ambulatory c. diff labs not tracked but included in total resulted volume. 
 
+**All Breast Specimens:** Included all the primary breast specimens. Only labs from ambulatory and inpatient services included.All settings included in resulted volume.
+
+**GI Biopsies:** Included only the samples that are consisted of GI biopsies. Only primary specimen GI biopsies included. Only labs from ambulatory and inpatient services included. All settings included in resulted volume.
+
+**Cyto Non-Gyn:** Included all the primary Cyto Non-Gyn specimens. Only labs from ambulatory and inpatient services included. All settings included in resulted volume.
 
 ### Control Charts of Non-Compliant Labs
 These control charts are p-charts used to track non-compliant labs. Non-compliant labs are defined as those labs that do not meet the target turnaround times from receipt in laboratory to result. Only labs with valid turnaround times are included in this analysis. 
@@ -838,6 +843,7 @@ Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\over
 
 **C. diff:** All labs treated as stat. Turnaround time analysis does not include ambulatory labs.
 
+**All Breast Specimens, GI Biopsies, & Cyto Non-Gyn:** Only labs from ambulatory and inpatient services included in the analysis.
 
 
 
