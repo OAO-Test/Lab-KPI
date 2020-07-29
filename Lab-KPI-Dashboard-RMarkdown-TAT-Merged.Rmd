@@ -2205,11 +2205,21 @@ Labs are classified as missing collections based on the following criteria:
 * SCC: Collection time equal to receive time
 * Sunquest: Collection time equal to order time
 
+* All Breast Specimens:
+    + Included all the primary breast specimens
+    + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
+    + All settings included in resulted volume
+    
+* GI Biopsies:
+    + Included only the samples that are consisted of GI biopsies
+    + Only primary specimen GI biopsies included
+    + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
+    + All settings included in resulted volume
 
-### Surgical Pathology
-
-### Cytology
-
-## {-}
+* Cyto Non-Gyn:
+    + Included all primary Cyto non-Gyn specimens
+    + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
+    + All settings included in resulted volume
+    
 <h6> *End of report.* </h6>
 
