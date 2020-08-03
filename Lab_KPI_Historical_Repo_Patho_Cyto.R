@@ -41,7 +41,7 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 setwd(user_wd)
 
-file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^(KPI REPORT\\ - \\RAW DATA V4).+(2020)\\-(01|02|03|04|05|06|07){1}\\-[0-9]{2}")
+file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^(KPI REPORT\\ - \\RAW DATA V4).+(2020)\\-[0-9]{2}\\-[0-9]{2}")
 
 SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
 
