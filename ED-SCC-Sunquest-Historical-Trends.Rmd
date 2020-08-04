@@ -35,7 +35,7 @@ library(ggQC)
 ```{r Clear history and import relevant data, echo = FALSE, warning = FALSE, message = FALSE}
 rm(list = ls())
 
-user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\SCC Sunquest Script Repo"
+user_wd <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\SCC Sunquest Historical Repo"
 user_path <- paste0(user_wd, "\\*.*")
 setwd(user_wd)
 
