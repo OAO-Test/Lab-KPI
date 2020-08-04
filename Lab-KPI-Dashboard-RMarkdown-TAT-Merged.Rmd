@@ -1551,7 +1551,6 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_c
 
 
 ### Cytology
-<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
 
 #### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
@@ -1563,6 +1562,8 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_c
 rownames(Cytology_Table_Weekday_New3_V3) <- NULL
 Table_Formatting_V2(Cytology_Table_Weekday_New3_V3)
 ```
+<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
+
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
 
@@ -1891,7 +1892,6 @@ Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, patholog
 ```
 
 ### Cytology   
-<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
 
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
@@ -1909,6 +1909,8 @@ Backlog_Accessioned_Table_New3 %>%
   add_header_above(c(" "= 2, "Elapsed Turn Around Time for Backlogged Cases From the Received Time"= 4), background = c("white", "#221F72"), color= "white", font_size = 13)%>%
   collapse_rows(columns = 1)
 ```
+<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
+
 
 #### *Cytology Signed Out Cases Volume (As of `r wday_result_date`)*
 ```{r Cytology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
@@ -2192,8 +2194,9 @@ tat_targets_kable %>%
     + All labs are treated as stat regardless of documented priority and patient setting.
     + Turnaround time for ambulatory C. diff tests are not tracked but rather volume of these labs is monitored.
 
-<h4><b>Turnaround Time Exclusions</b></n4>
-Turnaround time analysis excludes labs with out of order steps (ie, collect after receive), missing timestamps, add-on orders, and labs not originating in IP, ED, or ambulatory settings (ie, outreach).
+<h4><b>Turnaround Time Exclusions</b></h4>
+
+Turnaround time analysis excludes labs with out of order steps (ie, collect after receive), missing timestamps, add-on orders, and labs not originating in IP, ED, or ambulatory settings (ie, Outreach).
 
 <br>
   
