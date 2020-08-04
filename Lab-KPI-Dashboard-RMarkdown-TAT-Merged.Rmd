@@ -2228,5 +2228,3 @@ Labs are classified as missing collections based on the following criteria:
     + All settings included in resulted volume
     
 <h6> *End of report.* </h6>
-
-Add dummy line at the end.
