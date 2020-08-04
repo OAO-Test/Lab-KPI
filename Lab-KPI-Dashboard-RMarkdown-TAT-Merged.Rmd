@@ -47,7 +47,7 @@ library(writexl)
 
 
 ```{r global_options, echo=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+knitr::opts_chunk$set(echo=FALSE, warning=TRUE, message=FALSE)
 ```
 
 ```{r Determine date, warning = FALSE, message = FALSE, echo = FALSE}
@@ -2228,4 +2228,3 @@ Labs are classified as missing collections based on the following criteria:
     + All settings included in resulted volume
     
 <h6> *End of report.* </h6>
-

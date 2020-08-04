@@ -693,5 +693,5 @@ scc_sun_repo <- unique(scc_sun_repo)
 start_date <- format(min(scc_sun_repo$ResultDate), "%m-%d-%y")
 end_date <- format(max(scc_sun_repo$ResultDate), "%m-%d-%y")
 
-write_xlsx(scc_sun_repo, path = paste0(user_wd, "\\SCC Sunquest Script Repo", "\\Hist Repo Test ", start_date, " to ", end_date, " Created ", Sys.Date(), ".xlsx"))
+write_xlsx(scc_sun_repo, path = paste0(user_wd, "\\SCC Sunquest Historical Repo", "\\Hist Repo Test ", start_date, " to ", end_date, " Created ", Sys.Date(), ".xlsx"))
 
