@@ -58,7 +58,7 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list = ls())
 
 user_wd <- "J:\\Deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
-cp_user_path <- paste0(user_wd, "\\SCC Sunquest Script Repo\\*.*")
+cp_user_path <- paste0(user_wd, "\\SCC Sunquest Historical Repo\\*.*")
 ap_user_path <- paste0(user_wd, "\\AP & Cytology Historical Repo\\*.*")
 setwd(user_wd)
 
