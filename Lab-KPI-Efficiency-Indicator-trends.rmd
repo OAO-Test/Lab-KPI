@@ -1,7 +1,10 @@
 ---
 title: "Laboratory Efficiency Indicators: 30 Day Lookback"
-date: "7/24/2020"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
 ---
 
 <h2><span style="color: red;">Draft - Not for Distribution</span></h2>
@@ -689,7 +692,8 @@ ap_stratified_data_for_p_charts <- function(ap_historical_30_day_period_defects,
 #stratified_data_for_AP_p_charts(historical_30_day_period_defects, "CYTO NONGYN")
 
 ```
-# {.tabset}
+
+<br />
 
 ## **Efficiency Indicator Historical Performance** {.tabset}
 
@@ -697,43 +701,43 @@ ap_stratified_data_for_p_charts <- function(ap_historical_30_day_period_defects,
 ```{r Troponin historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "Troponin")
 ```
-<h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory. </h6>
+<h6> *TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory.* </h6>
 
 ### Lactate WB
 ```{r Lactate WB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "Lactate WB")
 ```
-<h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory. </h6>
+<h6> *TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory.* </h6>
 
 ### BUN
 ```{r BUN historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "BUN")
 ```
-<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> *TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
 ### HGB
 ```{r HGB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "HGB")
 ```
-<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> *TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
 ### PT
 ```{r PT historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "PT")
 ```
-<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> *TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
 ### Rapid Flu
 ```{r Rapid Flu historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "Rapid Flu")
 ```
-<h6> TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> *TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
 ### C. diff
 ```{r C. diff historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "C. diff")
 ```
-<h6> TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings. </h6>
+<h6> *TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
 ### All Breast Specimens
 ```{r All Breast Specimens historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
@@ -763,6 +767,8 @@ ap_stratified_data_for_charts(ap_historical_30_day_period_sum_RTR, ap_historical
 ap_stratified_data_for_charts(ap_historical_30_day_period_sum_RTR, ap_historical_30_day_period_sum_CTR, ap_historical_30_day_period_sum_vol, "CYTO NONGYN")
 
 ```
+
+<br />
 
 ## **Control Charts of Non-Compliant Labs** {.tabset}
 ### Troponin
@@ -840,7 +846,7 @@ ap_stratified_data_for_p_charts(ap_historical_30_day_period_defects, "CYTO NONGY
 ```
 
 
-##{-}
+<br />
 
 ## **Assumptions and Methodology** {.tabset}
 ### Definitions
