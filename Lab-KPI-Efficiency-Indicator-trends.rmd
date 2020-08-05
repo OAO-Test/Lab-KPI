@@ -49,8 +49,8 @@ library(ggQC)
 ```
 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=TRUE, message=FALSE)
 ```
 
 
