@@ -2139,6 +2139,23 @@ lab_vol_kable_format(hem_vol_not_wday_table)
 `r if (include_not_wday != TRUE) {"-->"}`
 
 ## **Assumptions and Methodology** {.tabset}
+### Definitions
+<h4><b>Definition table</b></h4>
+The table below summarizes the definitions for some of the terminology used in this dashboard for clarification purposes. 
+
+```{r format table for definitions}
+
+definition_table <- data.frame(read_excel(reference_file, sheet = "Definitions"), stringsAsFactors = FALSE)
+
+definition_table  %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Terminology Used", "Terminology Definition")) %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size =13, background = "#221f72", color = "white")
+
+```
+
 ### Clinical Pathology
 
 <h4><b>Data Sources</b></h4>
@@ -2211,20 +2228,66 @@ Labs are classified as missing collections based on the following criteria:
 * SCC: Collection time equal to receive time
 * Sunquest: Collection time equal to order time
 
+### Anatomic Pathology
+<h4><b>Target Turnaround Times</b></h4>
+The table below summarizes target turnaround times for Anatomic Pathology as agreed upon by clinical and operational leadership. 
+
+```{r Target Turnaround Times Table}
+
+TAT_Targets  %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Test", "Patient Setting","Receive to Result TAT Target (days)", "Collect to Result TAT Target (days)")) %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2, 3, 4), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size =13, background = "#221f72", color = "white") %>%
+  collapse_rows(columns = 1)
+
+```
+
+
+<h4><b>Inclusion and Exclusion Criteria for GI Specimens</b></h4>
+The table below summarizes the GI codes that were included vs. excluded during the TAT and volume calculations as agreed upon by clinical and operational leadership.
+<br>
+Only the codes for GI biopsies are included in the analysis.
+
+```{r GI Codes Table}
+
+GI_Codes  %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Specimen Code", "Included vs. Excluded Codes")) %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size =13, background = "#221f72", color = "white")
+
+```
+
+**Additional notes on target turnaround times:**
+
+* Receive to Result TAT: for anatomic pathology the receive to result TAT; lab KPI metric, is calculated by only using the MSHS business days.
+
+* Collect to Result TAT: for anatomic pathology the collect to result TAT; patient KPI metric, is calculated using all the calendar days.
+
+* Primary Specimens: when any specimen has multiple slides only the first slide is included (spec_sort_order = A).
+
 * All Breast Specimens:
-    + Included all the primary breast specimens
+    + Included all the primary breast specimens only. 
     + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
-    + All settings included in resulted volume
+    + TAT analysis excludes labs with missing timestamps (none valid).
+    + All settings included in the resulted volume
     
 * GI Biopsies:
     + Included only the samples that are consisted of GI biopsies
     + Only primary specimen GI biopsies included
     + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
-    + All settings included in resulted volume
+    + TAT analysis excludes labs with missing timestamps (none valid).
+    + All settings included in the resulted volume
 
 * Cyto Non-Gyn:
     + Included all primary Cyto non-Gyn specimens
     + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
-    + All settings included in resulted volume
+    + TAT analysis excludes labs with missing timestamps (none valid).
+    + All settings included in the resulted volume
+    
+    
     
 <h6> *End of report.* </h6>
