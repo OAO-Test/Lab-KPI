@@ -57,10 +57,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r Clear history and import relevant data, echo = FALSE, warning = FALSE, message = FALSE}
 rm(list = ls())
 
-user_wd <- "J:\\Deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
-cp_user_path <- paste0(user_wd, "\\SCC Sunquest Historical Repo\\*.*")
-ap_user_path <- paste0(user_wd, "\\AP & Cytology Historical Repo\\*.*")
-setwd(user_wd)
+if (list.files("J://") == "Presidents") {
+  user_directory <- "J:/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+} else {
+  user_directory <- "J:/deans/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+}
+
+#user_wd <- "J:\\Deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
+cp_user_path <- paste0(user_directory, "/SCC Sunquest Historical Repo/*.*")
+ap_user_path <- paste0(user_directory, "/AP & Cytology Historical Repo/*.*")
+#setwd(user_wd)
 
 # Import Clinical Pathology historical repository (Sunquest and SCC)
 scc_sun_hist <- read_excel(choose.files(default = cp_user_path, caption = "Select Historical Repository"), sheet = 1, col_names = TRUE)
@@ -79,12 +85,45 @@ site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
 dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 dashboard_priority_order <- c("All", "Stat", "Routine")
 
-#user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\AP & Cytology Historical Repo"
-#user_path <- paste0(user_wd, "\\*.*")
-
 # Sinai color scheme
 mshs_colors = c("#221f72", "#00AEFF", "#D80B8C", "#7f7f7f")
 ```
+
+```{r Reference Data, warning = FALSE, message = FALSE, echo = FALSE}
+# CP and Micro --------------------------------
+# Import analysis reference data starting with test codes for SCC and Sunquest
+# reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
+
+reference_file <- choose.files(default = paste0(user_directory, "/Code Reference/*.*"), caption = "Select analysis reference file")
+test_code <- read_excel(reference_file, sheet = "TestNames")
+
+tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
+tat_targets$Concate <- ifelse(tat_targets$Priority == "All" & tat_targets$`Pt Setting` == "All", tat_targets$Test,
+                              ifelse(tat_targets$Priority != "All" & tat_targets$`Pt Setting` == "All", paste(tat_targets$Test, tat_targets$Priority),
+                                     paste(tat_targets$Test, tat_targets$Priority, tat_targets$`Pt Setting`)))
+
+scc_icu <- read_excel(reference_file, sheet = "SCC_ICU")
+scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")
+sun_icu <- read_excel(reference_file, sheet = "SUN_ICU")
+sun_setting <- read_excel(reference_file, sheet = "SUN_LocType")
+
+mshs_site <- read_excel(reference_file, sheet = "SiteNames")
+
+# To Be Updated in Analysis reference file
+#-----------Patient Setting Excel File-----------#
+#Using Rev Center to determine patient setting
+Patient_Setting <- data.frame(read_excel(reference_file, sheet = "AP_Patient Setting"), stringsAsFactors = FALSE)
+
+#-----------Anatomic Pathology Targets Excel File-----------#
+TAT_Targets <- data.frame(read_excel(reference_file, sheet = "AP_TAT Targets"), stringsAsFactors = FALSE)
+
+#-----------GI Codes Excel File-----------#
+#Upload the exclusion vs inclusion criteria associated with the GI codes
+GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAsFactors = FALSE)
+
+```
+
+
 
 ```{r Format historical repository for Clinical Pathology plotting, echo = FALSE, warning = FALSE, message = FALSE}
 cp_dashboard_tat_summary <- scc_sun_hist %>%
@@ -652,7 +691,7 @@ ap_stratified_data_for_p_charts <- function(ap_historical_30_day_period_defects,
 ```
 # {.tabset}
 
-## Efficiency Indicator Historical Performance {.tabset}
+## **Efficiency Indicator Historical Performance** {.tabset}
 
 ### Troponin
 ```{r Troponin historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
@@ -725,7 +764,7 @@ ap_stratified_data_for_charts(ap_historical_30_day_period_sum_RTR, ap_historical
 
 ```
 
-## Control Charts of Non-Compliant Labs {.tabset}
+## **Control Charts of Non-Compliant Labs** {.tabset}
 ### Troponin
 ```{r Troponin p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
 cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary, test = "Troponin")
@@ -803,29 +842,158 @@ ap_stratified_data_for_p_charts(ap_historical_30_day_period_defects, "CYTO NONGY
 
 ##{-}
 
-## Methodology and Assumptions
-### General Notes
+## **Assumptions and Methodology** {.tabset}
+### Definitions
+<h4><b>Definition table</b></h4>
+The table below summarizes the definitions for some of the terminology used in this dashboard for clarification purposes. 
+
+```{r format table for definitions}
+
+definition_table <- data.frame(read_excel(reference_file, sheet = "Definitions"), stringsAsFactors = FALSE)
+
+definition_table  %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Terminology Used", "Terminology Definition")) %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size =13, background = "#221f72", color = "white")
+
+```
+
+### Clinical Pathology
 The data presented here is based on the compilation of historical data.
 
-### Efficiency Indicator Historical Performance
-Turnaround time percentages within target includes labs with valid turnaround times (ie, labs with missing timestamps or negative turnaround times excluded). Resulted volume includes all labs for each site regardless of turnaround time, order priority, or setting to reflect demand on laboratory resources.
+<h4><b>Data Sources</b></h4>
+MSH and MSQ: Based on daily SCC report. Report name changes daily but follows structure of "DocMM-DD_xxxxxx.xlsx"</br>
+MSBI, MSB, MSW, MSM: Based on daily Sunquest report titled "KPI_Daily_TAT_Report_Updated.xls"</br>
+The table below summarizes the test codes and IDs used from these daily reports.
 
-All ED and ICU labs are treated as stat, regardless of documented priority. 
+```{r Create and format a table for test codes}
+test_codes_kable <- test_code %>%
+  mutate(Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE)) %>%
+  arrange(Test)
 
-**Troponin & Lactate WB:** All labs treated as stat. Settings included in turnaround time analysis are ED, ICU, and Inpatient Non-ICU. All settings included in resulted volume.
+test_codes_kable <- test_codes_kable[ , c("Division", "Test", "SCC_TestID", "SUN_TestCode")]
 
-**BUN, HGB, & PT:** All labs from ED and ICU are treated as stat; otherwise lab priority is based on documented priority.
+test_codes_kable %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Lab Division", "Test", "SCC Test ID", "Sunquest Test Code")) %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2, 3, 4), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size =13, background = "#221f72", color = "white") %>%
+  collapse_rows()
 
-**Rapid Flu:** All labs treated as stat. All settings included in resulted volume.
+```
 
-**C. diff:** All labs treated as stat. Turnaround time for ambulatory c. diff labs not tracked but included in total resulted volume. 
+<h4><b>Target Turnaround Times</b></h4>
+The table below summarizes target turnaround times as agreed upon by clinical and operational leadership. 
+```{r Create and format tables for TAT targets }
+tat_targets_kable <- tat_targets %>%
+  mutate(Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE),
+         Priority = factor(Priority, levels = dashboard_priority_order, ordered = TRUE)) %>%
+  arrange(Test, Priority)
 
-**All Breast Specimens:** Included all the primary breast specimens. Only labs from ambulatory and inpatient services included.All settings included in resulted volume.
+tat_targets_kable$Concate <- NULL
 
-**GI Biopsies:** Included only the samples that are consisted of GI biopsies. Only primary specimen GI biopsies included. Only labs from ambulatory and inpatient services included. All settings included in resulted volume.
+tat_targets_kable %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Test", "Priority", "Patient Setting", "Receive to Result TAT Target (min)", "Collect to Result TAT Target (min)"),
+        caption = "Target Turnaround Times") %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2, 3, 5), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size =13, background = "#221f72", color = "white")
 
-**Cyto Non-Gyn:** Included all the primary Cyto Non-Gyn specimens. Only labs from ambulatory and inpatient services included. All settings included in resulted volume.
+```
 
+<h4><b>Additional notes on target turnaround times:</b></h4>
+
+* Troponin and Lactate WB:
+    + All labs are treated as stat regardless of documented priority and patient setting.
+    + Ambulatory labs excluded from turnaround time analysis
+* Rapid Flu:
+    + All labs are treated as stat regardless of documented priority and patient setting.
+* C. diff:
+    + All labs are treated as stat regardless of documented priority and patient setting.
+    + Turnaround time for ambulatory C. diff tests are not tracked but rather volume of these labs is monitored.
+
+<h4><b>Turnaround Time Exclusions</b></h4>
+
+Turnaround time analysis excludes labs with out of order steps (ie, collect after receive), missing timestamps, add-on orders, and labs not originating in IP, ED, or ambulatory settings (ie, Outreach).
+
+<br>
+  
+<h4><b>Add On Orders</b></h4>
+Add on orders are defined as labs with an order time more than 5 minutes after receive time. These labs are excluded from turnaround time analysis but the volume of these labs is monitored.
+
+<br>
+
+<h4><b>Missing Collections</b></h4>
+Labs are classified as missing collections based on the following criteria:
+
+* SCC: Collection time equal to receive time
+* Sunquest: Collection time equal to order time
+
+### Anatomic Pathology
+The data presented here is based on the compilation of historical data.
+<h4><b>Target Turnaround Times</b></h4>
+The table below summarizes target turnaround times for Anatomic Pathology as agreed upon by clinical and operational leadership. 
+
+```{r Target Turnaround Times Table}
+
+TAT_Targets  %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Test", "Patient Setting","Receive to Result TAT Target (days)", "Collect to Result TAT Target (days)")) %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2, 3, 4), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size =13, background = "#221f72", color = "white") %>%
+  collapse_rows(columns = 1)
+
+```
+
+
+<h4><b>Inclusion and Exclusion Criteria for GI Specimens</b></h4>
+The table below summarizes the GI codes that were included vs. excluded during the TAT and volume calculations as agreed upon by clinical and operational leadership.
+<br>
+Only the codes for GI biopsies are included in the analysis.
+
+```{r GI Codes Table}
+
+GI_Codes  %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Specimen Code", "Included vs. Excluded Codes")) %>%
+  kable_styling(bootstrap = "hover", position = "center", font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size =13, background = "#221f72", color = "white")
+
+```
+
+<h4><b>Additional notes on target turnaround times:</b></h4>
+
+* Receive to Result TAT: for anatomic pathology the receive to result TAT; lab KPI metric, is calculated by only using the MSHS business days.
+
+* Collect to Result TAT: for anatomic pathology the collect to result TAT; patient KPI metric, is calculated using all the calendar days.
+
+* Primary Specimens: when any specimen has multiple slides only the first slide is included (spec_sort_order = A).
+
+* All Breast Specimens:
+    + Included all the primary breast specimens only. 
+    + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
+    + TAT analysis excludes labs with missing timestamps (none valid).
+    + All settings included in the resulted volume
+    
+* GI Biopsies:
+    + Included only the samples that are consisted of GI biopsies
+    + Only primary specimen GI biopsies included
+    + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
+    + TAT analysis excludes labs with missing timestamps (none valid).
+    + All settings included in the resulted volume
+
+* Cyto Non-Gyn:
+    + Included all primary Cyto non-Gyn specimens
+    + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
+    + TAT analysis excludes labs with missing timestamps (none valid).
+    + All settings included in the resulted volume
+    
 ### Control Charts of Non-Compliant Labs
 These control charts are p-charts used to track non-compliant labs. Non-compliant labs are defined as those labs that do not meet the target turnaround times from receipt in laboratory to result. Only labs with valid turnaround times are included in this analysis. 
 
@@ -833,18 +1001,11 @@ Percentage of non-compliant labs calculated as: $\frac{Volume Of Resulted Labs E
 
 Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. 
 
-Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
+Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$. 
 
-**Troponin & Lactate WB:** All labs treated as stat. Settings included in analysis are ED, ICU, and Inpatient Non-ICU.
+Control charts are generated if and only if the average sample size accross the reported perion is more than or equal to 50 labs. n $\ge$ 50 
 
-**BUN, HGB, & PT:** All labs from ED and ICU are treated as stat; otherwise lab priority is based on documented priority.
-
-**Rapid Flu:** All labs treated as stat.
-
-**C. diff:** All labs treated as stat. Turnaround time analysis does not include ambulatory labs.
-
-**All Breast Specimens, GI Biopsies, & Cyto Non-Gyn:** Only labs from ambulatory and inpatient services included in the analysis.
-
+<h6> *End of report.* </h6>
 
 
 

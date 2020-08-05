@@ -2200,7 +2200,7 @@ tat_targets_kable %>%
 
 ```
 
-**Additional notes on target turnaround times:**
+<h4><b>Additional notes on target turnaround times:</b></h4>
 
 * Troponin and Lactate WB:
     + All labs are treated as stat regardless of documented priority and patient setting.
@@ -2261,7 +2261,7 @@ GI_Codes  %>%
 
 ```
 
-**Additional notes on target turnaround times:**
+<h4><b>Additional notes on target turnaround times:</b></h4>
 
 * Receive to Result TAT: for anatomic pathology the receive to result TAT; lab KPI metric, is calculated by only using the MSHS business days.
 
