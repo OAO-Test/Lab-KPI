@@ -47,7 +47,7 @@ library(writexl)
 
 
 ```{r global_options, echo=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=TRUE, message=FALSE)
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 ```
 
 ```{r Determine date, warning = FALSE, message = FALSE, echo = FALSE}
@@ -310,11 +310,11 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # SCC data formatting ----------------------------------------------
   raw_scc[c("Ward", "WARD_NAME", 
              "REQUESTING_DOC", 
-             "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", "Test",
+             "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "Test",
              "COLLECT_CENTER_ID", "SITE", "Site",
              "CLINIC_TYPE", "Setting", "SettingRollUp")] <- lapply(raw_scc[c("Ward", "WARD_NAME", 
                                                                               "REQUESTING_DOC", 
-                                                                              "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "PRIORITY", "Test",
+                                                                              "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "Test",
                                                                               "COLLECT_CENTER_ID", "SITE", "Site",
                                                                               "CLINIC_TYPE", "Setting", "SettingRollUp")], as.factor)
   
@@ -452,11 +452,11 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   # Sunquest data formatting --------------------------------------------
   raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
              "LocType", "LocCode", "LocName", 
-             "SpecimenPriority", "PhysName", "SHIFT",
+             "PhysName", "SHIFT",
              "ReceiveTech", "ResultTech", "PerformingLabCode",
              "Test", "LocandName", "Setting", "SettingRollUp", "Site")] <- 
     lapply(raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
-                     "LocType", "LocCode", "LocName","SpecimenPriority", "PhysName", 
+                     "LocType", "LocCode", "LocName", "PhysName", 
                      "SHIFT", "ReceiveTech", "ResultTech", "PerformingLabCode", "Test", 
                      "LocandName", "Setting", "SettingRollUp", "Site")], as.factor)
   
