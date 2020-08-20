@@ -56,14 +56,14 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 
-# Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-Today <- as.timeDate(as.Date("07/29/2020", format = "%m/%d/%Y"))
+Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+#Today <- as.timeDate(as.Date("07/29/2020", format = "%m/%d/%Y"))
 
 
 #Determine if yesterday was a holiday/weekend 
 #get yesterday's DOW
-# Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-Yesterday <- as.timeDate(as.Date("07/28/2020", format = "%m/%d/%Y"))
+Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+#Yesterday <- as.timeDate(as.Date("07/28/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -649,7 +649,7 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 }
 ```
 
-```{r Begin combining and summarizing data for historical repository, eval = TRUE, echo = FALSE, warning = FALSE, message = FALSE}
+```{r Begin combining and summarizing data for historical repository, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
 # Bind weekday and non-weekday data, if any exists
 if (is.null(scc_sun_not_wday_master) == FALSE) {
   scc_sun_all_days <- rbind(scc_sun_wday_master, scc_sun_not_wday_master)
@@ -2251,13 +2251,15 @@ The table below summarizes the GI codes that were included vs. excluded during t
 Only the codes for GI biopsies are included in the analysis.
 
 ```{r GI Codes Table}
+GI_Codes_updated <- GI_Codes[,c("GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.", "Spec_code")]
 
-GI_Codes  %>%
+GI_Codes_updated  %>%
   kable(format = "html", escape = FALSE, align = "c",
         col.names = c("Specimen Code", "Included vs. Excluded Codes")) %>%
   kable_styling(bootstrap = "hover", position = "center", font_size = 11, full_width = FALSE) %>%
   column_spec(column = c(1, 2), border_right = "thin solid lightgray") %>%
-  row_spec(row = 0, font_size =13, background = "#221f72", color = "white")
+  row_spec(row = 0, font_size =13, background = "#221f72", color = "white") %>%
+  collapse_rows(columns = 1)
 
 ```
 
