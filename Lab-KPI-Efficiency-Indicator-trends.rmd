@@ -7,7 +7,7 @@ output:
     toc_float: true
 ---
 
-<h2><span style="color: red;">Draft - Not for Distribution</span></h2>
+<h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red">
 
 
 ```{r Install and load packages, echo = FALSE, warning = FALSE, message = FALSE}
@@ -753,8 +753,9 @@ ap_stratified_data_for_charts(ap_historical_30_day_period_sum_RTR, ap_historical
 
 ```
 
+
 ### Cyto Gyn Specimens
-<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
+<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
 ```{r Cyto Gyn Specimens historical data, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 
 ap_stratified_data_for_charts(ap_historical_30_day_period_sum_RTR, ap_historical_30_day_period_sum_CTR, ap_historical_30_day_period_sum_vol, "CYTO GYN")
@@ -830,7 +831,7 @@ ap_stratified_data_for_p_charts(ap_historical_30_day_period_defects, "GI")
 ```
 
 ### Cyto Gyn Specimens
-<h1><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h1>
+<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
 ```{r Cyto Gyn Specimens  pchart, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", results='asis'}
 
 ap_stratified_data_for_p_charts(ap_historical_30_day_period_defects, "CYTO GYN")

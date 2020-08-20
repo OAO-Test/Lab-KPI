@@ -2263,29 +2263,31 @@ GI_Codes  %>%
 
 <h4><b>Additional notes on target turnaround times:</b></h4>
 
-* Receive to Result TAT: for anatomic pathology the receive to result TAT; lab KPI metric, is calculated by only using the MSHS business days.
+* Receive to Result TAT: for anatomic pathology this metric only includes MSHS business days and is a measure of internal laboratory performance.
 
-* Collect to Result TAT: for anatomic pathology the collect to result TAT; patient KPI metric, is calculated using all the calendar days.
+* Collect to Result TAT: for anatomic pathology this metric includes all calendar days and is a patient-centric measure of performance.
 
-* Primary Specimens: when any specimen has multiple slides only the first slide is included (spec_sort_order = A).
+* At this phase, target turnaround times for collect to result have not been established. This metric will be tracked in order to understand current performance and establish future targets.
+
+* Primary Specimens: When a specimen has multiple slides, only the first slide is included. The primary slide is identified as those with spec_sort_order = A.
 
 * All Breast Specimens:
     + Included all the primary breast specimens only. 
     + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
-    + TAT analysis excludes labs with missing timestamps (none valid).
+    + TAT analysis excludes labs with missing timestamps
     + All settings included in the resulted volume
     
 * GI Biopsies:
     + Included only the samples that are consisted of GI biopsies
     + Only primary specimen GI biopsies included
     + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
-    + TAT analysis excludes labs with missing timestamps (none valid).
+    + TAT analysis excludes labs with missing timestamps
     + All settings included in the resulted volume
 
 * Cyto Non-Gyn:
     + Included all primary Cyto non-Gyn specimens
     + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
-    + TAT analysis excludes labs with missing timestamps (none valid).
+    + TAT analysis excludes labs with missing timestamps
     + All settings included in the resulted volume
     
     
