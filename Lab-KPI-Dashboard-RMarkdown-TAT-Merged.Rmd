@@ -1569,7 +1569,8 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V3)
 
 ```{r Lab KPI Form for Qualitative Indicators, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
 #read the excel sheet that is generated from office form responses
-KPI_Form <- data.frame(read_excel(choose.files(caption = "Select the KPI form generated today"), 1), stringsAsFactors = FALSE)
+KPI_Form <- data.frame(read_excel(choose.files(default = paste0(user_directory, "/Lab KPI Form/*.*"), caption = "Select the KPI form generated today"), 1), stringsAsFactors = FALSE)
+
 
 #Determine the dates within the KPI excel sheet and report only the latest date
 KPI_Form$Completion_Date <- as.Date(as.POSIXct(KPI_Form$Completion.time,tz="",format='%m/%d/%y %I:%M %p'))
@@ -1670,7 +1671,7 @@ Formatted_Clinical_Labs_Melt_New3 <- Formatted_Clinical_Labs_Melt_New2[,c(1:9)]
 Comments_Clinical_Labs <- Formatted_Clinical_Labs_Melt_New2[,c(1,10)]
 Comments_Clinical_Labs[is.na(Comments_Clinical_Labs)] <- "No Issues Reported (Safe)"
 
-#Comments_Clinical_Labs$IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident[Comments_Clinical_Labs$IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident == "None" || Comments_Clinical_Labs$IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident == "none" || Comments_Clinical_Labs$IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident == "N/A"|| Comments_Clinical_Labs$IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident == "n/a" || Comments_Clinical_Labs$IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident == "na" || Comments_Clinical_Labs$IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident == "NA"] <- "No Issues Reported (Safe)"
+Comments_Clinical_Labs[Comments_Clinical_Labs == "None" | Comments_Clinical_Labs == "NONE"| Comments_Clinical_Labs == "none" | Comments_Clinical_Labs == "N/A"| Comments_Clinical_Labs == "n/a" | Comments_Clinical_Labs == "na" | Comments_Clinical_Labs == "NA"] <- "No Issues Reported (Safe)"
 
 ###### --------------- now decast the LIS  table --------------- ######
 if(is.null(Formatted_LIS_New) || nrow(Formatted_LIS_New) == 0){
@@ -1715,6 +1716,9 @@ Never_Events_Melt <- melt(Never_Events, id =c("Select.your.branch.facility", "NE
 Never_Events_Melt$value[is.na(Never_Events_Melt$value)] <- "None"
 Never_Events_Melt$value[Never_Events_Melt$value == 1] <- "Present"
 
+Never_Events_Melt[Never_Events_Melt == "None" | Never_Events_Melt == "NONE"| Never_Events_Melt == "none" | Never_Events_Melt == "N/A"| Never_Events_Melt == "n/a" | Never_Events_Melt == "na" | Never_Events_Melt == "NA"] <- "None"
+
+
 Formatted_Never_Event_Melt <- Conditional_Formatting_Kpi_Form(Never_Events_Melt)
 
 Formatted_Never_Event <- dcast(Formatted_Never_Event_Melt,Select.your.branch.facility+NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.+ X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable. ~ variable)
@@ -1742,10 +1746,14 @@ rownames(Formatted_Never_Event) <- NULL
 Good_Catch <- Formatted_Never_Event[,c(1,7)]
 Good_Catch[is.na(Good_Catch)] <- "No Issues Reported"
 
+Good_Catch[Good_Catch == "None" | Good_Catch == "NONE"| Good_Catch == "none" | Good_Catch == "N/A"| Good_Catch == "n/a" | Good_Catch == "na" | Good_Catch == "NA" | Good_Catch == 0] <- "No Issues Reported"
+
 #Good_Catch_New <- Good_Catch[which(!(is.na(Good_Catch$X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable.))),]
 
 Never_Events_Comments <- Formatted_Never_Event[,c(1,6)]
 Never_Events_Comments[is.na(Never_Events_Comments)] <- "No Issues Reported"
+
+Never_Events_Comments[Never_Events_Comments == "None" | Never_Events_Comments == "NONE"| Never_Events_Comments == "none" | Never_Events_Comments == "N/A"| Never_Events_Comments == "n/a" | Never_Events_Comments == "na" | Never_Events_Comments == "NA" | Never_Events_Comments == 0] <- "No Issues Reported"
 
 Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
 
