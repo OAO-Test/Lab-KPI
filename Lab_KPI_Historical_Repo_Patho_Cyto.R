@@ -11,6 +11,8 @@ library(formattable)
 library(rmarkdown)
 library(writexl)
 
+rm(list = ls())
+
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
@@ -41,7 +43,8 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 setwd(user_wd)
 
-file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^(KPI REPORT\\ - \\RAW DATA V4).+(2020)\\-[0-9]{2}\\-[0-9]{2}")
+file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = c("^(KPI REPORT\\ - \\RAW DATA V4).+(2020)\\-[0-9]{2}\\-[0-9]{2}", "^(KPI REPORT\\ - \\RAW DATA V4_V2).+(2020)\\-[0-9]{2}\\-[0-9]{2}"))
+
 
 SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
 
@@ -82,6 +85,7 @@ GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAs
 
 # create an extra column for old Facility and change the facility from MSSM to MSH 
 SP_Dataframe_combined$Facility_Old <- SP_Dataframe_combined$Facility
+SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "*failed to decode utf16*MSH"] <- "MSH"
 SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "MSS"] <- "MSH"
 SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "STL"] <- "SL"
 SP_Dataframe_combined$spec_group[SP_Dataframe_combined$spec_group == "BREAST"] <- "Breast"
