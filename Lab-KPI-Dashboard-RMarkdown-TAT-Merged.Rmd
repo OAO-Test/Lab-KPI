@@ -777,7 +777,13 @@ pre_processing_pp <- function(Raw_Data){
     Return_Tables <- NULL
   } else {
     #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
-    Raw_Data_PS <- merge(x=Raw_Data, y=Patient_Setting, all.x = TRUE ) 
+    Raw_Data_PS <- merge(x=Surgical_Pathology_Weekday, y=Patient_Setting, all.x = TRUE ) 
+    
+    #make sure to fix the MSBK patient type based on the extra column in the new report
+    
+    Raw_Data_PS$Patient.Setting[Raw_Data_PS$Rev_ctr == "MSBK" & (Raw_Data_PS$patient_type == "A" | Raw_Data_PS$patient_type == "O")] <- "Amb"
+    
+    Raw_Data_PS$Patient.Setting[Raw_Data_PS$Rev_ctr == "MSBK" & Raw_Data_PS$patient_type == "IN"] <- "IP"
 
     #vlookup targets based on spec_group and patient setting
     Raw_Data_New <- merge(x=Raw_Data_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
