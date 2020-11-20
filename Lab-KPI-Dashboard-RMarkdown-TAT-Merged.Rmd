@@ -134,12 +134,12 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),],stringsAsFactors = FALSE)
   #
   # Import EPIC Cytology data
-  Epic_Holiday_Monday_or_Friday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Recent Holiday"), skip = 1, 1)
-  Epic_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Sunday"), skip = 1, 1)
-  Epic_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Saturday"), skip = 1, 1)
+  Epic_Holiday_Monday_or_Friday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Recent Holiday"), 1)
+  Epic_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Sunday"), 1)
+  Epic_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Saturday"), 1)
   #Merge the weekend data with the holiday data in one data frame
   Epic_Not_Weekday <- data.frame(rbind(Epic_Holiday_Monday_or_Friday ,Epic_Sunday,Epic_Saturday),stringsAsFactors = FALSE)
-  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
+  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), 1)
 } else if ((Holiday_Det) & (Yesterday_Day =="Sun")){ # Scenario 2: Regular Monday (Need to select 3 files)
   # Save scenario
   scenario <- 2
@@ -169,11 +169,11 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
   #
   # Import Epic Cytology data
-  Epic_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Sunday"), skip = 1, 1)
-  Epic_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Saturday"), skip = 1, 1)
+  Epic_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Sunday"), 1)
+  Epic_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Saturday"), 1)
   #Merge the weekend data with the holiday data in one data frame
   Epic_Not_Weekday <- data.frame(rbind(Epic_Sunday,Epic_Saturday),stringsAsFactors = FALSE)
-  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
+  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), 1)
 } else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sun"))){ #Scenario 3: Midweek holiday (Need to select 2 files)
   # Save scenario
   scenario <- 3
@@ -196,9 +196,9 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
   #
   # Import Powerpath data
-  Epic_Holiday_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Recent Holiday"), skip = 1, 1)
+  Epic_Holiday_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Recent Holiday"), 1)
   Epic_Not_Weekday <- data.frame(Epic_Holiday_Weekday, stringsAsFactors = FALSE)
-  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
+  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), 1)
 } else { #Scenario 4: Tue-Fri without holidays (Need to select 1 file)
   # Save scenario
   scenario <- 4
@@ -217,7 +217,7 @@ if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHolid
   PP_Not_Weekday <- NULL
   #
   # Import Epic Cytology data
-  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
+  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), 1)
   Epic_Not_Weekday <- NULL
 }
 
@@ -737,7 +737,7 @@ PP_Weekday$spec_group[PP_Weekday$spec_group == "BREAST"] <- "Breast"
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
 
-Cytology_Weekday_Raw <- PP_Weekday[which((PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
+  Cytology_Weekday_Raw <- PP_Weekday[which((PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
 
 Cytology_Not_Weekday_Raw <- PP_Not_Weekday[which((PP_Not_Weekday$spec_group=="CYTO NONGYN" | PP_Not_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
 
