@@ -724,7 +724,22 @@ test_results <- scc_sun_all_days_subset %>%
 ```
 
 
-```{r Custom function for preprocessing raw Powerpath data and calling function, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Custom function for preprocessing raw Powerpath and Epic data and calling function, warning = FALSE, message = FALSE, echo = FALSE}
+
+##preprocessing for epic data
+
+#we are only looking for the specimens that were finalized/final edited
+Epic_Weekday_Final <- Epic_Weekday[which(Epic_Weekday$LAB_STATUS =="Final result" | Epic_Weekday$LAB_STATUS =="Edited Result - FINAL"),]
+
+#change the column order - the SPECIMEN_ID to the beginning to be able to match the two dataframes
+#col_idx <- grep("SPECIMEN_ID", names(Epic_Weekday_Final))
+#Epic_Weekday_Final <- Epic_Weekday_Final[, c(col_idx, (1:ncol(Epic_Weekday_Final))[-col_idx])]
+#names(Epic_Weekday_Final)
+
+#get only the SPECIMEN_ID Column from Epic data
+Epic_finalized_specimen <- NULL
+Epic_finalized_specimen$Case_no <- Epic_Weekday_Final$SPECIMEN_ID
+
 #standardize column names
 #GI_codes_column_name <- c("Specimen_code", "GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.")
 #colnames(GI_Codes) <- GI_codes_column_name
@@ -737,9 +752,14 @@ PP_Weekday$spec_group[PP_Weekday$spec_group == "BREAST"] <- "Breast"
 #Cytology
 #Keep the cyto gyn and cyto non-gyn
 
-  Cytology_Weekday_Raw <- PP_Weekday[which((PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
+Cytology_Weekday_Raw <- PP_Weekday[which((PP_Weekday$spec_group=="CYTO NONGYN" | PP_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
 
 Cytology_Not_Weekday_Raw <- PP_Not_Weekday[which((PP_Not_Weekday$spec_group=="CYTO NONGYN" | PP_Not_Weekday$spec_group=="CYTO GYN") & PP_Weekday$spec_sort_order=="A"),]
+
+Cytology_Weekday_Finalized <- merge(x = Cytology_Weekday_Raw, y= Epic_finalized_specimen)
+
+#for testing the logic
+#write.csv(Cytology_Weekday_Finalized, "mergetrial.csv")
 
 #------------------------------Extract the All Breast and GI Specimens Data Only------------------------------#
 
@@ -801,7 +821,7 @@ pre_processing_pp <- function(Raw_Data){
     Return_Tables <- NULL
   } else {
     #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
-    Raw_Data_PS <- merge(x=Surgical_Pathology_Weekday, y=Patient_Setting, all.x = TRUE ) 
+    Raw_Data_PS <- merge(x=Raw_Data, y=Patient_Setting, all.x = TRUE ) 
     
     #make sure to fix the MSBK patient type based on the extra column in the new report
     
@@ -867,13 +887,13 @@ pre_processing_pp <- function(Raw_Data){
   return(Return_Tables)
 }
 
-Cytology_Table_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[1]]
+Cytology_Table_Weekday <- pre_processing_pp(Cytology_Weekday_Finalized)[[1]]
 Cytology_Table_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[1]]
-Cytology_Table_Weekday_V2 <- pre_processing_pp(Cytology_Weekday_Raw)[[2]]
+Cytology_Table_Weekday_V2 <- pre_processing_pp(Cytology_Weekday_Finalized)[[2]]
 Cytology_Table_Not_Weekday_V2 <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[2]]
-Cytology_Stratified_Vol_Weekday <- pre_processing_pp(Cytology_Weekday_Raw)[[3]]
+Cytology_Stratified_Vol_Weekday <- pre_processing_pp(Cytology_Weekday_Finalized)[[3]]
 Cytology_Stratified_Vol_Not_Weekday <- pre_processing_pp(Cytology_Not_Weekday_Raw)[[3]]
-Cytology_Table_Weekday_Raw <- pre_processing_pp(Cytology_Weekday_Raw)[[4]]
+Cytology_Table_Weekday_Raw <- pre_processing_pp(Cytology_Weekday_Finalized)[[4]]
 
 Surgical_Pathology_Table_Weekday <- pre_processing_pp(Surgical_Pathology_Weekday)[[1]]
 #Surgical_Pathology_Table_Not_Weekday <- pre_processing_pp(Surgical_Pathology_Not_Weekday)[[1]]
@@ -912,10 +932,10 @@ Cytology_case_Volume_DOW <- as.numeric(Cytology_Backlog_Volume$Cyto_Backlog[1])/
 
 #accessioned volume
 #1. Find the date that we need to report --> the date of the last weekday
-Accessioned_Date <- as.Date(Cytology_Weekday_Raw$signed_out_date[1])
+Accessioned_Date <- as.Date(Cytology_Weekday_Finalized$signed_out_date[1])
 #2. count the accessioned volume that was accessioned on that date from the cytology report
-Cytology_Weekday_Raw$Accessioned_Date_Only <- as.Date(Cytology_Weekday_Raw$Received_Date)
-Cytology_Accessioned_Vol1 <- summarise(group_by(Cytology_Weekday_Raw,spec_group), Cyto_Acc_Vol1 = as.numeric(sum(Accessioned_Date == Accessioned_Date_Only, na.rm = TRUE)))
+Cytology_Weekday_Finalized$Accessioned_Date_Only <- as.Date(Cytology_Weekday_Finalized$Received_Date)
+Cytology_Accessioned_Vol1 <- summarise(group_by(Cytology_Weekday_Finalized,spec_group), Cyto_Acc_Vol1 = as.numeric(sum(Accessioned_Date == Accessioned_Date_Only, na.rm = TRUE)))
 
 Cytology_Accessioned_Vol1$spec_group <- factor(Cytology_Accessioned_Vol1$spec_group, levels = c("CYTO GYN", "CYTO NONGYN"))
 
@@ -953,7 +973,7 @@ Historical_Repo <- read_excel(paste0(user_directory,"/AP & Cytology Historical R
 #Historical_Repo$Signed_out_date_only <- as.Date(Historical_Repo$Signed_out_date_only, format='%m/%d/%Y')
 
 #2. append all the summary tables together
-Cytology_Table_Weekday_Summarized <- pre_processing_pp(Cytology_Weekday_Raw)[[5]]
+Cytology_Table_Weekday_Summarized <- pre_processing_pp(Cytology_Weekday_Finalized)[[5]]
 Surgical_Pathology_Table_Weekday_Summarized <- pre_processing_pp(Surgical_Pathology_Weekday)[[5]]
 
 current_summary <- rbind(Cytology_Table_Weekday_Summarized, Surgical_Pathology_Table_Weekday_Summarized)
