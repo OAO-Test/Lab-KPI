@@ -79,23 +79,23 @@ if (initial_run == TRUE) {
   aggregated_1_2 <- aggregated_1_2[, c("Facility",	"Priority",	"spec_group", "Spec_code",	"Specimen_description",	"CPT_code",	"Fee_sch",	"Rev_ctr",	"Encounter_no",	"MRN",	"AGE",	"Case_no",	"Case_created_date",	"Collection_Date",	"Received_Date",	"signed_out_date",	"TAT",	"signed_out_Pathologist",	"Refmd_name",	"Refmd_code",	"NPI_NO",	"spec_sort_order","patient_type")]
   
   #### bind the rows for the daily data
-  SP_Dataframe_combined <- bind_rows(SP_list)
-  SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility ==  "Page -1 of 1",]
+  SP_Dataframe_combined_ <- bind_rows(SP_list)
+  SP_Dataframe_combined_ <- SP_Dataframe_combined_[!SP_Dataframe_combined_$Facility ==  "Page -1 of 1",]
   
   #### bind the daily data with the aggregated data
-  SP_Dataframe_combined_ <- rbind(aggregated_1_2, SP_Dataframe_combined)
+  SP_Dataframe_combined <- rbind(aggregated_1_2, SP_Dataframe_combined_)
   
   ##### pull EPIC cytology daily data
   ### pull daily data
   file_list_epic <- list.files(path = paste0(user_wd, "\\EPIC Cytology"), pattern = "^MSHS Pathology Orders EPIC.+(2020)\\-[0-9]{2}\\-[0-9]{2}")
   epic_cyto_list <- lapply(file_list_epic, function(x) read_excel(path = paste0(user_wd, "\\EPIC Cytology\\", x)))
-  epic_Dataframe_combined <- bind_rows(epic_cyto_list)
+  epic_Dataframe_combined_ <- bind_rows(epic_cyto_list)
   
   ##### pull EPIC aggregated data 
   aggregatedEpic <- read_excel(path = paste0(user_wd,"\\EPIC Cytology\\MSHS Pathology Orders EPIC 2020-01-01  to 2020-11-04.xlsx"))
   
   #### bind the daily data with the aggregated data
-  epic_Dataframe_combined_ <- rbind(aggregatedEpic, epic_Dataframe_combined)
+  epic_Dataframe_combined <- rbind(aggregatedEpic, epic_Dataframe_combined_)
   
 } else{
   # Import existing historical repository
@@ -127,7 +127,7 @@ if (initial_run == TRUE) {
   SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility ==  "Page -1 of 1",]
   
   ##### pull EPIC cytology daily data
-  file_list_epic <- list.files(path = paste0(user_wd, "\\EPIC Cytology"), pattern = pattern = paste0("^MSHS Pathology Orders EPIC.+",date_range, ".xlsx"))
+  file_list_epic <- list.files(path = paste0(user_wd, "\\EPIC Cytology"), pattern = paste0("^MSHS Pathology Orders EPIC.+",date_range, ".xlsx"))
   epic_cyto_list <- lapply(file_list_epic, function(x) read_excel(path = paste0(user_wd, "\\EPIC Cytology\\", x)))
   epic_Dataframe_combined <- bind_rows(epic_cyto_list)
 }
@@ -151,6 +151,19 @@ TAT_Targets <- data.frame(read_excel(reference_file, sheet = "AP_TAT Targets"), 
 #Upload the exclusion vs inclusion criteria associated with the GI codes
 GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAsFactors = FALSE)
 
+##preprocessing for epic data
+
+#we are only looking for the specimens that were finalized/final edited
+Epic_Weekday_Final <- epic_Dataframe_combined[which(epic_Dataframe_combined$LAB_STATUS =="Final result" | epic_Dataframe_combined$LAB_STATUS =="Edited Result - FINAL"),]
+
+#get only the SPECIMEN_ID Column from Epic data
+Epic_finalized_specimen <- NULL
+Epic_finalized_specimen <- as.data.frame(Epic_Weekday_Final$SPECIMEN_ID)
+colnames(Epic_finalized_specimen) <- c("Case_no")
+
+#keep only the unique specimen IDs
+Epic_finalized_specimen <- unique(Epic_finalized_specimen)
+
 # create an extra column for old Facility and change the facility from MSSM to MSH 
 SP_Dataframe_combined$Facility_Old <- SP_Dataframe_combined$Facility
 SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "*failed to decode utf16*MSH"] <- "MSH"
@@ -164,7 +177,27 @@ SP_Dataframe_combined$spec_group[SP_Dataframe_combined$spec_group == "BREAST"] <
 
 SP_Dataframe_combined_Exc <- merge(x = SP_Dataframe_combined, y= GI_Codes, all.x = TRUE)
 
-Cytology <- SP_Dataframe_combined_Exc[which((SP_Dataframe_combined_Exc$spec_group=="CYTO NONGYN" | SP_Dataframe_combined_Exc$spec_group=="CYTO GYN") & SP_Dataframe_combined_Exc$spec_sort_order=="A"),]
+Cytology_ <- SP_Dataframe_combined_Exc[which((SP_Dataframe_combined_Exc$spec_group=="CYTO NONGYN" | SP_Dataframe_combined_Exc$spec_group=="CYTO GYN") & SP_Dataframe_combined_Exc$spec_sort_order=="A"),]
+# order dataframe by signed out date from newest to oldest
+Cytology_ <- Cytology_[order(Cytology_$signed_out_date, decreasing =TRUE ),]
+# order dataframe based on case no
+Cytology_ <- Cytology_[order(Cytology_$Case_no),]
+Cytology_ <- unique(Cytology_)
+
+#create a column for unique case numbers
+Cytology_$unique_Case_no <- TRUE
+
+#add false next to the not unique case number and the older date 
+for (i in 1: length(Cytology_$Case_no)){
+  ifelse(Cytology_$Case_no[i+1] == Cytology_$Case_no[i], Cytology_$unique_Case_no[i+1] <- FALSE, Cytology_$unique_Case_no[i+1] <- TRUE)
+  } 
+
+#only keep the unique case number with the newest date 
+Cytology_ <- Cytology_[which(Cytology_$unique_Case_no == TRUE),]
+
+#only keep the powerpath data that matched with EPIC cytology
+Cytology <- merge(x = Cytology_, y= Epic_finalized_specimen )
+Cytology$unique_Case_no <- NULL
 
 #find case numbers with GI_Code = exclude
 Exclude_GI_Codes_DF <- SP_Dataframe_combined_Exc[which((SP_Dataframe_combined_Exc$spec_group=="GI") & (SP_Dataframe_combined_Exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Exclude")),]
@@ -175,6 +208,7 @@ Surgical_Pathology<- SP_Dataframe_combined_Exc[which((((SP_Dataframe_combined_Ex
 #SP_Dataframe_combined_Exc <- SP_Dataframe_combined_Exc[which(((SP_Dataframe_combined_Exc$spec_group=="GI") &(SP_Dataframe_combined_Exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | SP_Dataframe_combined_Exc$spec_group=="Breast" | SP_Dataframe_combined_Exc$spec_group=="CYTO NONGYN" | SP_Dataframe_combined_Exc$spec_group=="CYTO GYN"),]
 
 SP_Dataframe_combined_New <- rbind(Cytology, Surgical_Pathology)
+SP_Dataframe_combined_New <- unique(SP_Dataframe_combined_New)
 #------------------------------Data Pre-Processing------------------------------#
 ############Create a function for Data pre-processing############
 
