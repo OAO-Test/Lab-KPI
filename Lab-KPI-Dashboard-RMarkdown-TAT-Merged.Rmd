@@ -738,7 +738,11 @@ Epic_Weekday_Final <- Epic_Weekday[which(Epic_Weekday$LAB_STATUS =="Final result
 
 #get only the SPECIMEN_ID Column from Epic data
 Epic_finalized_specimen <- NULL
-Epic_finalized_specimen$Case_no <- Epic_Weekday_Final$SPECIMEN_ID
+Epic_finalized_specimen <- as.data.frame(Epic_Weekday_Final$SPECIMEN_ID)
+colnames(Epic_finalized_specimen) <- c("Case_no")
+
+#keep only the unique specimen IDs
+Epic_finalized_specimen <- unique(Epic_finalized_specimen)
 
 #standardize column names
 #GI_codes_column_name <- c("Specimen_code", "GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.")
