@@ -43,25 +43,94 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
 setwd(user_wd)
 
-file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = c("^(KPI REPORT\\ - \\RAW DATA V4).+(2020)\\-[0-9]{2}\\-[0-9]{2}", "^(KPI REPORT\\ - \\RAW DATA V4_V2).+(2020)\\-[0-9]{2}\\-[0-9]{2}"))
+#import historical data for first run vs. future runs
+initial_run <- TRUE
 
-
-SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
-
-for (i in (1: length(SP_list))){
-  #check if any of the dates was imported as char
-  if (is.character(SP_list[[i]]$Collection_Date)){
-    SP_list[[i]]$Collection_Date <- as.numeric(SP_list[[i]]$Collection_Date)
-    SP_list[[i]]$Collection_Date <- as.Date(SP_list[[i]]$Collection_Date, origin = "1899-12-30")
-    SP_list[[i]]$Collection_Date <- as.POSIXct(SP_list[[i]]$Collection_Date,tz="", format='%m/%d/%y %I:%M %p')
-  } else {
-    SP_list[[i]]$Collection_Date <- SP_list[[i]]$Collection_Date
-  }
-}
+if (initial_run == TRUE) {
   
+  ##### pull powerpath daily data 
+  file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^KPI REPORT\\ - \\RAW DATA V4_V2.+(2020)\\-[0-9]{2}\\-[0-9]{2}")
+  
+  SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
+  
+  ### fix the collection date for the powerpath daily data
+  for (i in (1: length(SP_list))){
+    #check if any of the dates was imported as char
+    if (is.character(SP_list[[i]]$Collection_Date)){
+      SP_list[[i]]$Collection_Date <- as.numeric(SP_list[[i]]$Collection_Date)
+      SP_list[[i]]$Collection_Date <- as.Date(SP_list[[i]]$Collection_Date, origin = "1899-12-30")
+      SP_list[[i]]$Collection_Date <- as.POSIXct(SP_list[[i]]$Collection_Date,tz="", format='%m/%d/%y %I:%M %p')
+    } else {
+      SP_list[[i]]$Collection_Date <- SP_list[[i]]$Collection_Date
+    }
+  }
+  ##### pull the powerpath aggregated data 
+  aggregated_1 <- read_excel(path = paste0(user_wd,"\\AP & Cytology Signed Cases Reports\\KPI_RAW_V4_V2_Jan-Sept-2020 file1.xlsx"))
+  aggregated_2 <- read_excel(path = paste0(user_wd,"\\AP & Cytology Signed Cases Reports\\KPI_RAW_V4_V2_Jan-Sept-2020 file2.xlsx"))
+  
+  ## correct the collection date
+  aggregated_1_2 <- rbind(aggregated_1, aggregated_2)
+  aggregated_1_2$Collection_Date <- as.numeric(aggregated_1_2$Collection_Date)
+  aggregated_1_2$Collection_Date <- as.Date(aggregated_1_2$Collection_Date, origin = "1899-12-30")
+  aggregated_1_2$Collection_Date <- as.POSIXct(aggregated_1_2$Collection_Date,tz="", format='%m/%d/%y %I:%M %p')
+  
+  ##change the column names of the aggregated data and their order to match the daily data
+  colnames(aggregated_1_2) <- c("Facility",	"Priority",	"spec_group",	"spec_sort_order",	"Spec_code",	"Specimen_description",	"CPT_code",	"Fee_sch",	"Rev_ctr",	"Encounter_no",	"MRN",	"AGE",	"Case_no",	"Case_created_date",	"Collection_Date",	"Received_Date",	"signed_out_date",	"TAT",	"signed_out_Pathologist",	"Refmd_name",	"Refmd_code",	"NPI_NO",	"patient_type")
+  aggregated_1_2 <- aggregated_1_2[, c("Facility",	"Priority",	"spec_group", "Spec_code",	"Specimen_description",	"CPT_code",	"Fee_sch",	"Rev_ctr",	"Encounter_no",	"MRN",	"AGE",	"Case_no",	"Case_created_date",	"Collection_Date",	"Received_Date",	"signed_out_date",	"TAT",	"signed_out_Pathologist",	"Refmd_name",	"Refmd_code",	"NPI_NO",	"spec_sort_order","patient_type")]
+  
+  #### bind the rows for the daily data
+  SP_Dataframe_combined <- bind_rows(SP_list)
+  SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility ==  "Page -1 of 1",]
+  
+  #### bind the daily data with the aggregated data
+  SP_Dataframe_combined_ <- rbind(aggregated_1_2, SP_Dataframe_combined)
+  
+  ##### pull EPIC cytology daily data
+  ### pull daily data
+  file_list_epic <- list.files(path = paste0(user_wd, "\\EPIC Cytology"), pattern = "^MSHS Pathology Orders EPIC.+(2020)\\-[0-9]{2}\\-[0-9]{2}")
+  epic_cyto_list <- lapply(file_list_epic, function(x) read_excel(path = paste0(user_wd, "\\EPIC Cytology\\", x)))
+  epic_Dataframe_combined <- bind_rows(epic_cyto_list)
+  
+  ##### pull EPIC aggregated data 
+  aggregatedEpic <- read_excel(path = paste0(user_wd,"\\EPIC Cytology\\MSHS Pathology Orders EPIC 2020-01-01  to 2020-11-04.xlsx"))
+  
+  #### bind the daily data with the aggregated data
+  epic_Dataframe_combined_ <- rbind(aggregatedEpic, epic_Dataframe_combined)
+  
+} else{
+  # Import existing historical repository
+  existing_powerpath_repo <- read_excel(choose.files(default = user_path, caption = "Select Historical Repository"), sheet = 1, col_names = TRUE)
+  #
+  # Find last date of resulted lab data in historical repository
+  last_date <- as.Date(max(existing_powerpath_repo$Signed_out_date_only), format = "%Y-%m-%d")
+  # Determine today's date to determine last possible data report
+  todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
+  # Create vector with possible data report dates
+  date_range <- seq(from = last_date + 2, to = todays_date, by = "day")
 
-SP_Dataframe_combined <- bind_rows(SP_list)
-SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility ==  "Page -1 of 1",]
+  ##### pull powerpath daily data 
+  file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = paste0("^KPI REPORT\\ - \\RAW DATA V4_V2.+",date_range, ".xlsx"))
+  
+  SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
+  
+  for (i in (1: length(SP_list))){
+    #check if any of the dates was imported as char
+    if (is.character(SP_list[[i]]$Collection_Date)){
+      SP_list[[i]]$Collection_Date <- as.numeric(SP_list[[i]]$Collection_Date)
+      SP_list[[i]]$Collection_Date <- as.Date(SP_list[[i]]$Collection_Date, origin = "1899-12-30")
+      SP_list[[i]]$Collection_Date <- as.POSIXct(SP_list[[i]]$Collection_Date,tz="", format='%m/%d/%y %I:%M %p')
+    } else {
+      SP_list[[i]]$Collection_Date <- SP_list[[i]]$Collection_Date
+    }
+  }
+  SP_Dataframe_combined <- bind_rows(SP_list)
+  SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility ==  "Page -1 of 1",]
+  
+  ##### pull EPIC cytology daily data
+  file_list_epic <- list.files(path = paste0(user_wd, "\\EPIC Cytology"), pattern = pattern = paste0("^MSHS Pathology Orders EPIC.+",date_range, ".xlsx"))
+  epic_cyto_list <- lapply(file_list_epic, function(x) read_excel(path = paste0(user_wd, "\\EPIC Cytology\\", x)))
+  epic_Dataframe_combined <- bind_rows(epic_cyto_list)
+}
 
 #cyto_gyn_combined <- SP_Dataframe_combined[which(SP_Dataframe_combined$spec_group == "CYTO GYN"),]
 #write.csv(cyto_gyn_combined, "cyto_gyn_combined.csv")
@@ -71,7 +140,6 @@ SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility =
 # reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
 reference_file <- choose.files(caption = "Select analysis reference file")
 
-# To Be Updated in Analysis reference file
 #-----------Patient Setting Excel File-----------#
 #Using Rev Center to determine patient setting
 Patient_Setting <- data.frame(read_excel(reference_file, sheet = "AP_Patient Setting"), stringsAsFactors = FALSE)
