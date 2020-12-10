@@ -471,8 +471,10 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_sun <- left_join(raw_sun, sun_setting, by = c("LocType" = "LocType"))
   
   # Crosswalk site name
-  raw_sun <- left_join(raw_sun, mshs_site, by = c("HospCode" = "DataSite"))
-  
+  #raw_sun <- left_join(raw_sun, mshs_site, by = c("HospCode" = "DataSite"))
+  #Asala Added this to tackle the issue of the other site temporarly until Kate comes back
+  raw_sun <- inner_join(raw_sun, mshs_site, by = c("HospCode" = "DataSite"))
+
   # Sunquest data formatting --------------------------------------------
   raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
              "LocType", "LocCode", "LocName", 
@@ -931,6 +933,8 @@ Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto
 
 Cytology_Backlog_Volume$spec_group <- factor(Cytology_Backlog_Volume$spec_group, levels = c("CYTO GYN", "CYTO NONGYN"))
 
+Cytology_Backlog_Volume$Maximum[Cytology_Backlog_Volume$Maximum == "-Inf"] <- "NA"
+
 #Days of work
 Cytology_case_Volume_DOW <- as.numeric(Cytology_Backlog_Volume$Cyto_Backlog[1])/80
 
@@ -968,7 +972,7 @@ Backlog_Accessioned_Table_New2[is.na(Backlog_Accessioned_Table_New2)] <- 0
 Backlog_Accessioned_Table_New3 <- Backlog_Accessioned_Table_New2[-c(1),]
 ```
 
-```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE, eval = FALSE}
+```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
 
 #1. import the historical repo
 Historical_Repo <- read_excel(paste0(user_directory,"/AP & Cytology Historical Repo/" ,"Historical_Repo_Surgical_Pathology","_",Yesterday, ".xlsx"))
@@ -1119,14 +1123,15 @@ chem_hem_micro_kable <- function(data) {
   kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
   column_spec(column = c(1, 9, 17), border_right = "thin solid lightgray") %>%
   add_header_above(c(" ", "Receive to Result Within Target" = (ncol(data)-1)/2, "Collect to Result Within Target" = (ncol(data)-1)/2), background = c("white", "#00AEEF", "#221f72"), color = "white", line = FALSE, font_size = 13) %>%
-  column_spec(column = 2:9, background = "#00AEEF", color = "white", include_thead = TRUE) %>%
-  column_spec(column = 10:17, background = "#221f72", color = "white", include_thead = TRUE) %>%
-  column_spec(column = 2:17, background = "inherit", color = "inherit") %>%
-  column_spec(column = 1, width_min = "125px", include_thead = TRUE) %>%
-  column_spec(column = c(3, 11), width_min = "100px", include_thead = TRUE) %>%
+  column_spec(column = 2:9, background = "#E6F8FF", color = "black") %>%
+  column_spec(column = 10:17, background = "#EBEBF9", color = "black") %>%
+  #column_spec(column = 2:17, background = "inherit", color = "inherit") %>%
+  column_spec(column = 1, width_min = "125px") %>%
+  column_spec(column = c(3, 11), width_min = "100px") %>%
   row_spec(row = 0, font_size = 13) %>%
   collapse_rows(columns = c(1, 2, 10))
 }
+
 ```
 
 ```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = FALSE, message = FALSE, echo = FALSE}
@@ -1430,9 +1435,9 @@ Table_Formatting <- function (Table_New3,column_names){
     kable(escape = F, align = "c", col.names = column_names) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
     add_header_above(c(" "= 1, "Receive to Result within Target (Business Days)"= 10, "Average Collection to Result TAT (Calendar Days)"=7), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
-    column_spec(2:11, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-    column_spec(12:18, background = "#221F72", color = "white", include_thead = TRUE)%>%
-    column_spec(2:18, background = "inherit", color = "inherit")%>%
+    column_spec(2:11, background = "#E6F8FF",color ="black")%>%
+    column_spec(12:18, background = "#EBEBF9", color = "black")%>%
+    #column_spec(2:18, background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = c(1,2))
   }
@@ -1448,9 +1453,9 @@ Table_Formatting_V2 <- function (Table_New3_V2){
     kable(escape = F, align = "c", col.names = c("Case Type","Target","Setting","No. Cases Signed Out","Centralized Lab","MSH","MSQ","MSBI","PACC","MSB","MSW","MSSL", "NYEE")) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
     add_header_above(c(" "= 1, "Receive to Result within Target (Business Days)"= 4, "Average Collection to Result TAT (Calendar Days)"=8), background = c("white", "#00B9F2", "#221F72"), color= "white", font_size = 13)%>%
-    column_spec(2:5, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-    column_spec(6:13, background = "#221F72", color = "white", include_thead = TRUE)%>%
-    column_spec(2:13, background = "inherit", color = "inherit")%>%
+    column_spec(2:5, background = "#E6F8FF",color ="black")%>%
+    column_spec(6:13, background = "#EBEBF9", color = "black")%>%
+    #column_spec(2:13, background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = c(1,2))
   }
@@ -1469,14 +1474,14 @@ Table_Formatting_Volume <- function (Volume_Table, column_names){
     select(everything()) %>%
     kable(escape = F, align = "c", col.names = column_names) %>%
     kable_styling(bootstrap_options = "hover", full_width = FALSE, position = "center", row_label_position = "c", font_size = 11) %>%
-    column_spec(3:length(column_names), background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-    column_spec(3:length(column_names), background = "inherit", color = "inherit")%>%
+      add_header_above(c(" "= 2, "Resulted Lab Volume"= length(column_names)-2), background = c("white", "#00B9F2"), color= "white", font_size = 13) %>%
+      column_spec(3:length(column_names), background ="#E6F8FF",color ="black")%>%
+    #column_spec(3:length(column_names), background = "inherit", color = "inherit")%>%
     row_spec(row = 0, font_size = 13)%>%
     collapse_rows(columns = 1)
-    #add_header_above(c(" "= 2, "Cases Signed Out by Home Hospital"= 8), background = c("white", "#00B9F2"), color= "white", font_size = 13)
+    
   }
 }
-
 
 ```
 
@@ -1569,8 +1574,8 @@ missing_collect_table %>%
   kable_styling(bootstrap = "hover", position = "float_left", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Percentage of Labs with Missing Collect Times" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "#00AEEF", color = "white", include_thead = TRUE) %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit", width_max = 0.15) %>%
+  column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black") %>%
+ # column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit", width_max = 0.15) %>%
   row_spec(row = 0, font_size =13)
 
 
@@ -1586,8 +1591,8 @@ add_on_table %>%
   kable_styling(bootstrap = "hover", position = "right", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Volume of Add On Labs" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "#00AEEF", color = "white", include_thead = TRUE) %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
+  column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black") %>%
+  #column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
   row_spec(row = 0, font_size =13)
 ```
 <h6>*Missing collection time analysis includes analytes represented in Chemistry, Hematology, and Microbiology RRL dashboard TAT analysis from ED, ICU, IP Non-ICU, and ambulatory settings.*</h6>
@@ -1611,12 +1616,11 @@ Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_c
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
 ```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
-#Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
+Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 #added this line to delete the cyto gyn from the table until we get correct data
-rownames(Cytology_Table_Weekday_New3_V3) <- NULL
-Table_Formatting_V2(Cytology_Table_Weekday_New3_V3)
+#rownames(Cytology_Table_Weekday_New3_V3) <- NULL
+#Table_Formatting_V2(Cytology_Table_Weekday_New3_V3)
 ```
-<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
 
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
 
@@ -1699,18 +1703,27 @@ Formatted_LIS_New <- Conditional_Formatting_Kpi_Form(LIS_Melt_New)
 
 ###### --------------- Now decast the melted clinical table --------------- ######
 
-Formatted_Clinical_Labs_Melt_New2 <- dcast(Formatted_Clinical_Labs_Melt_New,  Select.your.branch.facility +IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident ~ variable)
+Formatted_Clinical_Labs_Melt_New1 <- dcast(Formatted_Clinical_Labs_Melt_New,  Select.your.branch.facility +IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident ~ variable)
 
 #Change the order of the columns in the table
 
 Columns_Order_Form_Clinical <- c("Select.your.branch.facility", "LabCorp...Consumables", "Vendor.Services..LabLogistics..HealthEx..Reference.Labs..Other.Vendors.", "Environment", "Equipment.Issues..Lab.Equipment..Pneumatic.Tube.System..Others.", "IT.Issues", "Service.Changes", "Acute.Volume.Increase", "Staffing.Issues","IF.chosen..RED.or.YELLOW.for.any.of.the.items.listed.above..please.write.a.brief.note.on.each.event.including.source.of.specimen.and.location.of.incident")
 
-Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[,Columns_Order_Form_Clinical]
+Formatted_Clinical_Labs_Melt_New1 <- Formatted_Clinical_Labs_Melt_New1[,Columns_Order_Form_Clinical]
+
+Needed_rows <- data.frame(matrix(ncol=1, nrow = 11)) 
+colnames(Needed_rows) <- c("Select.your.branch.facility")
+Needed_rows[1] <- c("MSH (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSQ (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSBI (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSB (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSW (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSSL (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)" , "NYEE (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSSN (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSH - Anatomic Pathology (Centralized)", "MSH - Central Processing & Accessioning", "4LABS - Client Services")
+
+#i need all the columns from x and all the rows from x and y
+trial <- right_join(Formatted_Clinical_Labs_Melt_New1, Needed_rows)
+#
+rownames(trial) <- trial$Select.your.branch.facility
 
 #Change the order of the rows in the table
 
-Rows_Order_Form_Clinical <- factor(rownames(Formatted_Clinical_Labs_Melt_New2),levels = c(11, 4, 3, 9, 10, 1 , 2, 6, 8, 5, 7))
-Formatted_Clinical_Labs_Melt_New2 <- Formatted_Clinical_Labs_Melt_New2[Rows_Order_Form_Clinical,]
+#Rows_Order_Form_Clinical <- factor(rownames(trial),levels = c(11, 4, 3, 10, 1, 2, 6, 8, 5, 7, 9))
+Formatted_Clinical_Labs_Melt_New2 <- trial[c("MSH (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSQ (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSBI (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSB (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSW (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSSL (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)" , "NYEE (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSSN (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSH - Anatomic Pathology (Centralized)", "MSH - Central Processing & Accessioning", "4LABS - Client Services"),]
 rownames(Formatted_Clinical_Labs_Melt_New2) <- NULL
 
 #Change the names in the Facility columns to be standardized
@@ -1775,16 +1788,24 @@ Never_Events_Melt[Never_Events_Melt == "None" | Never_Events_Melt == "NONE"| Nev
 
 Formatted_Never_Event_Melt <- Conditional_Formatting_Kpi_Form(Never_Events_Melt)
 
-Formatted_Never_Event <- dcast(Formatted_Never_Event_Melt,Select.your.branch.facility+NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.+ X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable. ~ variable)
+Formatted_Never_Event_ <- dcast(Formatted_Never_Event_Melt,Select.your.branch.facility+NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.+ X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable. ~ variable)
 
 Never_Events_Column_Order_1 <- c("Select.your.branch.facility", "Specimen(s) Lost", "QNS - specimen that cannot be recollected", "Treatment based on mislabeled/misidentified specimen", "Treatment based on false positive/false negative results", "NEVER.EVENTS..Please.provide.number.of.events.and.write.a.brief.note.on.each.one.including.source.of.specimen.and.location.of.incident..If.Applicable.", "X.Good.Catch....Misidentified.mislabeled.specimen.s...Please.provide.number.of.events.that.occurred.in.the.last.24.hours...If.Applicable.")
 
-Formatted_Never_Event <- Formatted_Never_Event[,Never_Events_Column_Order_1]
+Formatted_Never_Event_ <- Formatted_Never_Event_[,Never_Events_Column_Order_1]
+
+#Change the order of the rows in the table
+trial_neverevent <- right_join(Formatted_Never_Event_, Needed_rows)
+rownames(trial_neverevent) <- trial_neverevent$Select.your.branch.facility
 
 #Change the order of the rows in the table
 
-Rows_Order_Never_Events <- factor(rownames(Formatted_Never_Event),levels = c(11, 4, 3, 9, 10, 1 , 2, 6, 8, 5, 7))
-Formatted_Never_Event <- Formatted_Never_Event[Rows_Order_Never_Events,]
+#Rows_Order_Form_Clinical <- factor(rownames(trial),levels = c(11, 4, 3, 10, 1, 2, 6, 8, 5, 7, 9))
+Formatted_Never_Event <- trial_neverevent[c("MSH (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSQ (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSBI (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSB (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSW (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSSL (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)" , "NYEE (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSSN (Clinical Pathology, Blood Bank, Anatomic Pathology Front End, etc.)", "MSH - Anatomic Pathology (Centralized)", "MSH - Central Processing & Accessioning", "4LABS - Client Services"),]
+
+#Rows_Order_Never_Events <- factor(rownames(Formatted_Never_Event),levels = c(11, 4, 3, 9, 10, 1 , 2, 6, 8, 5, 7))
+
+#Formatted_Never_Event <- Formatted_Never_Event[Rows_Order_Never_Events,]
 rownames(Formatted_Never_Event) <- NULL
 
 #Change the names in the Facility columns to be standardized
@@ -1918,8 +1939,8 @@ lab_vol_kable_format <- function(table_data) {
   kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
   column_spec(column = c(1, 8), border_right = "thin solid lightgray") %>%
   add_header_above(c(" " = 1, "Resulted Lab Volume" = (ncol(table_data)-1)), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
-  column_spec(column = 2:8, background = "#00AEEF", color = "white", include_thead = TRUE) %>%
-  column_spec(column = 2:8, background = "inherit", color = "inherit") %>%
+  column_spec(column = 2:8, background = "#E6F8FF", color = "black") %>%
+  #column_spec(column = 2:8, background = "inherit", color = "inherit") %>%
   # column_spec(column = 1, width_min = "125px", include_thead = TRUE) %>%
   # column_spec(column = c(3, 11), width_min = "100px", include_thead = TRUE) %>%
   row_spec(row = 0, font_size = 13) %>%
@@ -1973,27 +1994,27 @@ Table_Formatting_Volume(Surgical_Pathology_Stratified_Vol_Weekday_New2, patholog
 #Backlog_Accessioned_Table_New2
 
 #added this line to delete the cyto gyn from the table until we get correct data
-rownames(Backlog_Accessioned_Table_New3) <- NULL
-Backlog_Accessioned_Table_New3 %>% 
+#rownames(Backlog_Accessioned_Table_New3) <- NULL
+Backlog_Accessioned_Table_New2 %>% 
   kable(escape = F, align = "c", col.names = c("Case Type","Cases Accessioned","Backlog Volume", "25th Percentile", "50th Percentile", "Maximum")) %>%
   kable_styling(bootstrap_options = "hover", full_width = TRUE, position = "center", row_label_position = "c", font_size = 11) %>%
-  column_spec(2, background = "#00B9F2",color ="white", include_thead = TRUE)%>%
-  column_spec(3:6, background = "#221F72",color ="white", include_thead = TRUE)%>%
-  column_spec(2:6, background = "inherit", color = "inherit")%>%
+  column_spec(2, background = "#E6F8FF",color ="black")%>%
+  column_spec(3:6, background = "#EBEBF9",color ="black")%>%
+  #column_spec(2:6, background = "inherit", color = "inherit")%>%
   row_spec(row = 0, font_size = 13)%>%
   add_header_above(c(" "= 2, "Elapsed Turn Around Time for Backlogged Cases From the Received Time"= 4), background = c("white", "#221F72"), color= "white", font_size = 13)%>%
   collapse_rows(columns = 1)
 ```
-<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
+
 
 
 #### *Cytology Signed Out Cases Volume (As of `r wday_result_date`)*
 ```{r Cytology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
-#Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2, cytology_volume_column_names)
+Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New2, cytology_volume_column_names)
 
 #added this line to delete the cyto gyn from the table until we get correct data
-rownames(Cytology_Stratified_Vol_Weekday_New3) <- NULL
-Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New3, cytology_volume_column_names)
+#rownames(Cytology_Stratified_Vol_Weekday_New3) <- NULL
+#Table_Formatting_Volume(Cytology_Stratified_Vol_Weekday_New3, cytology_volume_column_names)
 
 ```
 
@@ -2143,8 +2164,8 @@ missing_collect_table_not_wday %>%
   kable_styling(bootstrap = "hover", position = "float_left", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Percentage of Labs with Missing Collect Times" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "#00AEEF", color = "white", include_thead = TRUE) %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit", width_max = 0.15) %>%
+  column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black") %>%
+  #column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit", width_max = 0.15) %>%
   row_spec(row = 0, font_size =13)
 
 add_on_volume_not_wday <- scc_sun_not_wday_master %>%
@@ -2159,8 +2180,8 @@ add_on_table_not_wday %>%
   kable_styling(bootstrap = "hover", position = "right", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Volume of Add On Labs" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "#00AEEF", color = "white", include_thead = TRUE) %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
+  column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black", include_thead = TRUE) %>%
+  #column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
   row_spec(row = 0, font_size =13)
 
 # asis_output('<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
