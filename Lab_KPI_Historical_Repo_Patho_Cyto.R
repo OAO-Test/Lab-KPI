@@ -44,12 +44,12 @@ user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimizatio
 setwd(user_wd)
 
 #import historical data for first run vs. future runs
-initial_run <- TRUE
+initial_run <- FALSE
 
 if (initial_run == TRUE) {
   
   ##### pull powerpath daily data 
-  file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^KPI REPORT\\ - \\RAW DATA V4_V2.+(2020)\\-[0-9]{2}\\-[0-9]{2}")
+  file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^KPI REPORT\\ - \\RAW DATA V4_V2.+(2020)|(2021)\\-[0-9]{2}\\-[0-9]{2}")
   
   SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
   
@@ -99,7 +99,7 @@ if (initial_run == TRUE) {
   
 } else{
   # Import existing historical repository
-  existing_powerpath_repo <- read_excel(choose.files(default = user_path, caption = "Select Historical Repository"), sheet = 1, col_names = TRUE)
+  existing_powerpath_repo <- read_excel(choose.files(default = user_wd, caption = "Select Historical Repository"), sheet = 1, col_names = TRUE)
   #
   # Find last date of resulted lab data in historical repository
   last_date <- as.Date(max(existing_powerpath_repo$Signed_out_date_only), format = "%Y-%m-%d")
@@ -109,7 +109,7 @@ if (initial_run == TRUE) {
   date_range <- seq(from = last_date + 2, to = todays_date, by = "day")
 
   ##### pull powerpath daily data 
-  file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = paste0("^KPI REPORT\\ - \\RAW DATA V4_V2.+",date_range, ".xlsx"))
+  file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = paste0("^KPI REPORT\\ - \\RAW DATA V4_V2.+",date_range, collapse = "|"))
   
   SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
   
@@ -127,7 +127,7 @@ if (initial_run == TRUE) {
   SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility ==  "Page -1 of 1",]
   
   ##### pull EPIC cytology daily data
-  file_list_epic <- list.files(path = paste0(user_wd, "\\EPIC Cytology"), pattern = paste0("^MSHS Pathology Orders EPIC.+",date_range, ".xlsx"))
+  file_list_epic <- list.files(path = paste0(user_wd, "\\EPIC Cytology"), pattern = paste0("^MSHS Pathology Orders EPIC.+",date_range, collapse = "|"))
   epic_cyto_list <- lapply(file_list_epic, function(x) read_excel(path = paste0(user_wd, "\\EPIC Cytology\\", x)))
   epic_Dataframe_combined <- bind_rows(epic_cyto_list)
 }
@@ -252,9 +252,15 @@ pre_processing_historical <- function(Raw_Data){
 Historical_Data_Summarized <- pre_processing_historical(SP_Dataframe_combined_New)
 colnames(Historical_Data_Summarized) <- c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr", "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target", "Patient_metric_target", "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std","Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med", "Patient_metric_std")
 
+Historical_Data_Summarized <- as.data.frame(Historical_Data_Summarized)
+
+#Bind new repo with old repo
+Historical_Data_Summarized_New <- rbind(existing_powerpath_repo, Historical_Data_Summarized)
+Historical_Data_Summarized_New <- unique(Historical_Data_Summarized_New)
+
 #main historical repo
 xlsxFileName <- paste0(user_wd,"\\AP & Cytology Historical Repo\\", "Historical_Repo_Surgical_Pathology","_",Today,".xlsx")
-write_xlsx(Historical_Data_Summarized, xlsxFileName)
+write_xlsx(Historical_Data_Summarized_New, xlsxFileName)
 
 
 
