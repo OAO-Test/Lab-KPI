@@ -931,6 +931,7 @@ Cytology_Backlog$Backlog <- bizdays(Cytology_Backlog$Case_created_date, Today)-1
 #Case Volume
 Cytology_Backlog_Volume <- summarise(group_by(Cytology_Backlog,spec_group), Cyto_Backlog = format(round(sum(Backlog > Received.to.signed.out.target..Days., na.rm = TRUE),0)), percentile_25th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.25, na.rm = TRUE))), percentile_50th = format(ceiling(quantile(Backlog[Backlog > Received.to.signed.out.target..Days.], prob = 0.5, na.rm = TRUE))), Maximum = format(ceiling(max(Backlog[Backlog > Received.to.signed.out.target..Days.], na.rm = TRUE))))
 
+
 Cytology_Backlog_Volume$spec_group <- factor(Cytology_Backlog_Volume$spec_group, levels = c("CYTO GYN", "CYTO NONGYN"))
 
 Cytology_Backlog_Volume$Maximum[Cytology_Backlog_Volume$Maximum == "-Inf"] <- "NA"
