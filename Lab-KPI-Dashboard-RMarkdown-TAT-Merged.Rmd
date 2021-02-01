@@ -2180,7 +2180,8 @@ add_on_table_not_wday %>%
   kable_styling(bootstrap = "hover", position = "right", font_size = 11, full_width = FALSE) %>%
   add_header_above(c(" " = 1, "Volume of Add On Labs" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
   column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black", include_thead = TRUE) %>%
+  column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black") %>%
+  #column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black", include_thead = TRUE) %>%
   #column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
   row_spec(row = 0, font_size =13)
 
@@ -2382,10 +2383,21 @@ GI_Codes_updated  %>%
     + TAT analysis excludes labs with missing timestamps
     + All settings included in the resulted volume
 
+* Cyto Gyn:
+    + TAT and volume analysis were only calculated for Cyto Gyn specimens that were finalized and closed out in EPIC
+    + Included all primary Cyto Gyn specimens
+    + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
+    + TAT analysis excludes labs with missing timestamps
+    + All settings included in the resulted volume
+
 * Cyto Non-Gyn:
+    + TAT and volume analysis were only calculated for Cyto non-Gyn specimens that were finalized and closed out in EPIC
     + Included all primary Cyto non-Gyn specimens
     + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
     + TAT analysis excludes labs with missing timestamps
     + All settings included in the resulted volume
+
+* Backlog Cases:
+    + Backlog cases are defined as all the cases that are open by cytology and microbiology.
     
 <h6> *End of report.* </h6>
