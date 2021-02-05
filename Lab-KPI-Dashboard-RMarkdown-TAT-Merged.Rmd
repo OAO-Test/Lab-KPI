@@ -785,6 +785,8 @@ Must_Exclude_CNum_df <- PP_Weekday[which(PP_Weekday$Case_no %in% Must_Exclude_CN
 
 Surgical_Pathology_Weekday <- PP_Weekday[which((((PP_Weekday$spec_group=="GI") & (!(PP_Weekday$Case_no %in% Must_Exclude_CNum))) | (PP_Weekday$spec_group=="Breast")) & PP_Weekday$spec_sort_order=="A"),]
 
+Surgical_Pathology_Weekday <- Surgical_Pathology_Weekday[which(Surgical_Pathology_Weekday$Facility != "NYEE"),]
+
 #PP_Not_Weekday_Excl <- merge(x = PP_Not_Weekday, y= GI_Codes, all.x = TRUE)
 
 #find MRNs with GI_Code = exclude
