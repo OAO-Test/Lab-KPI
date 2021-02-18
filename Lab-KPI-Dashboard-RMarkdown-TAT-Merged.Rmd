@@ -23,7 +23,7 @@ output:
 #install.packages("stringr")
 #install.packages("writexl")
 
-#-------------------------------Required packages-------------------------------#
+#-------------------------------Required packages------------------------------#
 
 #Required packages: run these everytime you run the code
 library(timeDate)
@@ -46,8 +46,8 @@ library(writexl)
 <h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red">
 
 
-```{r global_options, echo=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```{r global_options, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
 ```{r Determine date, warning = FALSE, message = FALSE, echo = FALSE}
@@ -56,13 +56,13 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 
-Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+Today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
 #Today <- as.timeDate(as.Date("07/29/2020", format = "%m/%d/%Y"))
 
 
-#Determine if yesterday was a holiday/weekend 
+#Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
+Yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
 #Yesterday <- as.timeDate(as.Date("07/28/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
@@ -76,9 +76,10 @@ MSHS_Holiday <- NYSE_Holidays[GoodFriday != NYSE_Holidays]
 #Determine whether yesterday was a holiday/weekend
 Holiday_Det <- isHoliday(Yesterday, holidays = MSHS_Holiday)
 
-#Set up a default calendar for collect to received TAT calculations for Pathology and Cytology
-create.calendar("MSHS_working_days", MSHS_Holiday, weekdays=c("saturday","sunday"))
-bizdays.options$set(default.calendar="MSHS_working_days")
+#Set up a calendar for collect to received TAT calculations for Path & Cyto
+create.calendar("MSHS_working_days", MSHS_Holiday,
+                weekdays = c("saturday", "sunday"))
+bizdays.options$set(default.calendar = "MSHS_working_days")
 ```
 
 #### *Dashboard Creation Date: `r format(Today, "%m/%d/%Y")`*
@@ -90,141 +91,330 @@ bizdays.options$set(default.calendar="MSHS_working_days")
 #user_path <- paste0(user_wd, "\\*.*")
 
 if (list.files("J://") == "Presidents") {
-  user_directory <- "J:/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+  user_directory <- "J:/Presidents/HSPI-PM/
+  Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
 } else {
-  user_directory <- "J:/deans/Presidents/HSPI-PM/Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+  user_directory <- "J:/deans/Presidents/HSPI-PM/
+  Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
 }
 user_path <- paste0(user_directory, "/*.*")
 
 
 #------------------------------Read Excel sheets------------------------------#
 
-# The if-statement below determines the number of raw data files to import based on the day of week and holidays.
-# The user is then prompted to select each file from the relevant folder.
+# The if-statement below determines the number of raw data files to import
+# based on the day of week and holidays. The user is then prompted to select
+# each file from the relevant folder.
 
-if(((Holiday_Det) & (Yesterday_Day =="Mon"))|((Yesterday_Day =="Sun") & (isHoliday(Yesterday-(86400*2))))){ # Scenario 1: Mon Holiday or Friday Holiday (Need to select 4 files)
+if (((Holiday_Det) & (Yesterday_Day == "Mon")) |
+   ((Yesterday_Day == "Sun") & (isHoliday(Yesterday - (86400*2))))) { 
+  # Scenario 1: Mon Holiday or Friday Holiday (Need to select 4 files)
   # Save scenario
   scenario <- 1
   # Import SCC data
-  SCC_Holiday_Monday_or_Friday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE)
-  SCC_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
-  SCC_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
+  SCC_Holiday_Monday_or_Friday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted on 
+                 Recent Holiday"), 
+    sheet = 1, col_names = TRUE)
+  SCC_Sunday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted on Sunday"), 
+    sheet = 1, col_names = TRUE)
+  SCC_Saturday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted on Saturday"), 
+    sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
-  SCC_Not_Weekday <- rbind(SCC_Holiday_Monday_or_Friday, SCC_Sunday, SCC_Saturday)
-  SCC_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
+  SCC_Not_Weekday <- rbind(SCC_Holiday_Monday_or_Friday, 
+                           SCC_Sunday, 
+                           SCC_Saturday)
+  SCC_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted on 
+                 Most Recent Weekday"), 
+    sheet = 1, col_names = TRUE)
   # 
   # Import Sunquest data
-  SQ_Holiday_Monday_or_Friday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE))
-  SQ_Sunday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE))
-  SQ_Saturday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE))
+  SQ_Holiday_Monday_or_Friday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select Sunquest Report for Labs Resulted 
+                 on Recent Holiday"), 
+    sheet = 1, col_names = TRUE))
+  SQ_Sunday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select Sunquest Report for Labs Resulted 
+                 on Sunday"), 
+    sheet = 1, col_names = TRUE))
+  SQ_Saturday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select Sunquest Report for Labs Resulted 
+                 on Saturday"), 
+    sheet = 1, col_names = TRUE))
   #Merge the weekend data with the holiday data in one data frame
   SQ_Not_Weekday <- rbind(SQ_Holiday_Monday_or_Friday, SQ_Sunday, SQ_Saturday)
-  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
+  SQ_Weekday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select Sunquest Report for Labs Resulted 
+                 on Most Recent Weekday"), 
+    sheet = 1, col_names = TRUE))
   #
   # Import Powerpath data
-  PP_Holiday_Monday_or_Friday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Recent Holiday"), skip = 1, 1)
-  PP_Holiday_Monday_or_Friday  <- PP_Holiday_Monday_or_Friday[-nrow(PP_Holiday_Monday_or_Friday),]
-  PP_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Sunday"), skip = 1, 1)
-  PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Saturday"), skip = 1, 1)
-  PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
+  PP_Holiday_Monday_or_Friday <- read_excel(
+    choose.files(default = paste0(user_directory, 
+                                  "/AP & Cytology Signed Cases Reports/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Recent Holiday"), 
+    skip = 1, 1)
+  PP_Holiday_Monday_or_Friday  <- PP_Holiday_Monday_or_Friday[
+    -nrow(PP_Holiday_Monday_or_Friday), ]
+  PP_Sunday <- read_excel(
+    choose.files(default = paste0(user_directory,
+                                  "/AP & Cytology Signed Cases Reports/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Sunday"), 
+    skip = 1, 1)
+  PP_Sunday <- PP_Sunday[-nrow(PP_Sunday), ]
+  PP_Saturday <- read_excel(
+    choose.files(default = paste0(user_directory, 
+                                  "/AP & Cytology Signed Cases Reports/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Saturday"), 
+    skip = 1, 1)
+  PP_Saturday <- PP_Saturday[-nrow(PP_Saturday), ]
   #Merge the weekend data with the holiday data in one data frame
-  PP_Not_Weekday <- data.frame(rbind(PP_Holiday_Monday_or_Friday ,PP_Sunday,PP_Saturday),stringsAsFactors = FALSE)
-  PP_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
-  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),],stringsAsFactors = FALSE)
+  PP_Not_Weekday <- data.frame(rbind(PP_Holiday_Monday_or_Friday, 
+                                     PP_Sunday, 
+                                     PP_Saturday), stringsAsFactors = FALSE)
+  PP_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, 
+                                  "/AP & Cytology Signed Cases Reports/*.*"),
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Most Recent Weekday"),
+    skip = 1, 1)
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday), ], 
+                           stringsAsFactors = FALSE)
   #
   # Import EPIC Cytology data
-  Epic_Holiday_Monday_or_Friday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Recent Holiday"), 1)
-  Epic_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Sunday"), 1)
-  Epic_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Saturday"), 1)
+  Epic_Holiday_Monday_or_Friday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select Epic Report for Specimens Signed Out 
+                 on Recent Holiday"), 1)
+  Epic_Sunday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select Epic Report for Specimens Signed Out 
+                 on Sunday"), 1)
+  Epic_Saturday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Saturday"), 1)
   #Merge the weekend data with the holiday data in one data frame
-  Epic_Not_Weekday <- data.frame(rbind(Epic_Holiday_Monday_or_Friday ,Epic_Sunday,Epic_Saturday),stringsAsFactors = FALSE)
-  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), 1)
-} else if ((Holiday_Det) & (Yesterday_Day =="Sun")){ # Scenario 2: Regular Monday (Need to select 3 files)
+  Epic_Not_Weekday <- data.frame(rbind(Epic_Holiday_Monday_or_Friday, 
+                                       Epic_Sunday, 
+                                       Epic_Saturday),stringsAsFactors = FALSE)
+  Epic_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select Epic Report for Specimens Signed Out 
+                 on Most Recent Weekday"), 1)
+} else if ((Holiday_Det) & (Yesterday_Day == "Sun")){
+  # Scenario 2: Regular Monday (Need to select 3 files)
   # Save scenario
   scenario <- 2
   #
   # Import SCC data
-  SCC_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE)
-  SCC_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE)
+  SCC_Sunday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted on Sunday"), 
+    sheet = 1, col_names = TRUE)
+  SCC_Saturday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted on Saturday"), 
+    sheet = 1, col_names = TRUE)
   #Merge the weekend data with the holiday data in one data frame
-  SCC_Not_Weekday <- rbind(SCC_Sunday,SCC_Saturday)
-  SCC_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
+  SCC_Not_Weekday <- rbind(SCC_Sunday, SCC_Saturday)
+  SCC_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted 
+                 on Most Recent Weekday"), 
+    sheet = 1, col_names = TRUE)
   #
   # Import Sunquest data
-  SQ_Sunday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Sunday"), sheet = 1, col_names = TRUE))
-  SQ_Saturday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Saturday"), sheet = 1, col_names = TRUE))
+  SQ_Sunday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select Sunquest Report for Labs Resulted 
+                 on Sunday"), 
+    sheet = 1, col_names = TRUE))
+  SQ_Saturday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select Sunquest Report for Labs Resulted 
+                 on Saturday"), 
+    sheet = 1, col_names = TRUE))
   #Merge the weekend data with the holiday data in one data frame
   SQ_Not_Weekday <- rbind(SQ_Sunday,SQ_Saturday)
-  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
+  SQ_Weekday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select Sunquest Report for Labs Resulted 
+                 on Most Recent Weekday"), 
+    sheet = 1, col_names = TRUE))
   #
   # Import Powerpath data
-  PP_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Sunday"), skip = 1, 1)
-  PP_Sunday <- PP_Sunday[-nrow(PP_Sunday),]
-  PP_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Saturday"), skip = 1, 1)
-  PP_Saturday <- PP_Saturday[-nrow(PP_Saturday),]
+  PP_Sunday <- read_excel(
+    choose.files(default = paste0(user_directory, 
+                                  "/AP & Cytology Signed Cases Reports/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Sunday"), 
+    skip = 1, 1)
+  PP_Sunday <- PP_Sunday[-nrow(PP_Sunday), ]
+  PP_Saturday <- read_excel(
+    choose.files(default = paste0(user_directory,
+                                  "/AP & Cytology Signed Cases Reports/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Saturday"),
+    skip = 1, 1)
+  PP_Saturday <- PP_Saturday[-nrow(PP_Saturday), ]
   #Merge the weekend data with the holiday data in one data frame
-  PP_Not_Weekday <- data.frame(rbind(PP_Sunday,PP_Saturday),stringsAsFactors = FALSE)
-  PP_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
-  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
+  PP_Not_Weekday <- data.frame(rbind(PP_Sunday, 
+                                     PP_Saturday), stringsAsFactors = FALSE)
+  PP_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, 
+                                  "/AP & Cytology Signed Cases Reports/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Most Recent Weekday"), 
+    skip = 1, 1)
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday), ], 
+                           stringsAsFactors = FALSE)
   #
   # Import Epic Cytology data
-  Epic_Sunday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Sunday"), 1)
-  Epic_Saturday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Saturday"), 1)
+  Epic_Sunday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select Epic Report for Specimens Signed Out 
+                 on Sunday"), 
+    1)
+  Epic_Saturday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select Epic Report for Specimens Signed Out 
+                 on Saturday"), 
+    1)
   #Merge the weekend data with the holiday data in one data frame
-  Epic_Not_Weekday <- data.frame(rbind(Epic_Sunday,Epic_Saturday),stringsAsFactors = FALSE)
-  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), 1)
-} else if ((Holiday_Det) & ((Yesterday_Day !="Mon")|(Yesterday_Day !="Sun"))){ #Scenario 3: Midweek holiday (Need to select 2 files)
+  Epic_Not_Weekday <- data.frame(rbind(Epic_Sunday, 
+                                       Epic_Saturday), 
+                                 stringsAsFactors = FALSE)
+  Epic_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select Epic Report for Specimens Signed Out 
+                 on Most Recent Weekday"), 
+    1)
+} else if ((Holiday_Det) & ((Yesterday_Day != "Mon") | 
+                            (Yesterday_Day != "Sun"))){ 
+  #Scenario 3: Midweek holiday (Need to select 2 files)
   # Save scenario
   scenario <- 3
   #
   # Import SCC data
-  SCC_Holiday_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE)
+  SCC_Holiday_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted 
+                 on Recent Holiday"), 
+    sheet = 1, col_names = TRUE)
   SCC_Not_Weekday <- SCC_Holiday_Weekday
-  SCC_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted 
+                 on Most Recent Weekday"), 
+    sheet = 1, col_names = TRUE)
   #
   # Import Sunquest data
-  SQ_Holiday_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Recent Holiday"), sheet = 1, col_names = TRUE))
+  SQ_Holiday_Weekday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select Sunquest Report for Labs Resulted 
+                 on Recent Holiday"), 
+    sheet = 1, col_names = TRUE))
   SQ_Not_Weekday <- SQ_Holiday_Weekday
-  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select Sunquest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
+  SQ_Weekday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select Sunquest Report for Labs Resulted 
+                 on Most Recent Weekday"), 
+    sheet = 1, col_names = TRUE))
   #
   # Import Powerpath data
-  PP_Holiday_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Recent Holiday"), skip = 1, 1)
-  PP_Holiday_Weekday <- PP_Holiday_Weekday[-nrow(PP_Holiday_Weekday),]
+  PP_Holiday_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, 
+                                  "/AP & Cytology Signed Cases Reports/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Recent Holiday"), 
+    skip = 1, 1)
+  PP_Holiday_Weekday <- PP_Holiday_Weekday[-nrow(PP_Holiday_Weekday), ]
   PP_Not_Weekday <- data.frame(PP_Holiday_Weekday, stringsAsFactors = FALSE)
-  PP_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
-  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
+  PP_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, 
+                                  "/AP & Cytology Signed Cases Reports/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Most Recent Weekday"), 
+    skip = 1, 1)
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday), ], 
+                           stringsAsFactors = FALSE)
   #
   # Import Powerpath data
-  Epic_Holiday_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Recent Holiday"), 1)
+  Epic_Holiday_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select Epic Report for Specimens Signed Out 
+                 on Recent Holiday"), 
+    1)
   Epic_Not_Weekday <- data.frame(Epic_Holiday_Weekday, stringsAsFactors = FALSE)
-  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), 1)
+  Epic_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select Epic Report for Specimens Signed Out 
+                 on Most Recent Weekday"), 
+    1)
 } else { #Scenario 4: Tue-Fri without holidays (Need to select 1 file)
   # Save scenario
   scenario <- 4
   #
   # Import SCC data
-  SCC_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), caption = "Select SCC Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE)
+  SCC_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/SCC CP Reports/*.*"), 
+                 caption = "Select SCC Report for Labs Resulted 
+                 on Most Recent Weekday"), 
+    sheet = 1, col_names = TRUE)
   SCC_Not_Weekday <- NULL
   #
   # Import Sunquest data
-  SQ_Weekday <- suppressWarnings(read_excel(choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), caption = "Select SunQuest Report for Labs Resulted on Most Recent Weekday"), sheet = 1, col_names = TRUE))
+  SQ_Weekday <- suppressWarnings(read_excel(
+    choose.files(default = paste0(user_directory, "/SUN CP Reports/*.*"), 
+                 caption = "Select SunQuest Report for Labs Resulted 
+                 n Most Recent Weekday"), 
+    sheet = 1, col_names = TRUE))
   SQ_Not_Weekday <- NULL
   #
   # Import Powerpath data
-  PP_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/AP & Cytology Signed Cases Reports/*.*"), caption = "Select PowerPath Report for Specimens Signed Out on Most Recent Weekday"), skip = 1, 1)
-  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday),], stringsAsFactors = FALSE)
+  PP_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, 
+                                  "/AP & Cytology Signed Cases Reports/*.*"), 
+                 caption = "Select PowerPath Report for Specimens Signed Out 
+                 on Most Recent Weekday"), 
+    skip = 1, 1)
+  PP_Weekday <- data.frame(PP_Weekday[-nrow(PP_Weekday), ], 
+                           stringsAsFactors = FALSE)
   PP_Not_Weekday <- NULL
   #
   # Import Epic Cytology data
-  Epic_Weekday <- read_excel(choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), caption = "Select Epic Report for Specimens Signed Out on Most Recent Weekday"), 1)
+  Epic_Weekday <- read_excel(
+    choose.files(default = paste0(user_directory, "/EPIC Cytology/*.*"), 
+                 caption = "Select Epic Report for Specimens Signed Out 
+                 on Most Recent Weekday"), 
+    1)
   Epic_Not_Weekday <- NULL
 }
 
 #-----------Cytology Backlog Excel Files-----------#
 #For the backlog files the read excel is starting from the second row and remove last row
-Cytology_Backlog_Raw <- read_excel(choose.files(default = paste0(user_directory, "/Cytology Backlog Reports/*.*"), caption = "Select Cytology Backlog Report"),skip =1 , 1)
-Cytology_Backlog_Raw <- data.frame(Cytology_Backlog_Raw[-nrow(Cytology_Backlog_Raw),], stringsAsFactors = FALSE)
+Cytology_Backlog_Raw <- read_excel(
+  choose.files(default = paste0(user_directory, 
+                                "/Cytology Backlog Reports/*.*"), 
+               caption = "Select Cytology Backlog Report"), 
+  skip =1, 1)
+Cytology_Backlog_Raw <- data.frame(
+  Cytology_Backlog_Raw[-nrow(Cytology_Backlog_Raw), ], stringsAsFactors = FALSE)
 ```
 
 ```{r Reference Data, warning = FALSE, message = FALSE, echo = FALSE}
@@ -232,13 +422,22 @@ Cytology_Backlog_Raw <- data.frame(Cytology_Backlog_Raw[-nrow(Cytology_Backlog_R
 # Import analysis reference data starting with test codes for SCC and Sunquest
 # reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
 
-reference_file <- choose.files(default = paste0(user_directory, "/Code Reference/*.*"), caption = "Select analysis reference file")
+reference_file <- choose.files(
+  default = paste0(user_directory, "/Code Reference/*.*"), 
+  caption = "Select analysis reference file")
 test_code <- read_excel(reference_file, sheet = "TestNames")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
-tat_targets$Concate <- ifelse(tat_targets$Priority == "All" & tat_targets$`Pt Setting` == "All", tat_targets$Test,
-                              ifelse(tat_targets$Priority != "All" & tat_targets$`Pt Setting` == "All", paste(tat_targets$Test, tat_targets$Priority),
-                                     paste(tat_targets$Test, tat_targets$Priority, tat_targets$`Pt Setting`)))
+tat_targets$Concate <- ifelse(tat_targets$Priority == "All" & 
+                                tat_targets$`Pt Setting` == "All", 
+                              tat_targets$Test,
+                              ifelse(tat_targets$Priority != "All" & 
+                                       tat_targets$`Pt Setting` == "All", 
+                                     paste(tat_targets$Test, 
+                                           tat_targets$Priority),
+                                     paste(tat_targets$Test, 
+                                           tat_targets$Priority, 
+                                           tat_targets$`Pt Setting`)))
 
 scc_icu <- read_excel(reference_file, sheet = "SCC_ICU")
 scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")
@@ -263,42 +462,66 @@ dashboard_priority_order <- c("All", "Stat", "Routine")
 # To Be Updated in Analysis reference file
 #-----------Patient Setting Excel File-----------#
 #Using Rev Center to determine patient setting
-Patient_Setting <- data.frame(read_excel(reference_file, sheet = "AP_Patient Setting"), stringsAsFactors = FALSE)
+Patient_Setting <- data.frame(read_excel(reference_file, 
+                                         sheet = "AP_Patient Setting"), 
+                              stringsAsFactors = FALSE)
 
 #-----------Anatomic Pathology Targets Excel File-----------#
-TAT_Targets <- data.frame(read_excel(reference_file, sheet = "AP_TAT Targets"), stringsAsFactors = FALSE)
+TAT_Targets <- data.frame(read_excel(reference_file, 
+                                     sheet = "AP_TAT Targets"), 
+                          stringsAsFactors = FALSE)
 
 #-----------GI Codes Excel File-----------#
 #Upload the exclusion vs inclusion criteria associated with the GI codes
-GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAsFactors = FALSE)
+GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), 
+                       stringsAsFactors = FALSE)
 
 #-----------Create table template for Cyto/Path-----------#
 
 #Cyto
-Table_Template_Cyto <- data.frame(matrix(ncol=19, nrow = 4)) 
-colnames(Table_Template_Cyto) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x","NYEE.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y","NYEE.y","PACC.y","R.y","SL.y", "KH.y")
+Table_Template_Cyto <- data.frame(matrix(ncol=19, nrow = 4))
+colnames(Table_Template_Cyto) <- c("spec_group", "Patient.Setting",
+                                   "No_Cases_Signed", 
+                                   "MSH.x", "BIMC.x", "MSQ.x","NYEE.x", 
+                                   "PACC.x", "R.x", "SL.x", "KH.x", "BIMC.y", 
+                                   "MSH.y", "MSQ.y", "NYEE.y", "PACC.y", "R.y", 
+                                   "SL.y", "KH.y")
 Table_Template_Cyto[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto[2] <- c('IP', 'Amb')
 
-Table_Template_Cyto_V2 <- data.frame(matrix(ncol=12, nrow = 4)) 
-colnames(Table_Template_Cyto_V2) <- c("spec_group","Patient.Setting","No_Cases_Signed","Received_to_Signed_Out_within_target","BIMC", "MSH", "MSQ","NYEE","PACC","R","SL", "KH")
-Table_Template_Cyto_V2[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
+Table_Template_Cyto_V2 <- data.frame(matrix(ncol=12, nrow = 4))
+colnames(Table_Template_Cyto_V2) <- c("spec_group", "Patient.Setting",
+                                      "No_Cases_Signed", 
+                                      "Received_to_Signed_Out_within_target", 
+                                      "BIMC", "MSH", "MSQ", "NYEE", "PACC", 
+                                      "R", "SL", "KH")
+Table_Template_Cyto_V2[1] <- c('CYTO GYN', 'CYTO GYN', 
+                               'CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto_V2[2] <- c('IP', 'Amb')
 
-Table_Template_Cyto_Vol <- data.frame(matrix(ncol=10, nrow = 4)) 
-colnames(Table_Template_Cyto_Vol) <- c("spec_group","Patient.Setting","BIMC", "MSH", "MSQ","NYEE","PACC","R","SL", "KH")
-Table_Template_Cyto_Vol[1] <- c('CYTO GYN','CYTO GYN','CYTO NONGYN', 'CYTO NONGYN')
+Table_Template_Cyto_Vol <- data.frame(matrix(ncol=10, nrow = 4))
+colnames(Table_Template_Cyto_Vol) <- c("spec_group", "Patient.Setting", 
+                                       "BIMC", "MSH", "MSQ", "NYEE", "PACC", 
+                                       "R", "SL", "KH")
+Table_Template_Cyto_Vol[1] <- c('CYTO GYN', 'CYTO GYN', 
+                                'CYTO NONGYN', 'CYTO NONGYN')
 Table_Template_Cyto_Vol[2] <- c('IP', 'Amb')
 
 #Patho
-Table_Template_Patho <- data.frame(matrix(ncol=17, nrow = 4)) 
-colnames(Table_Template_Patho) <- c("spec_group","Patient.Setting","No_Cases_Signed","MSH.x", "BIMC.x","MSQ.x","PACC.x","R.x","SL.x", "KH.x","BIMC.y", "MSH.y", "MSQ.y","PACC.y","R.y","SL.y", "KH.y")
-Table_Template_Patho[1] <- c('Breast','Breast','GI', 'GI')
+Table_Template_Patho <- data.frame(matrix(ncol=17, nrow = 4))
+colnames(Table_Template_Patho) <- c("spec_group", "Patient.Setting", 
+                                    "No_Cases_Signed", 
+                                    "MSH.x", "BIMC.x", "MSQ.x", "PACC.x", 
+                                    "R.x", "SL.x", "KH.x", "BIMC.y", "MSH.y", 
+                                    "MSQ.y", "PACC.y", "R.y", "SL.y", "KH.y")
+Table_Template_Patho[1] <- c('Breast', 'Breast', 'GI', 'GI')
 Table_Template_Patho[2] <- c('IP', 'Amb')
 
-Table_Template_Patho_Vol <- data.frame(matrix(ncol=9, nrow = 4)) 
-colnames(Table_Template_Patho_Vol) <- c("spec_group","Patient.Setting","BIMC", "MSH", "MSQ", "PACC","R","SL", "KH")
-Table_Template_Patho_Vol[1] <- c('Breast','Breast','GI', 'GI')
+Table_Template_Patho_Vol <- data.frame(matrix(ncol=9, nrow = 4))
+colnames(Table_Template_Patho_Vol) <- c("spec_group", "Patient.Setting", 
+                                        "BIMC", "MSH", "MSQ", "PACC", 
+                                        "R", "SL", "KH")
+Table_Template_Patho_Vol[1] <- c('Breast', 'Breast', 'GI', 'GI')
 Table_Template_Patho_Vol[2] <- c('IP', 'Amb')
 ```
 
@@ -309,7 +532,9 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
 # SCC DATA PROCESSING --------------------------
   # SCC lookup references ----------------------------------------------
   # Crosswalk labs included and remove out of scope labs
-  raw_scc <- left_join(raw_scc, test_code[ , c("Test", "SCC_TestID", "Division")], by = c("TEST_ID" = "SCC_TestID"))
+  raw_scc <- left_join(raw_scc, 
+                       test_code[ , c("Test", "SCC_TestID", "Division")], 
+                       by = c("TEST_ID" = "SCC_TestID"))
   raw_scc$TEST_ID <- as.factor(raw_scc$TEST_ID)
   raw_scc$Division <- as.factor(raw_scc$Division)
 
@@ -323,52 +548,93 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_scc <- raw_scc %>%
     mutate(WardandName = paste(Ward, WARD_NAME))
   
-  raw_scc <- left_join(raw_scc, scc_icu[ , c("Concatenate", "ICU")], by = c("WardandName" = "Concatenate"))
+  raw_scc <- left_join(raw_scc, scc_icu[ , c("Concatenate", "ICU")], 
+                       by = c("WardandName" = "Concatenate"))
   raw_scc[is.na(raw_scc$ICU), "ICU"] <- FALSE
   
   # Crosswalk unit type
-  raw_scc <- left_join(raw_scc, scc_setting, by = c("CLINIC_TYPE" = "Clinic_Type"))
+  raw_scc <- left_join(raw_scc, scc_setting, 
+                       by = c("CLINIC_TYPE" = "Clinic_Type"))
   # Crosswalk site name
-  raw_scc <- left_join(raw_scc, mshs_site, by = c("SITE" = "DataSite"))
+  raw_scc <- left_join(raw_scc, mshs_site, 
+                       by = c("SITE" = "DataSite"))
   
   # SCC data formatting ----------------------------------------------
-  raw_scc[c("Ward", "WARD_NAME", 
-             "REQUESTING_DOC", 
-             "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "Test",
-             "COLLECT_CENTER_ID", "SITE", "Site",
-             "CLINIC_TYPE", "Setting", "SettingRollUp")] <- lapply(raw_scc[c("Ward", "WARD_NAME", 
-                                                                              "REQUESTING_DOC", 
-                                                                              "GROUP_TEST_ID", "TEST_ID", "TEST_NAME", "Test",
-                                                                              "COLLECT_CENTER_ID", "SITE", "Site",
-                                                                              "CLINIC_TYPE", "Setting", "SettingRollUp")], as.factor)
+  raw_scc[c("Ward", 
+            "WARD_NAME", 
+            "REQUESTING_DOC",
+            "GROUP_TEST_ID",
+            "TEST_ID",
+            "TEST_NAME",
+            "Test",
+            "COLLECT_CENTER_ID",
+            "SITE",
+            "Site",
+            "CLINIC_TYPE",
+            "Setting",
+            "SettingRollUp")] <- lapply(raw_scc[c("Ward",
+                                                  "WARD_NAME",
+                                                  "REQUESTING_DOC", 
+                                                  "GROUP_TEST_ID",
+                                                  "TEST_ID", 
+                                                  "TEST_NAME", 
+                                                  "Test",
+                                                  "COLLECT_CENTER_ID",
+                                                  "SITE",
+                                                  "Site",
+                                                  "CLINIC_TYPE",
+                                                  "Setting",
+                                                  "SettingRollUp")], 
+                                        as.factor)
   
   # Fix any timestamps that weren't imported correctly and then format as date/time
-  raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")] <- 
-    lapply(raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")], 
-           function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
+  raw_scc[c("ORDERING_DATE", 
+            "COLLECTION_DATE", 
+            "RECEIVE_DATE", 
+            "VERIFIED_DATE")] <- lapply(raw_scc[c("ORDERING_DATE", 
+                                                  "COLLECTION_DATE", 
+                                                  "RECEIVE_DATE", 
+                                                  "VERIFIED_DATE")], 
+           function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, 
+                              str_replace(x, "\\*.*\\*", ""), x))
   
-  raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")] <- 
-    lapply(raw_scc[c("ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE")], 
-           as.POSIXct, tz = "UTC", format = "%Y-%m-%d %H:%M:%OS", options(digits.sec = 1))
+  raw_scc[c("ORDERING_DATE",
+            "COLLECTION_DATE",
+            "RECEIVE_DATE",
+            "VERIFIED_DATE")] <- lapply(raw_scc[c("ORDERING_DATE",
+                                                  "COLLECTION_DATE",
+                                                  "RECEIVE_DATE",
+                                                  "VERIFIED_DATE")], 
+           as.POSIXct, tz = "UTC", format = "%Y-%m-%d %H:%M:%OS", 
+           options(digits.sec = 1))
   
   # Add a column for Resulted date for later use in repository
   raw_scc <- raw_scc %>%
     mutate(ResultedDate = as.Date(VERIFIED_DATE, format = "%m/%d/%Y"))
   
-  # Update patient setting to reflect ICU/Non-ICU and update priorities for ED and ICU labs
+  # Update patient setting to reflect ICU/Non-ICU and 
+  # update priorities for ED and ICU labs
   raw_scc <- raw_scc %>%
     mutate(MasterSetting = ifelse(CLINIC_TYPE == "E", "ED", 
                                   ifelse(CLINIC_TYPE == "O", "Amb", 
-                                         ifelse(CLINIC_TYPE == "I" & ICU == TRUE, "ICU",
-                                                ifelse(CLINIC_TYPE == "I" & ICU != TRUE, "IP Non-ICU", "Other")))),
-           DashboardSetting = ifelse(MasterSetting == "ED" | MasterSetting == "ICU", "ED & ICU", 
+                                         ifelse(CLINIC_TYPE == "I" & 
+                                                  ICU == TRUE, "ICU",
+                                                ifelse(CLINIC_TYPE == "I" & 
+                                                         ICU != TRUE, 
+                                                       "IP Non-ICU", 
+                                                       "Other")))),
+           DashboardSetting = ifelse(MasterSetting == "ED" | 
+                                       MasterSetting == "ICU", "ED & ICU", 
                                      MasterSetting))
   
-  # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
+  # Update priority to reflect ED/ICU as stat and create Master Priority 
+  # for labs where all specimens are treated as stat
   raw_scc <- raw_scc %>%
-    mutate(AdjPriority = ifelse(MasterSetting == "ED" | MasterSetting == "ICU" | PRIORITY == "S", 
+    mutate(AdjPriority = ifelse(MasterSetting == "ED" | 
+                                  MasterSetting == "ICU" | PRIORITY == "S", 
                                 "Stat", "Routine"),
-           DashboardPriority = ifelse(tat_targets$Priority[match(Test, tat_targets$Test)] == "All", 
+           DashboardPriority = ifelse(
+             tat_targets$Priority[match(Test, tat_targets$Test)] == "All", 
                                       "All", AdjPriority))
 
   # Calculate turnaround times
@@ -381,10 +647,13 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
     lapply(raw_scc[c("CollectToReceive", "ReceiveToResult", "CollectToResult")], 
            as.numeric, units = "mins")
   
-  # Identify add on orders as orders placed more than 5 min after specimen received
-  # Identify specimens with missing collections times as those with collection time defaulted to receive time
+  # Identify add on orders as orders placed more than 5 min 
+  # after specimen received
+  # Identify specimens with missing collections times as those with 
+  # collection time defaulted to receive time
   raw_scc <- raw_scc %>%
-    mutate(AddOnMaster = ifelse(difftime(ORDERING_DATE, RECEIVE_DATE, units = "mins") > 5, 
+    mutate(AddOnMaster = ifelse(difftime(ORDERING_DATE, 
+                                         RECEIVE_DATE, units = "mins") > 5, 
                                 "AddOn", "Original"),
            MissingCollect = ifelse(CollectToReceive == 0, TRUE, FALSE))
   
@@ -392,16 +661,24 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_scc <- raw_scc %>%
     mutate(Concate1 = paste(Test, DashboardPriority),
            Concate2 = paste(Test, DashboardPriority, MasterSetting),
-           ReceiveResultTarget = ifelse(!is.na(match(Concate2, tat_targets$Concate)),
-                                        tat_targets$ReceiveToResultTarget[match(Concate2, tat_targets$Concate)],
-                                        ifelse(!is.na(match(Concate1, tat_targets$Concate)), 
-                                               tat_targets$ReceiveToResultTarget[match(Concate1, tat_targets$Concate)], 
-                                               tat_targets$ReceiveToResultTarget[match(Test, tat_targets$Concate)])),
-           CollectResultTarget = ifelse(!is.na(match(Concate2, tat_targets$Concate)), 
-                                         tat_targets$CollectToResultTarget[match(Concate2, tat_targets$Concate)], 
-                                         ifelse(!is.na(match(Concate1, tat_targets$Concate)), 
-                                                tat_targets$CollectToResultTarget[match(Concate1, tat_targets$Concate)],
-                                                tat_targets$CollectToResultTarget[match(Test, tat_targets$Concate)])),
+           ReceiveResultTarget = ifelse(
+             !is.na(match(Concate2, tat_targets$Concate)),
+             tat_targets$ReceiveToResultTarget[match(Concate2, 
+                                                     tat_targets$Concate)],
+             ifelse(!is.na(match(Concate1, tat_targets$Concate)), 
+                    tat_targets$ReceiveToResultTarget[match(Concate1, 
+                                                            tat_targets$Concate)],
+                    tat_targets$ReceiveToResultTarget[match(Test, 
+                                                            tat_targets$Concate)])),
+           CollectResultTarget = ifelse(
+             !is.na(match(Concate2, tat_targets$Concate)),
+             tat_targets$CollectToResultTarget[match(Concate2, 
+                                                     tat_targets$Concate)], 
+             ifelse(!is.na(match(Concate1, tat_targets$Concate)), 
+                    tat_targets$CollectToResultTarget[match(Concate1, 
+                                                            tat_targets$Concate)], 
+                    tat_targets$CollectToResultTarget[match(Test, 
+                                                            tat_targets$Concate)])),
            ReceiveResultInTarget = ReceiveToResult <= ReceiveResultTarget, 
            CollectResultInTarget = CollectToResult <= CollectResultTarget)
   
@@ -414,35 +691,48 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_scc <- raw_scc[!duplicated(raw_scc$Concate3), ]
   
   # Identify which labs to include in TAT analysis
-  # Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
+  # Exclude add on orders, orders from "other" settings, orders with collect or 
+  # receive times after result, or orders with missing collect, receive, or 
+  # result timestamps
   raw_scc <- raw_scc %>% 
-    mutate(TATInclude = ifelse(AddOnMaster != "Original" | MasterSetting == "Other" | 
-                                 CollectToResult < 0 | ReceiveToResult < 0 | 
-                                 is.na(CollectToResult) | is.na(ReceiveToResult), FALSE, TRUE))
+    mutate(TATInclude = ifelse(AddOnMaster != "Original" | 
+                                 MasterSetting == "Other" | 
+                                 CollectToResult < 0 | 
+                                 ReceiveToResult < 0 | 
+                                 is.na(CollectToResult) | 
+                                 is.na(ReceiveToResult), FALSE, TRUE))
 
   scc_master <- raw_scc[ , c("Ward", "WARD_NAME", "WardandName",
-                             "ORDER_ID", "REQUESTING_DOC NAME", "MPI", "WORK SHIFT",
+                             "ORDER_ID", "REQUESTING_DOC NAME", 
+                             "MPI", "WORK SHIFT",
                              "TEST_NAME", "Test", "Division", "PRIORITY", 
                              "Site", "ICU", "CLINIC_TYPE", 
-                             "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
+                             "Setting", "SettingRollUp", 
+                             "MasterSetting", "DashboardSetting",
                              "AdjPriority", "DashboardPriority",
-                             "ORDERING_DATE", "COLLECTION_DATE", "RECEIVE_DATE", "VERIFIED_DATE",
+                             "ORDERING_DATE", "COLLECTION_DATE", 
+                             "RECEIVE_DATE", "VERIFIED_DATE",
                              "ResultedDate", 
-                             "CollectToReceive", "ReceiveToResult", "CollectToResult", 
+                             "CollectToReceive", "ReceiveToResult", 
+                             "CollectToResult", 
                              "AddOnMaster", "MissingCollect", 
                              "ReceiveResultTarget", "CollectResultTarget", 
                              "ReceiveResultInTarget", "CollectResultInTarget", 
                              "TATInclude")]
   
   colnames(scc_master) <- c("LocCode", "LocName", "LocConcat",
-                            "OrderID", "RequestMD", "MSMRN", "WorkShift", 
+                            "OrderID", "RequestMD", 
+                            "MSMRN", "WorkShift", 
                             "TestName", "Test", "Division", "OrderPriority", 
                             "Site", "ICU", "LocType", 
-                            "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting",
+                            "Setting", "SettingRollUp", 
+                            "MasterSetting", "DashboardSetting",
                             "AdjPriority", "DashboardPriority",
-                            "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
+                            "OrderTime", "CollectTime", 
+                            "ReceiveTime", "ResultTime", 
                             "ResultDate", 
-                            "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
+                            "CollectToReceiveTAT", "ReceiveToResultTAT", 
+                            "CollectToResultTAT", 
                             "AddOnMaster", "MissingCollect", 
                             "ReceiveResultTarget", "CollectResultTarget", 
                             "ReceiveResultInTarget", "CollectResultInTarget", 
@@ -452,7 +742,10 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   ## SUNQUEST DATA PROCESSING ----------
   # Sunquest lookup references ----------------------------------------------
   # Crosswalk labs included and remove out of scope labs
-  raw_sun <- left_join(raw_sun, test_code[ , c("Test", "SUN_TestCode", "Division")], by = c("TestCode" = "SUN_TestCode"))
+  raw_sun <- left_join(raw_sun, test_code[ , c("Test", 
+                                               "SUN_TestCode", 
+                                               "Division")], 
+                       by = c("TestCode" = "SUN_TestCode"))
   raw_sun$TestCode <- as.factor(raw_sun$TestCode)
   raw_sun$Division <- as.factor(raw_sun$Division)
   raw_sun <- raw_sun %>%
@@ -464,7 +757,8 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_sun <- raw_sun %>%
     mutate(LocandName = paste(LocCode, LocName))
   
-  raw_sun <- left_join(raw_sun, sun_icu[ , c("Concatenate", "ICU")], by = c("LocandName" = "Concatenate"))
+  raw_sun <- left_join(raw_sun, sun_icu[ , c("Concatenate", "ICU")], 
+                       by = c("LocandName" = "Concatenate"))
   raw_sun[is.na(raw_sun$ICU), "ICU"] <- FALSE
   
   # Crosswalk unit type
@@ -482,39 +776,64 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
              "ReceiveTech", "ResultTech", "PerformingLabCode",
              "Test", "LocandName", "Setting", "SettingRollUp", "Site")] <- 
     lapply(raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
-                     "LocType", "LocCode", "LocName", "PhysName", 
-                     "SHIFT", "ReceiveTech", "ResultTech", "PerformingLabCode", "Test", 
-                     "LocandName", "Setting", "SettingRollUp", "Site")], as.factor)
+                     "LocType", "LocCode", "LocName", 
+                     "PhysName", "SHIFT", 
+                     "ReceiveTech", "ResultTech", "PerformingLabCode", 
+                     "Test", "LocandName", "Setting", "SettingRollUp", "Site")],
+           as.factor)
   
   # Fix any timestamps that weren't imported correctly and then format as date/time
-  raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- 
-    lapply(raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")], 
-           function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, str_replace(x, "\\*.*\\*", ""), x))
+  raw_sun[c("OrderDateTime", 
+            "CollectDateTime", 
+            "ReceiveDateTime", 
+            "ResultDateTime")] <- 
+    lapply(raw_sun[c("OrderDateTime", 
+                     "CollectDateTime", 
+                     "ReceiveDateTime", 
+                     "ResultDateTime")], 
+           function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE, 
+                              str_replace(x, "\\*.*\\*", ""), x))
 
-  raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")] <- 
-    lapply(raw_sun[c("OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime")], 
+  raw_sun[c("OrderDateTime", 
+            "CollectDateTime", 
+            "ReceiveDateTime", 
+            "ResultDateTime")] <- 
+    lapply(raw_sun[c("OrderDateTime", 
+                     "CollectDateTime", 
+                     "ReceiveDateTime", 
+                     "ResultDateTime")], 
            as.POSIXct, tz = "UTC", format = "%m/%d/%Y %H:%M:%S")
   
   # Add a column for Resulted date for later use in repository
   raw_sun <- raw_sun %>%
     mutate(ResultedDate = as.Date(ResultDateTime, format = "%m/%d/%Y"))
 
-  # Sunquest data preprocessing --------------------------------------------------
-  # Update patient setting to reflect ICU/Non-ICU and update priorities for ED and ICU labs
+  # Sunquest data preprocessing -----------------------------------------------
+  # Update patient setting to reflect ICU/Non-ICU and update priorities for 
+  # ED and ICU labs
   raw_sun <- raw_sun %>%
     mutate(MasterSetting = ifelse(SettingRollUp == "ED", "ED", 
                                   ifelse(SettingRollUp == "Amb", "Amb", 
-                                         ifelse(SettingRollUp == "IP" & ICU == TRUE, "ICU",
-                                                ifelse(SettingRollUp == "IP" & ICU == FALSE, "IP Non-ICU", "Other")))), 
-           DashboardSetting = ifelse(MasterSetting == "ED" | MasterSetting == "ICU", "ED & ICU", MasterSetting))
+                                         ifelse(SettingRollUp == "IP" & 
+                                                  ICU == TRUE, "ICU",
+                                                ifelse(SettingRollUp == "IP" & 
+                                                         ICU == FALSE, 
+                                                       "IP Non-ICU", "Other")))), 
+           DashboardSetting = ifelse(MasterSetting == "ED" | 
+                                       MasterSetting == "ICU", "ED & ICU", 
+                                     MasterSetting))
   
-  # Update priority to reflect ED/ICU as stat and create Master Priority for labs where all specimens are treated as stat
+  # Update priority to reflect ED/ICU as stat and create Master Priority for 
+  # labs where all specimens are treated as stat
   raw_sun <- raw_sun %>%
-    mutate(AdjPriority = ifelse(MasterSetting != "ED" & MasterSetting != "ICU" & is.na(SpecimenPriority), "Routine",
-                                ifelse(MasterSetting == "ED" | MasterSetting == "ICU" | SpecimenPriority == "S", 
-                                       "Stat", "Routine")),
-           DashboardPriority = ifelse(tat_targets$Priority[match(Test, tat_targets$Test)] == "All", 
-                                      "All", AdjPriority))
+    mutate(AdjPriority = ifelse(MasterSetting != "ED" & MasterSetting != "ICU" &
+                                  is.na(SpecimenPriority), "Routine",
+                                ifelse(MasterSetting == "ED" | 
+                                         MasterSetting == "ICU" | 
+                                         SpecimenPriority == "S", "Stat", 
+                                       "Routine")),
+           DashboardPriority = ifelse(tat_targets$Priority[match(
+             Test, tat_targets$Test)] == "All", "All", AdjPriority))
 
   # Calculate turnaround times
   raw_sun <- raw_sun %>%
@@ -526,26 +845,45 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
     lapply(raw_sun[c("CollectToReceive", "ReceiveToResult", "CollectToResult")], 
            as.numeric, units = "mins")
   
-  # Identify add on orders as orders placed more than 5 min after specimen received
-  # Identify specimens with missing collections times as those with collection time defaulted to order time
+  # Identify add on orders as orders placed more than 5 min after 
+  # specimen received. 
+  # Identify specimens with missing collections times as those with collection 
+  # time defaulted to order time
   raw_sun <- raw_sun %>%
-    mutate(AddOnMaster = ifelse(difftime(OrderDateTime, ReceiveDateTime, units = "mins") > 5, "AddOn", "Original"),
-           MissingCollect = ifelse(CollectDateTime == OrderDateTime, TRUE, FALSE))
+    mutate(AddOnMaster = ifelse(difftime(OrderDateTime, ReceiveDateTime, 
+                                         units = "mins") > 5, "AddOn", 
+                                "Original"),
+           MissingCollect = ifelse(CollectDateTime == OrderDateTime, TRUE, 
+                                   FALSE))
   
   # Determine target TAT based on test, priority, and patient setting
   raw_sun <- raw_sun %>%
     mutate(Concate1 = paste(Test, DashboardPriority), 
            Concate2 = paste(Test, DashboardPriority, MasterSetting),
-           ReceiveResultTarget = ifelse(!is.na(match(Concate2, tat_targets$Concate)), 
-                                        tat_targets$ReceiveToResultTarget[match(Concate2, tat_targets$Concate)], 
-                                        ifelse(!is.na(match(Concate1, tat_targets$Concate)), 
-                                               tat_targets$ReceiveToResultTarget[match(Concate1, tat_targets$Concate)],
-                                               tat_targets$ReceiveToResultTarget[match(Test, tat_targets$Concate)])),
-           CollectResultTarget = ifelse(!is.na(match(Concate2, tat_targets$Concate)), 
-                                        tat_targets$CollectToResultTarget[match(Concate2, tat_targets$Concate)], 
-                                        ifelse(!is.na(match(Concate1, tat_targets$Concate)), 
-                                               tat_targets$CollectToResultTarget[match(Concate1, tat_targets$Concate)], 
-                                               tat_targets$CollectToResultTarget[match(Test, tat_targets$Concate)])),
+           ReceiveResultTarget = ifelse(!is.na(match(Concate2, 
+                                                     tat_targets$Concate)), 
+                                        tat_targets$ReceiveToResultTarget[
+                                          match(Concate2, tat_targets$Concate)], 
+                                        ifelse(!is.na(match(Concate1,
+                                                            tat_targets$Concate)),
+                                               tat_targets$ReceiveToResultTarget[
+                                                 match(Concate1, 
+                                                       tat_targets$Concate)],
+                                               tat_targets$ReceiveToResultTarget[
+                                                 match(Test, 
+                                                       tat_targets$Concate)])),
+           CollectResultTarget = ifelse(!is.na(match(Concate2, 
+                                                     tat_targets$Concate)), 
+                                        tat_targets$CollectToResultTarget[
+                                          match(Concate2, tat_targets$Concate)], 
+                                        ifelse(!is.na(match(Concate1, 
+                                                            tat_targets$Concate)), 
+                                               tat_targets$CollectToResultTarget[
+                                                 match(Concate1, 
+                                                       tat_targets$Concate)], 
+                                               tat_targets$CollectToResultTarget[
+                                                 match(Test, 
+                                                       tat_targets$Concate)])),
            ReceiveResultInTarget = ReceiveToResult <= ReceiveResultTarget,
            CollectResultInTarget = CollectToResult <= CollectResultTarget)
   
@@ -557,35 +895,48 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_sun <- raw_sun[!duplicated(raw_sun$Concate3), ]
   
   # Identify which labs to include in TAT analysis
-  # Exclude add on orders, orders from "other" settings, orders with collect or receive times after result, or orders with missing collect, receive, or result timestamps
+  # Exclude add on orders, orders from "other" settings, orders with collect or 
+  # receive times after result, or orders with missing collect, receive, or 
+  # result timestamps
   raw_sun <- raw_sun %>%
-    mutate(TATInclude = ifelse(AddOnMaster != "Original" | MasterSetting == "Other" | 
-                                 CollectToResult < 0 | ReceiveToResult < 0 | 
-                                 is.na(CollectToResult) | is.na(ReceiveToResult), FALSE, TRUE))
+    mutate(TATInclude = ifelse(AddOnMaster != "Original" | 
+                                 MasterSetting == "Other" | 
+                                 CollectToResult < 0 | 
+                                 ReceiveToResult < 0 | 
+                                 is.na(CollectToResult) | 
+                                 is.na(ReceiveToResult), FALSE, TRUE))
   
   sun_master <- raw_sun[ ,c("LocCode", "LocName", "LocandName", 
-                            "HISOrderNumber", "PhysName", "PtNumber", "SHIFT",            
+                            "HISOrderNumber", "PhysName", 
+                            "PtNumber", "SHIFT",            
                             "TSTName", "Test", "Division", "SpecimenPriority", 
                             "Site", "ICU", "LocType",               
-                            "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
+                            "Setting", "SettingRollUp", 
+                            "MasterSetting", "DashboardSetting", 
                             "AdjPriority", "DashboardPriority", 
-                            "OrderDateTime", "CollectDateTime", "ReceiveDateTime", "ResultDateTime", 
+                            "OrderDateTime", "CollectDateTime", 
+                            "ReceiveDateTime", "ResultDateTime", 
                             "ResultedDate", 
-                            "CollecttoReceive", "ReceivetoResult", "CollecttoResult", 
+                            "CollecttoReceive", "ReceivetoResult", 
+                            "CollecttoResult", 
                             "AddOnMaster", "MissingCollect", 
                             "ReceiveResultTarget", "CollectResultTarget", 
                             "ReceiveResultInTarget", "CollectResultInTarget", 
                             "TATInclude")]
   
   colnames(sun_master) <- c("LocCode", "LocName", "LocConcat", 
-                            "OrderID", "RequestMD", "MSMRN", "WorkShift", 
+                            "OrderID", "RequestMD", 
+                            "MSMRN", "WorkShift", 
                             "TestName", "Test", "Division", "OrderPriority", 
                             "Site", "ICU", "LocType", 
-                            "Setting", "SettingRollUp", "MasterSetting", "DashboardSetting", 
+                            "Setting", "SettingRollUp", 
+                            "MasterSetting", "DashboardSetting", 
                             "AdjPriority", "DashboardPriority",
-                            "OrderTime", "CollectTime", "ReceiveTime", "ResultTime", 
+                            "OrderTime", "CollectTime", 
+                            "ReceiveTime", "ResultTime", 
                             "ResultDate", 
-                            "CollectToReceiveTAT", "ReceiveToResultTAT", "CollectToResultTAT", 
+                            "CollectToReceiveTAT", "ReceiveToResultTAT", 
+                            "CollectToResultTAT", 
                             "AddOnMaster", "MissingCollect", 
                             "ReceiveResultTarget", "CollectResultTarget", 
                             "ReceiveResultInTarget", "CollectResultInTarget", 
@@ -594,14 +945,21 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   
   scc_sun_master <- rbind(scc_master, sun_master)
   
-  scc_sun_master[c("LocConcat", "RequestMD", "WorkShift", "AdjPriority", "AddOnMaster")] <-
-    lapply(scc_sun_master[c("LocConcat", "RequestMD", "WorkShift", "AdjPriority", "AddOnMaster")], as.factor)
+  scc_sun_master[c("LocConcat", "RequestMD", "WorkShift", 
+                   "AdjPriority", "AddOnMaster")] <-
+    lapply(scc_sun_master[c("LocConcat", "RequestMD", "WorkShift",
+                            "AdjPriority", "AddOnMaster")], as.factor)
   
-  scc_sun_master$Site <- factor(scc_sun_master$Site, levels = site_order)
-  scc_sun_master$Test <- factor(scc_sun_master$Test, levels = cp_micro_lab_order)
-  scc_sun_master$MasterSetting <- factor(scc_sun_master$MasterSetting, levels = pt_setting_order)
-  scc_sun_master$DashboardSetting <- factor(scc_sun_master$DashboardSetting, levels = pt_setting_order2)
-  scc_sun_master$DashboardPriority <- factor(scc_sun_master$DashboardPriority, levels = dashboard_priority_order)
+  scc_sun_master$Site <- factor(scc_sun_master$Site, 
+                                levels = site_order)
+  scc_sun_master$Test <- factor(scc_sun_master$Test, 
+                                levels = cp_micro_lab_order)
+  scc_sun_master$MasterSetting <- factor(scc_sun_master$MasterSetting, 
+                                         levels = pt_setting_order)
+  scc_sun_master$DashboardSetting <- factor(scc_sun_master$DashboardSetting, 
+                                            levels = pt_setting_order2)
+  scc_sun_master$DashboardPriority <- factor(scc_sun_master$DashboardPriority, 
+                                             levels = dashboard_priority_order)
   
   scc_sun_list <- list(raw_scc, raw_sun, scc_sun_master)
   
@@ -628,7 +986,8 @@ if (is.null(SQ_Not_Weekday) & is.null(SQ_Not_Weekday)) {
   scc_sun_not_wday_master <- scc_sun_not_wday_list[[3]]
 }
 
-# Remove labs from master data frame that were resulted at exactly midnight on next morning or prior day
+# Remove labs from master data frame that were resulted at exactly midnight on 
+# next morning or prior day
 # Custom function to determine correct number of dates
 correct_scc_result_dates <- function(data, number_days) {
   all_resulted_dates_vol <- data %>%
@@ -649,17 +1008,21 @@ correct_scc_result_dates <- function(data, number_days) {
 scc_sun_wday_master <- correct_scc_result_dates(scc_sun_wday_master, 1)
 
 if (scenario == 1) {
-  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 3)
+  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 
+                                                      3)
 } else if (scenario == 2) {
-  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 2)
+  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 
+                                                      2)
 } else if (scenario == 3) {
-  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 1)
+  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 
+                                                      1)
 }
 
 
 # Determine resulted date for weekday labs
 wday_dates_df <- scc_sun_wday_master[ , "ResultDate"]
-wday_result_date <- format(unique(wday_dates_df$ResultDate), format = "%a %m/%d/%y")
+wday_result_date <- format(unique(wday_dates_df$ResultDate), 
+                           format = "%a %m/%d/%y")
 
 
 if (is.null(scc_sun_not_wday_master) == FALSE) {
@@ -669,7 +1032,12 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
   # wkend_holiday_result_date <- ifelse(length(not_wday_result_date) == 1, format(not_wday_result_date, format = "%a %m/%d/%y"), paste0(format(not_wday_result_date[length(not_wday_result_date)], format = "%a %m/%d/%y"), "-", format(not_wday_result_date[1], format = "%a %m/%d/%y")))
   not_wday_dates_df <- scc_sun_not_wday_master[ , "ResultDate"]
   not_wday_result_date <- unique(date(not_wday_dates_df$ResultDate))
-  wkend_holiday_result_date <- ifelse(length(not_wday_result_date) == 1, format(not_wday_result_date, format = "%a %m/%d/%y"), paste0(format(not_wday_result_date[length(not_wday_result_date)], format = "%a %m/%d/%y"), "-", format(not_wday_result_date[1], format = "%a %m/%d/%y")))
+  wkend_holiday_result_date <- ifelse(
+    length(not_wday_result_date) == 1, format(not_wday_result_date, 
+                                              format = "%a %m/%d/%y"), 
+    paste0(format(not_wday_result_date[length(not_wday_result_date)], 
+                  format = "%a %m/%d/%y"), "-", format(not_wday_result_date[1], 
+                                                       format = "%a %m/%d/%y")))
 } else {
   wkend_holiday_result_date <- NULL
 }
@@ -690,15 +1058,19 @@ scc_sun_all_days_subset <- scc_sun_all_days %>%
            OrderPriority, AdjPriority, DashboardPriority,
            ReceiveResultTarget, CollectResultTarget) %>%
   summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), 
-            TotalReceiveResultInTarget = sum(ReceiveResultInTarget[TATInclude == TRUE]), 
-            TotalCollectResultInTarget = sum(CollectResultInTarget[TATInclude == TRUE]), 
+            TotalReceiveResultInTarget = 
+              sum(ReceiveResultInTarget[TATInclude == TRUE]), 
+            TotalCollectResultInTarget = 
+              sum(CollectResultInTarget[TATInclude == TRUE]), 
             TotalAddOnOrder = sum(AddOnMaster == "AddOn"), 
             TotalMissingCollections = sum(MissingCollect)) %>%
   arrange(Site, ResultDate) %>%
   ungroup()
 
-existing_repo <- read_excel(choose.files(default = user_path, caption = "Select SCC and Sunquest Historical Repository"),
-                              sheet = 1, col_names = TRUE)
+existing_repo <- read_excel(
+  choose.files(default = user_path, 
+               caption = "Select SCC and Sunquest Historical Repository"), 
+  sheet = 1, col_names = TRUE)
   
 # Convert ResultDate from date-time to date
 existing_repo <- existing_repo %>%
@@ -716,12 +1088,19 @@ start_date <- format(min(scc_sun_repo$ResultDate), "%m-%d-%y")
 end_date <- format(max(scc_sun_repo$ResultDate), "%m-%d-%y")
 
 # Add data to historical repository
-write_xlsx(scc_sun_repo, path = paste0(user_directory, "\\SCC Sunquest Historical Repo", "\\Hist Repo Test ", start_date, " to ", end_date, " Created ", Sys.Date(), ".xlsx"))
+write_xlsx(scc_sun_repo, path = paste0(user_directory, 
+                                       "\\SCC Sunquest Historical Repo", 
+                                       "\\Hist Repo Test ", start_date, " to ", 
+                                       end_date, " Created ", Sys.Date(), 
+                                       ".xlsx"))
 
 
 test_results <- scc_sun_all_days_subset %>%
   group_by(Site, Test, DashboardPriority, DashboardSetting) %>%
-  summarize(ReceiveResultPercent = sum(TotalReceiveResultInTarget)/sum(TotalResultedTAT)*100, CollectResultPercent = sum(TotalCollectResultInTarget)/sum(TotalResultedTAT)*100)
+  summarize(ReceiveResultPercent = sum(TotalReceiveResultInTarget)/
+              sum(TotalResultedTAT)*100, 
+            CollectResultPercent = sum(TotalCollectResultInTarget)/
+              sum(TotalResultedTAT)*100)
 
 ```
 
