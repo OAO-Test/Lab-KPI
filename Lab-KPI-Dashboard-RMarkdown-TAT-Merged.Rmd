@@ -1097,15 +1097,6 @@ write_xlsx(scc_sun_repo, path = paste0(user_directory,
                                        "\\Hist Repo Test ", start_date, " to ", 
                                        end_date, " Created ", Sys.Date(), 
                                        ".xlsx"))
-
-
-test_results <- scc_sun_all_days_subset %>%
-  group_by(Site, Test, DashboardPriority, DashboardSetting) %>%
-  summarize(ReceiveResultPercent = sum(TotalReceiveResultInTarget)/
-              sum(TotalResultedTAT)*100, 
-            CollectResultPercent = sum(TotalCollectResultInTarget)/
-              sum(TotalResultedTAT)*100)
-
 ```
 
 
