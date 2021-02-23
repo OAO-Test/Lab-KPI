@@ -58,14 +58,14 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 
-Today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
-#Today <- as.timeDate(as.Date("07/29/2020", format = "%m/%d/%Y"))
+# Today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
+Today <- as.timeDate(as.Date("12/10/2020", format = "%m/%d/%Y"))
 
 
 #Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-Yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
-#Yesterday <- as.timeDate(as.Date("07/28/2020", format = "%m/%d/%Y"))
+# Yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
+Yesterday <- as.timeDate(as.Date("12/9/2020", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 Yesterday_Day <- dayOfWeek(Yesterday)
@@ -424,11 +424,10 @@ Cytology_Backlog_Raw <- data.frame(
 ```{r Reference Data, warning = FALSE, message = FALSE, echo = FALSE}
 # CP and Micro --------------------------------
 # Import analysis reference data starting with test codes for SCC and Sunquest
-# reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
-
 reference_file <- choose.files(
   default = paste0(user_directory, "/Code Reference/*.*"), 
   caption = "Select analysis reference file")
+
 test_code <- read_excel(reference_file, sheet = "TestNames")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
@@ -455,7 +454,7 @@ sun_wday <- SQ_Weekday
 
 cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu", "C. diff")
 
-site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
+site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
 
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
@@ -769,9 +768,9 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
   raw_sun <- left_join(raw_sun, sun_setting, by = c("LocType" = "LocType"))
   
   # Crosswalk site name
-  #raw_sun <- left_join(raw_sun, mshs_site, by = c("HospCode" = "DataSite"))
+  raw_sun <- left_join(raw_sun, mshs_site, by = c("HospCode" = "DataSite"))
   #Asala Added this to tackle the issue of the other site temporarly until Kate comes back
-  raw_sun <- inner_join(raw_sun, mshs_site, by = c("HospCode" = "DataSite"))
+  # raw_sun <- inner_join(raw_sun, mshs_site, by = c("HospCode" = "DataSite"))
 
   # Sunquest data formatting --------------------------------------------
   raw_sun[c("HospCode", "BatTstCode", "BATName", "TestCode", "TSTName",
@@ -976,7 +975,7 @@ scc_wday <- scc_sun_wday_list[[1]]
 sun_wday <- scc_sun_wday_list[[2]]
 scc_sun_wday_master <- scc_sun_wday_list[[3]]
 
-if (is.null(SQ_Not_Weekday) & is.null(SQ_Not_Weekday)) {
+if (is.null(SQ_Not_Weekday) & is.null(SCC_Not_Weekday)) {
   include_not_wday <- FALSE
   scc_sun_not_wday_list <- NULL
   scc_not_wday <- NULL
