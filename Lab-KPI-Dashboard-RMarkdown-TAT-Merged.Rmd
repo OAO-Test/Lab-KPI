@@ -1071,10 +1071,15 @@ scc_sun_all_days_subset <- scc_sun_all_days %>%
   arrange(Site, ResultDate) %>%
   ungroup()
 
-existing_repo <- read_excel(
-  choose.files(default = user_path, 
-               caption = "Select SCC and Sunquest Historical Repository"), 
-  sheet = 1, col_names = TRUE)
+# existing_repo <- read_excel(
+#   choose.files(default = user_path, 
+#                caption = "Select SCC and Sunquest Historical Repository"), 
+#   sheet = 1, col_names = TRUE)
+existing_repo <- readRDS(file = 
+  choose.files(default = paste0(user_directory,
+                                "/SCC Sunquest Historical Repo",
+                                "/*.*"),
+               caption = "Select SCC and Sunquest Historical Repository"))
   
 # Convert ResultDate from date-time to date
 existing_repo <- existing_repo %>%
