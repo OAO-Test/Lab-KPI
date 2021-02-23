@@ -1439,7 +1439,7 @@ write_xlsx(Historical_Repo_Updated,xlsxFileName)
 #     lab_sub_output <- list(lab_df, lab_summary, lab_dashboard1, lab_dashboard2)
 # }
 
-# Custome function to subset, summarize, clean, and format data for dashboards for all lab divisions
+# Custom function to subset, summarize, clean, and format data for dashboards for all lab divisions
 lab_sub_summarize <- function(x, LabDivision) {
   # Subset data to be included based on lab division and whether or not TAT meets inclusion criteria
   lab_df <- x[x$Division == LabDivision & x$TATInclude == TRUE, ]
