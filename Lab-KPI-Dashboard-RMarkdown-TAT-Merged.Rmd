@@ -10,22 +10,23 @@ output:
 
 ```{r include = FALSE}
 #Install packages only the first time you run the code
-#install.packages("timeDate")
-#install.packages("lubridate")
-#install.packages("readxl")
-#install.packages("dplyr")
-#install.packages("reshape2")
-#install.packages("knitr")
-#install.packages("kableExtra")
-#install.packages("formattable")
-#install.packages("bizdays")
-#install.packages("rmarkdown")
-#install.packages("stringr")
-#install.packages("writexl")
+# install.packages("timeDate")
+# install.packages("lubridate")
+# install.packages("readxl")
+# install.packages("dplyr")
+# install.packages("reshape2")
+# install.packages("knitr")
+# install.packages("gdtools")
+# install.packages("kableExtra")
+# install.packages("formattable")
+# install.packages("bizdays")
+# install.packages("rmarkdown")
+# install.packages("stringr")
+# install.packages("writexl")
 
 #-------------------------------Required packages------------------------------#
 
-#Required packages: run these everytime you run the code
+#Required packages: run these every time you run the code
 library(timeDate)
 library(readxl)
 library(bizdays)
@@ -33,6 +34,7 @@ library(dplyr)
 library(lubridate)
 library(reshape2)
 library(knitr)
+# library(gdtools)
 library(kableExtra)
 library(formattable)
 library(rmarkdown)
@@ -91,11 +93,13 @@ bizdays.options$set(default.calendar = "MSHS_working_days")
 #user_path <- paste0(user_wd, "\\*.*")
 
 if (list.files("J://") == "Presidents") {
-  user_directory <- "J:/Presidents/HSPI-PM/
-  Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+  user_directory <- paste0("J:/Presidents/HSPI-PM/",
+                           "Operations Analytics and Optimization/Projects/",
+                           "Service Lines/Lab Kpi/Data")
 } else {
-  user_directory <- "J:/deans/Presidents/HSPI-PM/
-  Operations Analytics and Optimization/Projects/Service Lines/Lab Kpi/Data"
+  user_directory <- paste0("J:/deans/Presidents/HSPI-PM/",
+                           "Operations Analytics and Optimization/Projects/", 
+                           "Service Lines/Lab Kpi/Data")
 }
 user_path <- paste0(user_directory, "/*.*")
 
@@ -980,7 +984,8 @@ if (is.null(SQ_Not_Weekday) & is.null(SQ_Not_Weekday)) {
   scc_sun_not_wday_master <- NULL
 } else {
   include_not_wday <- TRUE
-  scc_sun_not_wday_list <- preprocess_scc_sun(SCC_Not_Weekday, SQ_Not_Weekday)
+  scc_sun_not_wday_list <- preprocess_scc_sun(SCC_Not_Weekday, 
+                                              SQ_Not_Weekday)
   scc_not_wday <- scc_sun_not_wday_list[[1]]
   sun_not_wday <- scc_sun_not_wday_list[[2]]
   scc_sun_not_wday_master <- scc_sun_not_wday_list[[3]]
@@ -1045,7 +1050,7 @@ if (is.null(scc_sun_not_wday_master) == FALSE) {
 
 ```{r Begin combining and summarizing data for historical repository, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
 # Bind weekday and non-weekday data, if any exists
-if (is.null(scc_sun_not_wday_master) == FALSE) {
+if (!is.null(scc_sun_not_wday_master)) {
   scc_sun_all_days <- rbind(scc_sun_wday_master, scc_sun_not_wday_master)
 } else {
   scc_sun_all_days <- scc_sun_wday_master
