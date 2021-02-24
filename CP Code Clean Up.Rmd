@@ -972,27 +972,15 @@ preprocess_scc_sun <- function(raw_scc, raw_sun)  {
 ```{r}
 raw_scc <- scc_wday
 # SCC lookup references ----------------------------------------------
-# Crosswalk labs included and remove out of scope labs
+# Crosswalk in scope labs
 raw_scc <- left_join(raw_scc,
                      test_code[ , c("Test", "SCC_TestID", "Division")],
                      by = c("TEST_ID" = "SCC_TestID"))
-
-# raw_scc$TEST_ID <- as.factor(raw_scc$TEST_ID)
-# raw_scc$Division <- as.factor(raw_scc$Division)
 
 # Determine if test is included based on crosswalk results
 raw_scc <- raw_scc %>%
   mutate(TestIncl = !is.na(Test)) %>%
   filter(TestIncl)
-  
-# Crosswalk units and identify ICUs
-raw_scc <- raw_scc %>%
-  mutate(WardandName = paste(Ward, WARD_NAME))
-  
-raw_scc <- left_join(raw_scc, scc_icu[ , c("Concatenate", "ICU")], 
-                       by = c("WardandName" = "Concatenate"))
-raw_scc <- raw_scc %>%
-  mutate(ICU = ifelse(is.na(ICU), FALSE, ICU))
 
 # Crosswalk unit type
 raw_scc <- left_join(raw_scc, scc_setting,
@@ -1000,7 +988,21 @@ raw_scc <- left_join(raw_scc, scc_setting,
 # Crosswalk site name
 raw_scc <- left_join(raw_scc, mshs_site,
                      by = c("SITE" = "DataSite"))
+
+# Crosswalk units and identify ICUs
+raw_scc <- raw_scc %>%
+  mutate(WardandName = paste(Ward, WARD_NAME))
   
+raw_scc <- left_join(raw_scc, scc_icu[ , c("Concatenate", "ICU")], 
+                       by = c("WardandName" = "Concatenate"))
+
+# Determine if unit is an ICU based on crosswalk results
+raw_scc <- raw_scc %>%
+  mutate(ICU = ifelse(is.na(ICU), FALSE, ICU))
+
+# raw_scc$TEST_ID <- as.factor(raw_scc$TEST_ID)
+# raw_scc$Division <- as.factor(raw_scc$Division)
+
 # # SCC data formatting ----------------------------------------------
 # raw_scc[c("Ward",
 #           "WARD_NAME",
@@ -1029,7 +1031,8 @@ raw_scc <- left_join(raw_scc, mshs_site,
 #                                                 "SettingRollUp")],
 #                                       as.factor)
   
-# Fix any timestamps that weren't imported correctly and then format as date/time
+# Fix any timestamps that weren't imported correctly and then format 
+# order, collect, receive, and verified times as date-time
 raw_scc[c("ORDERING_DATE", 
             "COLLECTION_DATE", 
             "RECEIVE_DATE", 
@@ -1041,46 +1044,49 @@ raw_scc[c("ORDERING_DATE",
                               str_replace(x, "\\*.*\\*", ""), x))
                    
 raw_scc[c("ORDERING_DATE",
-            "COLLECTION_DATE",
-            "RECEIVE_DATE",
-            "VERIFIED_DATE")] <- lapply(raw_scc[c("ORDERING_DATE",
-                                                  "COLLECTION_DATE",
-                                                  "RECEIVE_DATE",
-                                                  "VERIFIED_DATE")], 
-           as.POSIXct, tz = "UTC", format = "%Y-%m-%d %H:%M:%OS", 
-           options(digits.sec = 1))
+          "COLLECTION_DATE",
+          "RECEIVE_DATE",
+          "VERIFIED_DATE")] <- lapply(raw_scc[c("ORDERING_DATE",
+                                                "COLLECTION_DATE",
+                                                "RECEIVE_DATE",
+                                                "VERIFIED_DATE")],
+                                      as.POSIXct, tz = "UTC",
+                                      format = "%Y-%m-%d %H:%M:%OS",
+                                      options(digits.sec = 1))
   
-# Add a column for Resulted date for later use in repository
+# Add a column for Resulted Date for later use in repository
 raw_scc <- raw_scc %>%
   mutate(ResultedDate = date(VERIFIED_DATE))
   
 # Update patient setting to reflect ICU/Non-ICU and 
 # update priorities for ED and ICU labs
 raw_scc <- raw_scc %>%
-  mutate(MasterSetting = ifelse(SettingRollUp == "IP" & ICU, "ICU",
+  mutate(
+    # Create master setting column to identify ICU and IP Non-ICU units
+    MasterSetting = ifelse(SettingRollUp == "IP" & ICU, "ICU",
                                  ifelse(SettingRollUp == "IP" & !ICU,
                                         "IP Non-ICU", SettingRollUp)),
-           DashboardSetting = ifelse(MasterSetting %in% c("ED", "ICU"), 
-                                    "ED & ICU", MasterSetting))
-  
-# Update priority to reflect ED/ICU as stat and create Master Priority 
-# for labs where all specimens are treated as stat
-raw_scc <- raw_scc %>%
-    mutate(AdjPriority = ifelse(MasterSetting %in% c("ED", "ICU") |
+    # Create dashboard setting column to roll up master settings based on
+    # desired dashboard grouping (ie, group ED and ICU together)
+    DashboardSetting = ifelse(MasterSetting %in% c("ED", "ICU"), 
+                                    "ED & ICU", MasterSetting),
+    # Create column with adjusted priority based on assumption that all ED and
+    # ICU labs are treated as stat per operational leadership
+    AdjPriority = ifelse(MasterSetting %in% c("ED", "ICU") |
                                    PRIORITY == "S", "Stat", "Routine"),
-           DashboardPriority = ifelse(
+    # Create dashboard priority column 
+    DashboardPriority = ifelse(
              tat_targets$Priority[match(Test, tat_targets$Test)] == "All", 
-                                      "All", AdjPriority))
+                                      "All", AdjPriority),
+    # Calculate turnaround times
+    CollectToReceive = RECEIVE_DATE - COLLECTION_DATE,
+    ReceiveToResult = VERIFIED_DATE - RECEIVE_DATE,
+    CollectToResult = VERIFIED_DATE - COLLECTION_DATE)
 
-  # Calculate turnaround times
-  raw_scc <- raw_scc %>%
-    mutate(CollectToReceive = RECEIVE_DATE - COLLECTION_DATE,
-           ReceiveToResult = VERIFIED_DATE - RECEIVE_DATE,
-           CollectToResult = VERIFIED_DATE - COLLECTION_DATE)
-  
-  raw_scc[c("CollectToReceive", "ReceiveToResult", "CollectToResult")] <- 
-    lapply(raw_scc[c("CollectToReceive", "ReceiveToResult", "CollectToResult")], 
-           as.numeric, units = "mins")
+# Convert turnaround times to minutes
+raw_scc[c("CollectToReceive", "ReceiveToResult", "CollectToResult")] <- 
+  lapply(raw_scc[c("CollectToReceive", "ReceiveToResult", "CollectToResult")],
+         as.numeric, units = "mins")
   
   # Identify add on orders as orders placed more than 5 min 
   # after specimen received
@@ -1090,6 +1096,9 @@ raw_scc <- raw_scc %>%
     mutate(AddOnMaster = ifelse(difftime(ORDERING_DATE, 
                                          RECEIVE_DATE, units = "mins") > 5, 
                                 "AddOn", "Original"),
+           AddOnMaster2 = ifelse(ORDERING_DATE - RECEIVE_DATE > 5,
+                                 "AddOn", "Original"),
+           Test = AddOnMaster == AddOnMaster2,
            MissingCollect = ifelse(CollectToReceive == 0, TRUE, FALSE))
   
   # Determine target TAT based on test, priority, and patient setting
