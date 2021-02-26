@@ -1023,21 +1023,20 @@ if (scenario == 1) {
 
 
 # Determine resulted date for weekday labs
-wday_dates_df <- scc_sun_wday_master[ , "ResultDate"]
-wday_result_date <- format(unique(wday_dates_df$ResultDate), 
+wday_result_date <- format(unique(scc_sun_wday_master$ResultDate), 
                            format = "%a %m/%d/%y")
 
 
 if (!is.null(scc_sun_not_wday_master)) {
-  # These lines can probably be simplified
-  not_wday_dates_df <- scc_sun_not_wday_master[ , "ResultDate"]
-  not_wday_result_date <- unique(date(not_wday_dates_df$ResultDate))
+  not_wday_result_date <- sort(unique(not_wday_dates_df$ResultDate))
   wkend_holiday_result_date <- ifelse(
     length(not_wday_result_date) == 1,
     format(not_wday_result_date, format = "%a %m/%d/%y"),
-    paste0(format(not_wday_result_date[length(not_wday_result_date)],
-                  format = "%a %m/%d/%y"), "-", format(not_wday_result_date[1], 
-                                                       format = "%a %m/%d/%y")))
+    paste0(format(not_wday_result_date[1],
+                  format = "%a %m/%d/%y"),
+           "-",
+           format(not_wday_result_date[length(not_wday_result_date)],
+                  format = "%a %m/%d/%y")))
 } else {
   wkend_holiday_result_date <- NULL
 }
