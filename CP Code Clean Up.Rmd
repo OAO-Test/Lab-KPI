@@ -1921,11 +1921,71 @@ preprocess_scc_sun_newfunc <- function(raw_scc, raw_sun)  {
 ```
 
 ```{r}
-# Compare 3 different methods
-old_function_list <- preprocess_scc_sun(raw_scc = SCC_Weekday, raw_sun = SQ_Weekday)
-new_function_list <-preprocess_scc_sun_newfunc(raw_scc = SCC_Weekday, raw_sun = SQ_Weekday)
+# Preprocess data
+scc_sun_wday_list <-preprocess_scc_sun_newfunc(raw_scc = SCC_Weekday, raw_sun = SQ_Weekday)
 
-identical(new_function_list[1], raw_scc_test)
+scc_wday <- scc_sun_wday_list[[1]]
+sun_wday <- scc_sun_wday_list[[2]]
+scc_sun_wday_master <- scc_sun_wday_list[[5]]
+
+if (is.null(SQ_Not_Weekday) & is.null(SCC_Not_Weekday)) {
+  include_not_wday <- FALSE
+  scc_sun_not_wday_list <- NULL
+  scc_not_wday <- NULL
+  sun_not_wday <- NULL
+  scc_sun_not_wday_master <- NULL
+} else {
+  include_not_wday <- TRUE
+  scc_sun_not_wday_list <- preprocess_scc_sun(SCC_Not_Weekday, 
+                                              SQ_Not_Weekday)
+  scc_not_wday <- scc_sun_not_wday_list[[1]]
+  sun_not_wday <- scc_sun_not_wday_list[[2]]
+  scc_sun_not_wday_master <- scc_sun_not_wday_list[[3]]
+}
+
+# Remove labs from master data frame that were resulted at exactly midnight on 
+# next morning or prior day
+# Custom function to determine correct number of dates
+correct_scc_result_dates <- function(data, number_days) {
+  all_resulted_dates_vol <- data %>%
+    group_by(ResultDate) %>%
+    summarize(VolLabs = n()) %>%
+    arrange(desc(VolLabs)) %>%
+    ungroup()
+  
+  correct_dates <- all_resulted_dates_vol$ResultDate[1:number_days]
+  
+  new_data <- data[data$ResultDate %in% correct_dates, ]
+  
+  return(new_data)
+}
+
+# Update preprocessed data to only include correct dates ----------------------
+scc_sun_wday_master <- correct_scc_result_dates(scc_sun_wday_master, 1)
+
+if (scenario == 1) {
+  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 
+                                                      3)
+} else if (scenario == 2) {
+  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 
+                                                      2)
+} else if (scenario == 3) {
+  scc_sun_not_wday_master <- correct_scc_result_dates(scc_sun_not_wday_master, 
+                                                      1)
+}
+
+test1 <- scc_sun_wday_master %>%
+    select(MSMRN, ResultDate) %>%
+    group_by(ResultDate) %>%
+    summarize(VolLabs = n()) %>%
+    arrange(desc(VolLabs)) %>%
+    ungroup()
+
+test2 <- scc_sun_wday_master %>%
+    group_by(ResultDate) %>%
+    summarize(VolLabs = n()) %>%
+    arrange(desc(VolLabs)) %>%
+    ungroup()
 
 ```
 

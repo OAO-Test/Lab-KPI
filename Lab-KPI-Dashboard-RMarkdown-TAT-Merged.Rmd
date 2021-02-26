@@ -995,7 +995,6 @@ if (is.null(SQ_Not_Weekday) & is.null(SCC_Not_Weekday)) {
 # Custom function to determine correct number of dates
 correct_scc_result_dates <- function(data, number_days) {
   all_resulted_dates_vol <- data %>%
-    select(MSMRN, ResultDate) %>%
     group_by(ResultDate) %>%
     summarize(VolLabs = n()) %>%
     arrange(desc(VolLabs)) %>%
@@ -1030,12 +1029,13 @@ wday_result_date <- format(unique(wday_dates_df$ResultDate),
 
 
 if (!is.null(scc_sun_not_wday_master)) {
+  # These lines can probably be simplified
   not_wday_dates_df <- scc_sun_not_wday_master[ , "ResultDate"]
   not_wday_result_date <- unique(date(not_wday_dates_df$ResultDate))
   wkend_holiday_result_date <- ifelse(
-    length(not_wday_result_date) == 1, format(not_wday_result_date, 
-                                              format = "%a %m/%d/%y"), 
-    paste0(format(not_wday_result_date[length(not_wday_result_date)], 
+    length(not_wday_result_date) == 1,
+    format(not_wday_result_date, format = "%a %m/%d/%y"),
+    paste0(format(not_wday_result_date[length(not_wday_result_date)],
                   format = "%a %m/%d/%y"), "-", format(not_wday_result_date[1], 
                                                        format = "%a %m/%d/%y")))
 } else {
@@ -1043,7 +1043,7 @@ if (!is.null(scc_sun_not_wday_master)) {
 }
 ```
 
-```{r Begin combining and summarizing data for historical repository, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
+```{r Combine week day and weekend/holiday data and summarize for historical repository, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE}
 # Bind weekday and non-weekday data, if any exists
 if (!is.null(scc_sun_not_wday_master)) {
   scc_sun_all_days <- rbind(scc_sun_wday_master, scc_sun_not_wday_master)
@@ -1057,12 +1057,13 @@ scc_sun_all_days_subset <- scc_sun_all_days %>%
            Setting, SettingRollUp, MasterSetting, DashboardSetting,
            OrderPriority, AdjPriority, DashboardPriority,
            ReceiveResultTarget, CollectResultTarget) %>%
-  summarize(TotalResulted = n(), TotalResultedTAT = sum(TATInclude), 
-            TotalReceiveResultInTarget = 
-              sum(ReceiveResultInTarget[TATInclude == TRUE]), 
-            TotalCollectResultInTarget = 
-              sum(CollectResultInTarget[TATInclude == TRUE]), 
-            TotalAddOnOrder = sum(AddOnMaster == "AddOn"), 
+  summarize(TotalResulted = n(),
+            TotalResultedTAT = sum(TATInclude),
+            TotalReceiveResultInTarget =
+              sum(ReceiveResultInTarget[TATInclude == TRUE]),
+            TotalCollectResultInTarget =
+              sum(CollectResultInTarget[TATInclude == TRUE]),
+            TotalAddOnOrder = sum(AddOnMaster == "AddOn"),
             TotalMissingCollections = sum(MissingCollect)) %>%
   arrange(Site, ResultDate) %>%
   ungroup()
@@ -1071,6 +1072,7 @@ scc_sun_all_days_subset <- scc_sun_all_days %>%
 #   choose.files(default = user_path, 
 #                caption = "Select SCC and Sunquest Historical Repository"), 
 #   sheet = 1, col_names = TRUE)
+# Open existing repository
 existing_repo <- readRDS(file = 
   choose.files(default = paste0(user_directory,
                                 "/SCC Sunquest Historical Repo",
@@ -1087,12 +1089,11 @@ scc_sun_repo <- rbind(existing_repo, scc_sun_all_days_subset)
 # Remove any duplicates
 scc_sun_repo <- unique(scc_sun_repo)
 
-
 # Determine earliest and latest date in repository for use in file name
 start_date <- format(min(scc_sun_repo$ResultDate), "%m%d%y")
 end_date <- format(max(scc_sun_repo$ResultDate), "%m%d%y")
 
-# Add data to historical repository
+# Save updated repository
 # write_xlsx(scc_sun_repo, path = paste0(user_directory, 
 #                                        "\\SCC Sunquest Historical Repo", 
 #                                        "\\Hist Repo Test ", start_date, " to ", 
