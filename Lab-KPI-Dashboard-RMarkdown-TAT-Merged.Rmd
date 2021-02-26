@@ -1029,11 +1029,7 @@ wday_result_date <- format(unique(wday_dates_df$ResultDate),
                            format = "%a %m/%d/%y")
 
 
-if (is.null(scc_sun_not_wday_master) == FALSE) {
-  # not_wday_dates_df <- scc_sun_not_wday_master[(hour(scc_sun_not_wday_master$ResultTime) !=0 & minute(scc_sun_not_wday_master$ResultTime) !=0) & is.na(scc_sun_not_wday_master$ResultTime) == FALSE, "ResultTime"]
-  # not_wday_dates_df$dates <- date(not_wday_dates_df$ResultTime)
-  # not_wday_result_date <- unique(date(not_wday_dates_df$ResultTime))
-  # wkend_holiday_result_date <- ifelse(length(not_wday_result_date) == 1, format(not_wday_result_date, format = "%a %m/%d/%y"), paste0(format(not_wday_result_date[length(not_wday_result_date)], format = "%a %m/%d/%y"), "-", format(not_wday_result_date[1], format = "%a %m/%d/%y")))
+if (!is.null(scc_sun_not_wday_master)) {
   not_wday_dates_df <- scc_sun_not_wday_master[ , "ResultDate"]
   not_wday_result_date <- unique(date(not_wday_dates_df$ResultDate))
   wkend_holiday_result_date <- ifelse(
