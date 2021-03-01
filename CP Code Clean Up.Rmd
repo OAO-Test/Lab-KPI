@@ -1978,8 +1978,7 @@ if (scenario == 1) {
 }
 
 # Determine resulted date for weekday labs
-wday_dates_df <- scc_sun_wday_master[ , "ResultDate"]
-wday_result_date <- format(unique(wday_dates_df$ResultDate), 
+wday_result_date <- format(unique(scc_sun_wday_master$ResultDate), 
                            format = "%a %m/%d/%y")
 
 ```
@@ -2047,13 +2046,10 @@ test_site_prty_setting_templ <- test_site_prty_setting %>%
               DashboardSetting %in% c("Amb"))) |
         # Remove "all" priority for BUN, PT, and HGB labs
         (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All")) |
-        # Remove priority stratification for rapid flu since all are treated
+        # Remove priority stratification for rapid flu and c. diff since all are treated
         # as stat
-        (Test %in% c("Rapid Flu") & !(DashboardPriority %in% c("All"))) |
-        # Remove priority stratification and ambulatory for c. diff labs
-        (Test %in% c("C. diff") & (!(DashboardPriority %in% c("All")) |
-                                       (DashboardSetting %in% c("Amb")))),
-    "Excl", "Incl")) %>%
+        (Test %in% c("Rapid Flu", "C. diff") & !(DashboardPriority %in% c("All"))),
+      "Excl", "Incl")) %>%
   filter(Incl == "Incl")
 
 ```
@@ -2257,10 +2253,13 @@ lab_summary <- lab_test_df %>%
             ReceiveResultPercent = round(ReceiveResultInTarget/ResultedVolume,
                                          digits = 3),
             CollectResultPercent = round(CollectResultInTarget/ResultedVolume,
-                                         digits = 3))
+                                         digits = 3),
+            .groups = "keep") %>%
+  ungroup()
 
 # Combine lab summary with template data frame for this lab division
 chem_df_templ <- test_site_prty_setting_templ %>%
+  mutate(Incl = NULL) %>%
   filter(Division == "Chemistry")
 
 lab_summary <- left_join(chem_df_templ, lab_summary,
@@ -2270,24 +2269,20 @@ lab_summary <- left_join(chem_df_templ, lab_summary,
                                 "DashboardSetting" = "DashboardSetting"))
 
 #
-# Clean up summarized data
-# Replace NaN TAT percentages with NA
-# lab_summary[!is.finite(lab_summary$ReceiveResultPercent),
-#             "ReceiveResultPercent"] <- NA
-# lab_summary[!is.finite(lab_summary$CollectResultPercent),
-#             "CollectResultPercent"] <- NA
-
-# lab_summary <- lab_summary %>%
-#   mutate(ReceiveResultPercent = ifelse(!is.finite(ReceiveResultPercent),
-#                                        NA, ReceiveResultPercent),
-#          CollectResultPercent = ifelse(!is.finite(CollectResultPercent),
-#                                        NA, CollectResultPercent))
-  
-#
 # Look up target TAT for sites with 0 resulted labs using tat_targets reference
-
 lab_summary_test <- lab_summary %>%
   mutate(
+    #
+    # Set test, site, priority, and setting as factors
+    Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
+    Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+    DashboardPriority = droplevels(factor(DashboardPriority,
+                                          levels = dashboard_priority_order,
+                                          ordered = TRUE)),
+    DashboardSetting = droplevels(factor(DashboardSetting,
+                                         levels = dashboard_pt_setting,
+                                         ordered = TRUE)),
+    #
     # Determine TAT target for sites with 0 resulted labs
     # Create column concatenating test and priority to determine TAT targets
     Concate1 = paste(Test, DashboardPriority),
@@ -2389,108 +2384,132 @@ lab_summary_test <- lab_summary %>%
     #
     # Remove concatenated columns used for matching
     Concate1 = NULL,
-    Concate2 = NULL)
-
-
-
-# # Remove concatenated columns
-# lab_summary$Concate1 <- NULL
-# lab_summary$Concate2 <- NULL
-# #
-# # Format target TAT for tables from numbers to "<=X min"
-# lab_summary[c("ReceiveResultTarget", "CollectResultTarget")] <-
-#   lapply(lab_summary[c("ReceiveResultTarget", "CollectResultTarget")],
-#          function(y) ifelse(is.na(y), y, paste0("<=", y, " min")))
-# #
-# lab_summary[c("ReceiveResultPercent", "CollectResultPercent")] <-
-#   lapply(lab_summary[c("ReceiveResultPercent", "CollectResultPercent")],
-#          percent, digits = 0)
-# #
-# # Create new column with test and priority to be used in tables later
-# lab_summary$TestAndPriority <- paste(lab_summary$Test, "-",
-#                                      lab_summary$DashboardPriority, "Labs")
-# #
-# # Remove unused combinations, specifically Routine ED & ICU labs
-# lab_summary <- lab_summary[!(lab_summary$DashboardPriority == "Routine" &
-#                                lab_summary$DashboardSetting == "ED & ICU"), ]
-#
-
-# Apply conditional color formatting to TAT percentages based on status definitions for each lab division
-lab_summary <- lab_summary %>%
-  mutate(ReceiveResultPercent = cell_spec(
-    ReceiveResultPercent, "html",
-    color = ifelse(is.na(ReceiveResultPercent), "lightgray",
-                   ifelse(((ReceiveResultPercent >= 0.95 &
-                                (LabDivision == "Chemistry" |
-                                   LabDivision == "Hematology")) |
-                               (ReceiveResultPercent == 1.00 &
-                                  LabDivision == "Microbiology RRL")), "green",
-                            ifelse(((ReceiveResultPercent >=0.8 &
-                                       ReceiveResultPercent < 0.95 &
-                                       (LabDivision == "Chemistry" |
-                                          LabDivision == "Hematology")) |
-                                      (ReceiveResultPercent >= 0.90 &
-                                         ReceiveResultPercent < 1.0 &
-                                         LabDivision == "Microbiology RRL")),
-                                   "orange", "red")))))
-  #
-  lab_summary <- lab_summary %>%
-    mutate(CollectResultPercent = cell_spec(
+    Concate2 = NULL,
+    #
+    # Create new column with test and priority to be used in tables later
+    TestAndPriority = paste(Test, "-", DashboardPriority, "Labs"),
+    #
+    # Apply conditional formatting to TAT percentages based on status
+    # definitions for each lab division
+    #
+    # Chemistry & Hematology:
+    # Green: >= 95%, Yellow: >= 80% & < 95%, Red: < 80%
+    # Microbiology:
+    # Green: 100%, Yellow: >= 90% & < 100%, Red: < 90%
+    #
+    # Receive to Result Percent
+    ReceiveResultPercent = cell_spec(
+      ReceiveResultPercent, "html",
+      color = ifelse(is.na(ReceiveResultPercent), "lightgray",
+                     ifelse((ReceiveResultPercent >= 0.95 &
+                               (Division %in% c("Chemistry",
+                                                   "Hematology"))) |
+                              (ReceiveResultPercent == 1.00 &
+                                 Division %in% c("Microbiology RRL")),
+                            "green",
+                            ifelse((ReceiveResultPercent >=0.8 &
+                                      ReceiveResultPercent < 0.95 &
+                                      (Division %in% c("Chemistry",
+                                                          "Hematology"))) |
+                                     (ReceiveResultPercent >= 0.90 &
+                                        ReceiveResultPercent < 1.0 &
+                                        Division %in% c("Microbiology RRL")),
+                                   "orange", "red")))),
+    #
+    # Collect to Result Percent
+    CollectResultPercent = cell_spec(
       CollectResultPercent, "html",
       color = ifelse(is.na(CollectResultPercent), "lightgray",
-                     ifelse(((CollectResultPercent >= 0.95 &
-                                (LabDivision == "Chemistry" |
-                                   LabDivision == "Hematology")) |
-                               (CollectResultPercent == 1.00 &
-                                  LabDivision == "Microbiology RRL")), "green",
-                            ifelse(((CollectResultPercent >=0.8 &
-                                       CollectResultPercent < 0.95 &
-                                       (LabDivision == "Chemistry" |
-                                          LabDivision == "Hematology")) |
-                                      (CollectResultPercent >= 0.90 &
-                                         CollectResultPercent < 1.0 &
-                                         LabDivision == "Microbiology RRL")),
-                                   "orange", "red")))))
-  #
-  # Melt summarized data into a long dataframe
-  lab_dashboard1 <- melt(lab_summary,
-                         id.var = c("Test",
-                                    "Site",
-                                    "DashboardPriority",
-                                    "TestAndPriority",
-                                    "DashboardSetting",
-                                    "ReceiveResultTarget",
-                                    "CollectResultTarget"),
-                         measure.vars = c("ReceiveResultPercent",
-                                          "CollectResultPercent"))
-  # Cast dataframe into wide format for use in tables later
-  lab_dashboard2 <- dcast(lab_dashboard1,
-                          Test +
-                            DashboardPriority +
-                            TestAndPriority +
-                            DashboardSetting +
-                            ReceiveResultTarget +
-                            CollectResultTarget ~
-                            variable +
-                            Site,
-                          value.var = "value")
-  # Rearrange casted dataframe columns based on desired table aesthetics
-  lab_dashboard2 <- lab_dashboard2[ , c(1:3, 5, 4, 7:12, 6, 4, 13:18)]
-  # Save outputs in a list
-  lab_sub_output <- list(lab_df, lab_summary, lab_dashboard1, lab_dashboard2)
-  lab_sub_output
+                     ifelse((CollectResultPercent >= 0.95 &
+                               Division %in% c("Chemistry",
+                                                  "Hematology")) |
+                              (CollectResultPercent == 1.00 &
+                                 Division %in% c("Microbiology RRL")),
+                            "green",
+                            ifelse((CollectResultPercent >=0.8 &
+                                      CollectResultPercent < 0.95 &
+                                      Division %in% c("Chemistry",
+                                                         "Hematology")) |
+                                     (CollectResultPercent >= 0.90 &
+                                        CollectResultPercent < 1.0 &
+                                        Division %in% c("Microbiology RRL")),
+                                   "orange", "red"))))) %>%
+  arrange(Test, Site, DashboardPriority, DashboardSetting)
+# 
+# Melt summarized data into a long dataframe
+lab_dashboard_melt <- melt(lab_summary_test,
+                       id.var = c("Test",
+                                  "Site",
+                                  "DashboardPriority",
+                                  "TestAndPriority",
+                                  "DashboardSetting",
+                                  "ReceiveResultTarget",
+                                  "CollectResultTarget"),
+                       measure.vars = c("ReceiveResultPercent",
+                                        "CollectResultPercent"))
+#
+# Cast dataframe into wide format for use in tables later
+lab_dashboard_cast <- dcast(lab_dashboard_melt,
+                            Test +
+                              DashboardPriority +
+                              TestAndPriority +
+                              DashboardSetting +
+                              ReceiveResultTarget +
+                              CollectResultTarget ~
+                              variable +
+                              Site,
+                            value.var = "value")
+#
+# Rearrange casted dataframe columns based on desired table aesthetics
+lab_dashboard_cast_1 <- lab_dashboard_cast[ , c(1:3, 5, 4, 7:12, 6, 4, 13:18)]
+
+lab_dashboard_cast_2 <- lab_dashboard_cast %>%
+  mutate(DashboardSetting2 = DashboardSetting) %>%
+  select(Test, DashboardPriority, TestAndPriority,
+         ReceiveResultTarget, DashboardSetting,
+         ReceiveResultPercent_MSH, ReceiveResultPercent_MSQ,
+         ReceiveResultPercent_MSBI, ReceiveResultPercent_MSB,
+         ReceiveResultPercent_MSW, ReceiveResultPercent_MSM,
+         CollectResultTarget, DashboardSetting2,
+         CollectResultPercent_MSH, CollectResultPercent_MSQ,
+         CollectResultPercent_MSBI, CollectResultPercent_MSB,
+         CollectResultPercent_MSW, CollectResultPercent_MSM)
+
+
+# Save outputs in a list
+# lab_sub_output <- list(lab_df, lab_summary, lab_dashboard1, lab_dashboard2)
+# lab_sub_output
 
 ```
-```{r Left join test}
-chem_comb_test <- test_priority_setting_df %>%
-  filter(Division == "Chemistry")
 
-test_left_join <- left_join(test_priority_setting_df, lab_summary,
-                            by = c("Test" = "Test",
-                                   "DashboardPriority" = "DashboardPriority",
-                                   "DashboardSetting" = "DashboardSetting"))
+```{r Code for making kable}
+lab_kable <- lab_dashboard_cast_2[ , c(3:ncol(lab_dashboard_cast_2))]
+
+kable(lab_kable, format = "html", escape = FALSE, align = "c",
+      col.names = c("Test & Priority",
+                    "Target", "Setting",
+                    "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM",
+                    "Target", "Setting",
+                    "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
+  kable_styling(bootstrap_options = "hover", position = "center",
+                font_size = 11) %>%
+  column_spec(column = c(1, 9, 17), border_right = "thin solid lightgray") %>%
+  add_header_above(c(" ",
+                     "Receive to Result Within Target" = (ncol(lab_kable)-1)/2,
+                     "Collect to Result Within Target" = (ncol(lab_kable)-1)/2),
+                   background = c("white", "#00AEEF", "#221f72"),
+                   color = "white", line = FALSE, font_size = 13) %>%
+  column_spec(column = 2:9, background = "#E6F8FF", color = "black") %>%
+  column_spec(column = 10:17, background = "#EBEBF9", color = "black") %>%
+  #column_spec(column = 2:17, background = "inherit", color = "inherit") %>%
+  column_spec(column = 1, width_min = "125px") %>%
+  column_spec(column = c(3, 11), width_min = "100px") %>%
+  row_spec(row = 0, font_size = 13) %>%
+  collapse_rows(columns = c(1, 2, 10))
+
 
 ```
+
 
 
 ```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = FALSE, message = FALSE, echo = FALSE}
