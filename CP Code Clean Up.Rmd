@@ -1695,7 +1695,7 @@ preprocess_scc_sun_newfunc <- function(raw_scc, raw_sun)  {
   
   # Preprocess Sunquest data --------------------------------
   # Correct and format any timestamps that were not imported correctly
-  raw_sun <- SQ_Weekday
+  # raw_sun <- SQ_Weekday
   raw_sun[c("OrderDateTime", 
             "CollectDateTime", 
             "ReceiveDateTime", 
@@ -1937,11 +1937,12 @@ if (is.null(SQ_Not_Weekday) & is.null(SCC_Not_Weekday)) {
   scc_sun_not_wday_master <- NULL
 } else {
   include_not_wday <- TRUE
-  scc_sun_not_wday_list <- preprocess_scc_sun(SCC_Not_Weekday, 
-                                              SQ_Not_Weekday)
+  scc_sun_not_wday_list <- preprocess_scc_sun_newfunc(
+    raw_scc = SCC_Not_Weekday,
+    raw_sun = SQ_Not_Weekday)
   scc_not_wday <- scc_sun_not_wday_list[[1]]
   sun_not_wday <- scc_sun_not_wday_list[[2]]
-  scc_sun_not_wday_master <- scc_sun_not_wday_list[[3]]
+  scc_sun_not_wday_master <- scc_sun_not_wday_list[[5]]
 }
 
 # Remove labs from master data frame that were resulted at exactly midnight on 
@@ -1956,7 +1957,8 @@ correct_scc_result_dates <- function(data, number_days) {
   
   correct_dates <- all_resulted_dates_vol$ResultDate[1:number_days]
   
-  new_data <- data[data$ResultDate %in% correct_dates, ]
+  new_data <- data %>%
+    filter(ResultDate %in% correct_dates)
   
   return(new_data)
 }
