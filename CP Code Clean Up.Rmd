@@ -2347,6 +2347,12 @@ lab_summary_test <- lab_summary %>%
     #
     # Apply conditional color formatting to TAT percentages based on status 
     # definitions for each lab division
+    #
+    # Chemistry & Hematology:
+    # Green: >= 95%, Yellow: >= 80% & < 95%, Red: < 80%
+    # Microbiology:
+    # Green: 100%, Yellow: >= 90% & < 100%, Red: < 90%
+    #
     ReceiveResultPercent = cell_spec(
       ReceiveResultPercent, "html",
       color = ifelse(is.na(ReceiveResultPercent), "lightgray",
@@ -2384,56 +2390,7 @@ lab_summary_test <- lab_summary %>%
     #
     # Remove concatenated columns used for matching
     Concate1 = NULL,
-    Concate2 = NULL,
-    #
-    # Create new column with test and priority to be used in tables later
-    TestAndPriority = paste(Test, "-", DashboardPriority, "Labs"),
-    #
-    # Apply conditional formatting to TAT percentages based on status
-    # definitions for each lab division
-    #
-    # Chemistry & Hematology:
-    # Green: >= 95%, Yellow: >= 80% & < 95%, Red: < 80%
-    # Microbiology:
-    # Green: 100%, Yellow: >= 90% & < 100%, Red: < 90%
-    #
-    # Receive to Result Percent
-    ReceiveResultPercent = cell_spec(
-      ReceiveResultPercent, "html",
-      color = ifelse(is.na(ReceiveResultPercent), "lightgray",
-                     ifelse((ReceiveResultPercent >= 0.95 &
-                               (Division %in% c("Chemistry",
-                                                   "Hematology"))) |
-                              (ReceiveResultPercent == 1.00 &
-                                 Division %in% c("Microbiology RRL")),
-                            "green",
-                            ifelse((ReceiveResultPercent >=0.8 &
-                                      ReceiveResultPercent < 0.95 &
-                                      (Division %in% c("Chemistry",
-                                                          "Hematology"))) |
-                                     (ReceiveResultPercent >= 0.90 &
-                                        ReceiveResultPercent < 1.0 &
-                                        Division %in% c("Microbiology RRL")),
-                                   "orange", "red")))),
-    #
-    # Collect to Result Percent
-    CollectResultPercent = cell_spec(
-      CollectResultPercent, "html",
-      color = ifelse(is.na(CollectResultPercent), "lightgray",
-                     ifelse((CollectResultPercent >= 0.95 &
-                               Division %in% c("Chemistry",
-                                                  "Hematology")) |
-                              (CollectResultPercent == 1.00 &
-                                 Division %in% c("Microbiology RRL")),
-                            "green",
-                            ifelse((CollectResultPercent >=0.8 &
-                                      CollectResultPercent < 0.95 &
-                                      Division %in% c("Chemistry",
-                                                         "Hematology")) |
-                                     (CollectResultPercent >= 0.90 &
-                                        CollectResultPercent < 1.0 &
-                                        Division %in% c("Microbiology RRL")),
-                                   "orange", "red"))))) %>%
+    Concate2 = NULL) %>%
   arrange(Test, Site, DashboardPriority, DashboardSetting)
 # 
 # Melt summarized data into a long dataframe
@@ -2476,9 +2433,7 @@ lab_dashboard_cast_2 <- lab_dashboard_cast %>%
          CollectResultPercent_MSW, CollectResultPercent_MSM)
 
 
-# Save outputs in a list
-# lab_sub_output <- list(lab_df, lab_summary, lab_dashboard1, lab_dashboard2)
-# lab_sub_output
+
 
 ```
 
@@ -2494,7 +2449,7 @@ kable(lab_kable, format = "html", escape = FALSE, align = "c",
   kable_styling(bootstrap_options = "hover", position = "center",
                 font_size = 11) %>%
   column_spec(column = c(1, 9, 17), border_right = "thin solid lightgray") %>%
-  add_header_above(c(" ",
+  add_header_above(c(" " = 1,
                      "Receive to Result Within Target" = (ncol(lab_kable)-1)/2,
                      "Collect to Result Within Target" = (ncol(lab_kable)-1)/2),
                    background = c("white", "#00AEEF", "#221f72"),
