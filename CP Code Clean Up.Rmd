@@ -1500,7 +1500,7 @@ kableChemHemMicroTAT(x = micro_tat_vol_cast)
 
 ```
 
-```{r Missing Collection Times Tables, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Missing Collection Times and Add On Order Tables, warning = FALSE, message = FALSE, echo = FALSE}
 # Determine percentage of labs with missing collection times--------------------
 missing_collect <- scc_sun_wday_master %>%
   filter(TATInclude & Site %in% city_sites) %>%
@@ -1599,49 +1599,6 @@ add_on_table2 %>%
   row_spec(row = 0, font_size =13)
 
 ```
-
-```{r Lab volume summary}
-
-lab_volume_summarize <- function(x, LabDivision) {
-  # Subset data for relevant division
-  lab_vol_df <- x[x$Division == LabDivision, ]
-  # Update factors and format data
-  lab_vol_df$Test <- factor(lab_vol_df$Test, unique(test_code$Test[test_code$Division == LabDivision]))
-  lab_vol_df$MasterSetting <- factor(lab_vol_df$MasterSetting, pt_setting_order)
-  lab_vol_df$DashboardPriority <- droplevels(lab_vol_df$DashboardPriority)
-  
-  # Summarize data
-  lab_vol_summary <- lab_vol_df %>%
-  group_by(Site, Test, DashboardPriority, MasterSetting, .drop = FALSE) %>%
-  summarize(ResultedLabs = n())
-  # Add column concatenating Test and Priority
-  lab_vol_summary$TestPriority <- paste(lab_vol_summary$Test, "-", lab_vol_summary$DashboardPriority, "Labs")
-  
-  # Remove unused combinations (ie, Routine ED & ICU labs)
-  lab_vol_summary <- lab_vol_summary[!((lab_vol_summary$MasterSetting == "ED" | lab_vol_summary$MasterSetting == "ICU")&(lab_vol_summary$DashboardPriority == "Routine")), ]
-  
-  # Cast summary table
-  lab_vol_table <- dcast(lab_vol_summary, Test + DashboardPriority + TestPriority + MasterSetting ~ Site, value.var = "ResultedLabs")
-  
-  lab_vol_output <- list(lab_vol_df, lab_vol_summary, lab_vol_table)
-  return(lab_vol_output)
-}
-
-lab_vol_kable_format <- function(table_data) {
-  kable(table_data, format = "html", escape = FALSE, align = "c", 
-        col.names = c("Test & Priority", "Setting", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
-  kable_styling(bootstrap_options = "hover", position = "center", font_size = 11) %>%
-  column_spec(column = c(1, 8), border_right = "thin solid lightgray") %>%
-  add_header_above(c(" " = 1, "Resulted Lab Volume" = (ncol(table_data)-1)), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
-  column_spec(column = 2:8, background = "#E6F8FF", color = "black") %>%
-  #column_spec(column = 2:8, background = "inherit", color = "inherit") %>%
-  # column_spec(column = 1, width_min = "125px", include_thead = TRUE) %>%
-  # column_spec(column = c(3, 11), width_min = "100px", include_thead = TRUE) %>%
-  row_spec(row = 0, font_size = 13) %>%
-  collapse_rows(columns = c(1, 2))
-}
-```
-
 
 ```{r}
 
