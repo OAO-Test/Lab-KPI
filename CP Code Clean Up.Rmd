@@ -2046,10 +2046,10 @@ test_site_prty_setting_templ <- test_site_prty_setting %>%
               DashboardSetting %in% c("Amb"))) |
         # Remove "all" priority for BUN, PT, and HGB labs
         (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All")) |
-        # Remove priority stratification for rapid flu and c. diff since all are treated
-        # as stat
-        (Test %in% c("Rapid Flu", "C. diff") & !(DashboardPriority %in% c("All"))),
-      "Excl", "Incl")) %>%
+        # Remove priority stratification for rapid flu and c. diff since all
+        # are treated as stat
+        (Test %in% c("Rapid Flu", "C. diff") & 
+           !(DashboardPriority %in% c("All"))), "Excl", "Incl")) %>%
   filter(Incl == "Incl")
 
 ```
@@ -2347,6 +2347,12 @@ lab_summary_test <- lab_summary %>%
     #
     # Apply conditional color formatting to TAT percentages based on status 
     # definitions for each lab division
+    #
+    # Chemistry & Hematology:
+    # Green: >= 95%, Yellow: >= 80% & < 95%, Red: < 80%
+    # Microbiology:
+    # Green: 100%, Yellow: >= 90% & < 100%, Red: < 90%
+    #
     ReceiveResultPercent = cell_spec(
       ReceiveResultPercent, "html",
       color = ifelse(is.na(ReceiveResultPercent), "lightgray",
@@ -2384,56 +2390,7 @@ lab_summary_test <- lab_summary %>%
     #
     # Remove concatenated columns used for matching
     Concate1 = NULL,
-    Concate2 = NULL,
-    #
-    # Create new column with test and priority to be used in tables later
-    TestAndPriority = paste(Test, "-", DashboardPriority, "Labs"),
-    #
-    # Apply conditional formatting to TAT percentages based on status
-    # definitions for each lab division
-    #
-    # Chemistry & Hematology:
-    # Green: >= 95%, Yellow: >= 80% & < 95%, Red: < 80%
-    # Microbiology:
-    # Green: 100%, Yellow: >= 90% & < 100%, Red: < 90%
-    #
-    # Receive to Result Percent
-    ReceiveResultPercent = cell_spec(
-      ReceiveResultPercent, "html",
-      color = ifelse(is.na(ReceiveResultPercent), "lightgray",
-                     ifelse((ReceiveResultPercent >= 0.95 &
-                               (Division %in% c("Chemistry",
-                                                   "Hematology"))) |
-                              (ReceiveResultPercent == 1.00 &
-                                 Division %in% c("Microbiology RRL")),
-                            "green",
-                            ifelse((ReceiveResultPercent >=0.8 &
-                                      ReceiveResultPercent < 0.95 &
-                                      (Division %in% c("Chemistry",
-                                                          "Hematology"))) |
-                                     (ReceiveResultPercent >= 0.90 &
-                                        ReceiveResultPercent < 1.0 &
-                                        Division %in% c("Microbiology RRL")),
-                                   "orange", "red")))),
-    #
-    # Collect to Result Percent
-    CollectResultPercent = cell_spec(
-      CollectResultPercent, "html",
-      color = ifelse(is.na(CollectResultPercent), "lightgray",
-                     ifelse((CollectResultPercent >= 0.95 &
-                               Division %in% c("Chemistry",
-                                                  "Hematology")) |
-                              (CollectResultPercent == 1.00 &
-                                 Division %in% c("Microbiology RRL")),
-                            "green",
-                            ifelse((CollectResultPercent >=0.8 &
-                                      CollectResultPercent < 0.95 &
-                                      Division %in% c("Chemistry",
-                                                         "Hematology")) |
-                                     (CollectResultPercent >= 0.90 &
-                                        CollectResultPercent < 1.0 &
-                                        Division %in% c("Microbiology RRL")),
-                                   "orange", "red"))))) %>%
+    Concate2 = NULL) %>%
   arrange(Test, Site, DashboardPriority, DashboardSetting)
 # 
 # Melt summarized data into a long dataframe
@@ -2476,9 +2433,7 @@ lab_dashboard_cast_2 <- lab_dashboard_cast %>%
          CollectResultPercent_MSW, CollectResultPercent_MSM)
 
 
-# Save outputs in a list
-# lab_sub_output <- list(lab_df, lab_summary, lab_dashboard1, lab_dashboard2)
-# lab_sub_output
+
 
 ```
 
@@ -2494,7 +2449,7 @@ kable(lab_kable, format = "html", escape = FALSE, align = "c",
   kable_styling(bootstrap_options = "hover", position = "center",
                 font_size = 11) %>%
   column_spec(column = c(1, 9, 17), border_right = "thin solid lightgray") %>%
-  add_header_above(c(" ",
+  add_header_above(c(" " = 1,
                      "Receive to Result Within Target" = (ncol(lab_kable)-1)/2,
                      "Collect to Result Within Target" = (ncol(lab_kable)-1)/2),
                    background = c("white", "#00AEEF", "#221f72"),
@@ -2550,7 +2505,363 @@ row.names(micro_dashboard2) <- 1:nrow(micro_dashboard2)
 micro_table <- micro_dashboard2[ , 3:ncol(micro_dashboard2)]
 ```
 
+```{r New function for subsetting lab data and creating kables}
+lab_sum_summarize_new <- function(data, LabDivision) {
+  # Subset data to be included based on lab division, whether or not TAT
+  # meets inclusion criteria, and site location
+  lab_div_df <- scc_sun_wday_master %>%
+    filter(Division == LabDivision & TATInclude & Site %in% city_sites)
+  #
+  # Summarize data based on test, site, priority, setting, and TAT targets.
+  lab_summary <- lab_div_df %>%
+    group_by(Test,
+             Site,
+             DashboardPriority,
+             DashboardSetting,
+             ReceiveResultTarget,
+             CollectResultTarget) %>%
+    summarize(ResultedVolume = n(),
+              ReceiveResultInTarget = sum(ReceiveResultInTarget),
+              CollectResultInTarget = sum(CollectResultInTarget),
+              ReceiveResultPercent = round(
+                ReceiveResultInTarget/ResultedVolume, digits = 3),
+            CollectResultPercent = round(
+              CollectResultInTarget/ResultedVolume, digits = 3),
+            .groups = "keep") %>%
+    ungroup()
+  #
+  # Subset template data frame for this division
+  lab_div_df_templ <- test_site_prty_setting_templ %>%
+    mutate(Incl = NULL) %>%
+    filter(Division == LabDivision)
+  #
+  # Combine lab summary with template data frame for this division for
+  # dashboard visualization
+  lab_summary <- left_join(lab_div_df_templ, lab_summary,
+                           by = c("Test" = "Test",
+                                  "Site" = "Site",
+                                  "DashboardPriority" = "DashboardPriority",
+                                  "DashboardSetting" = "DashboardSetting"))
+  #
+  # Format relevant columns as factors, look up target TAT for labs with 0
+  # resulted volume, add formatting for percent within targets
+  lab_summary <- lab_summary %>%
+    mutate(
+      #
+      # Set test, site, priority, and setting as factors
+      Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
+      Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+      DashboardPriority = droplevels(factor(DashboardPriority,
+                                            levels = dashboard_priority_order,
+                                            ordered = TRUE)),
+      DashboardSetting = droplevels(factor(DashboardSetting,
+                                           levels = dashboard_pt_setting,
+                                           ordered = TRUE)),
+      #
+      # Determine TAT target for sites with 0 resulted labs
+      # Create column concatenating test and priority to determine TAT targets
+      Concate1 = paste(Test, DashboardPriority),
+      # Create column concatenating test, priority, and setting to determine
+      # TAT targets
+      Concate2 = paste(Test, DashboardPriority, DashboardSetting),
+      # Determine Receive to Result TAT target using this logic:
+      # 1. Try to match test, priority, and setting (applicable for labs with
+      # different TAT targets based on patient setting and order priority)
+      # 2. Try to match test and priority (applicable for labs with different
+      # TAT targets based on order priority)
+      # 3. Try to match test - this is for tests with (applicable for labs with
+      # TAT targets that are independent of patient setting or priority)
+      #
+      # Determine Receive to Result TAT target based on above logic/scenarios
+      ReceiveResultTarget =
+        # If TAT target is known, keep TAT target
+        ifelse(!is.na(ReceiveResultTarget), ReceiveResultTarget,
+               # Try to match on scenario 1
+               ifelse(
+                 !is.na(match(Concate2, tat_targets$Concate)),
+                 tat_targets$ReceiveToResultTarget[
+                   match(Concate2, tat_targets$Concate)],
+                 # Try to match on scenario 2
+                 ifelse(
+                   !is.na(match(Concate1, tat_targets$Concate)),
+                   tat_targets$ReceiveToResultTarget[
+                     match(Concate1, tat_targets$Concate)],
+                   # Try to match on scenario 3
+                   tat_targets$ReceiveToResultTarget[
+                     match(Test, tat_targets$Concate)]))),
+      #
+      # Determine Collect to Result TAT target based on above logic/scenarios
+      # Determine Receive to Result TAT target based on above logic/scenarios
+      CollectResultTarget =
+        # If TAT target is known, keep TAT target
+        ifelse(!is.na(CollectResultTarget), CollectResultTarget,
+               # Try to match on scenario 1
+               ifelse(
+                 !is.na(match(Concate2, tat_targets$Concate)),
+                 tat_targets$CollectToResultTarget[
+                   match(Concate2, tat_targets$Concate)],
+                 # Try to match on scenario 2
+                 ifelse(
+                   !is.na(match(Concate1, tat_targets$Concate)),
+                   tat_targets$CollectToResultTarget[
+                     match(Concate1, tat_targets$Concate)],
+                   # Try to match on scenario 3
+                   tat_targets$CollectToResultTarget[
+                     match(Test, tat_targets$Concate)]))),
+      #
+      # Format target TAT for tables from numbers to "<=X min"
+      ReceiveResultTarget = paste0("<=", ReceiveResultTarget, " min"),
+      CollectResultTarget = paste0("<=", CollectResultTarget, " min"),
+      #
+      # Format percentage of labs in target
+      ReceiveResultPercent = percent(ReceiveResultPercent, digits = 0),
+      CollectResultPercent = percent(CollectResultPercent, digits = 0),
+      #
+      # Apply conditional color formatting to TAT percentages based on status
+      # definitions for each lab division
+      #
+      # Chemistry & Hematology:
+      # Green: >= 95%, Yellow: >= 80% & < 95%, Red: < 80%
+      # Microbiology:
+      # Green: 100%, Yellow: >= 90% & < 100%, Red: < 90%
+      #
+      ReceiveResultPercent = cell_spec(
+        ReceiveResultPercent, "html",
+        color = ifelse(is.na(ReceiveResultPercent), "lightgray",
+                       ifelse(
+                         (ReceiveResultPercent >= 0.95 &
+                            LabDivision %in% c("Chemistry", "Hematology")) |
+                           (ReceiveResultPercent == 1.00 &
+                              LabDivision %in% c("Microbiology RRL")),
+                         "green",
+                         ifelse(
+                           (ReceiveResultPercent >= 0.8 &
+                              ReceiveResultPercent < 0.95 &
+                              LabDivision %in% c("Chemistry", "Hematology")) |
+                             (ReceiveResultPercent >= 0.9 &
+                                ReceiveResultPercent < 1.0 &
+                                LabDivision %in% c("Microbiology RRL")),
+                           "orange", "red")))),
+      CollectResultPercent = cell_spec(
+        CollectResultPercent, "html",
+        color = ifelse(is.na(CollectResultPercent), "lightgray",
+                       ifelse(
+                         (CollectResultPercent >= 0.95 &
+                            LabDivision %in% c("Chemistry", "Hematology")) |
+                           (CollectResultPercent == 1.00 &
+                              LabDivision %in% c("Microbiology RRL")),
+                         "green",
+                         ifelse(
+                           (CollectResultPercent >= 0.8 &
+                              CollectResultPercent < 0.95 &
+                              LabDivision %in% c("Chemistry", "Hematology")) |
+                             (CollectResultPercent >= 0.9 &
+                                CollectResultPercent < 1.0 &
+                                LabDivision %in% c("Microbiology RRL")),
+                           "orange", "red")))),
+      #
+      # Create a new column with test and priority to be used in tables later
+      TestAndPriority = paste(Test, "-", DashboardPriority, "Labs"),
+      #
+      # Remove concatenated columns used for matching
+      Concate1 = NULL,
+      Concate2 = NULL) %>%
+    arrange(Test, Site, DashboardPriority, DashboardSetting)
+  #
+  # Melt summarized data into a long dataframe
+  lab_dashboard_melt <- melt(lab_summary,
+                             id.var = c("Test",
+                                        "Site",
+                                        "DashboardPriority",
+                                        "TestAndPriority",
+                                        "DashboardSetting",
+                                        "ReceiveResultTarget",
+                                        "CollectResultTarget"),
+                             measure.vars = c("ReceiveResultPercent",
+                                              "CollectResultPercent"))
+  #
+  # Case dataframe into wide format for use in tables later
+  lab_dashboard_cast <- dcast(lab_dashboard_melt,
+                              Test +
+                                DashboardPriority +
+                                TestAndPriority +
+                                DashboardSetting +
+                                ReceiveResultTarget +
+                                CollectResultTarget ~
+                                variable +
+                                Site,
+                              value.var = "value")
+  #
+  # Rearrange columns based on desired dashboard aesthetics
+  lab_dashboard_cast <- lab_dashboard_cast %>%
+  mutate(DashboardSetting2 = DashboardSetting) %>%
+  select(Test, DashboardPriority, TestAndPriority,
+         ReceiveResultTarget, DashboardSetting,
+         ReceiveResultPercent_MSH, ReceiveResultPercent_MSQ,
+         ReceiveResultPercent_MSBI, ReceiveResultPercent_MSB,
+         ReceiveResultPercent_MSW, ReceiveResultPercent_MSM,
+         CollectResultTarget, DashboardSetting2,
+         CollectResultPercent_MSH, CollectResultPercent_MSQ,
+         CollectResultPercent_MSBI, CollectResultPercent_MSB,
+         CollectResultPercent_MSW, CollectResultPercent_MSM)
+  #
+  # Save outputs in a list
+  lab_sub_output <- list(lab_div_df,
+                         lab_summary,
+                         lab_dashboard_melt,
+                         lab_dashboard_cast)
+  #
+  lab_sub_output
+  
+}
 
+
+
+
+
+chem_list_test <- lab_sum_summarize_new(data = scc_sun_wday_master,
+                                        LabDivision = "Chemistry")
+
+
+chem_subset_test <- chem_list_test[[1]]
+chem_summary_test <- chem_list_test[[2]]
+chem_melt_test <- chem_list_test[[3]]
+chem_cast_test <- chem_list_test[[4]]
+
+# Custom function for styling chemistry, hematology, and microbiology kables
+chem_hem_micro_kable <- function(data) {
+  #
+  # Select columns 3 and on
+  data <- data[, c(3:ncol(data))]
+  #
+  # Format kable
+  kable(data, format = "html", escape = FALSE, align = "c",
+        col.names = c("Test & Priority",
+                      "Target", "Setting",
+                      "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM",
+                      "Target", "Setting",
+                      "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
+    kable_styling(bootstrap_options = "hover", position = "center",
+                  font_size = 11) %>%
+    column_spec(column = c(1, 9, 17),
+                border_right = "thin solid lightgray") %>%
+    add_header_above(c(" " = 1,
+                       "Receive to Result Within Target" =
+                         (ncol(lab_kable)-1)/2,
+                       "Collect to Result Within Target" =
+                         (ncol(lab_kable)-1)/2),
+                     background = c("white", "#00AEEF", "#221f72"),
+                     color = "white", line = FALSE, font_size = 13) %>%
+    column_spec(column = 2:9, background = "#E6F8FF", color = "black") %>%
+    column_spec(column = 10:17, background = "#EBEBF9", color = "black") %>%
+    #column_spec(column = 2:17, background = "inherit", color = "inherit") %>%
+    column_spec(column = 1, width_min = "125px") %>%
+    column_spec(column = c(3, 11), width_min = "100px") %>%
+    row_spec(row = 0, font_size = 13) %>%
+    collapse_rows(columns = c(1, 2, 10))
+}
+
+
+chem_hem_micro_kable(chem_cast_test)
+
+hem_list_test <- lab_sum_summarize_new(data = scc_sun_wday_master,
+                                        LabDivision = "Hematology")
+
+
+hem_subset_test <- hem_list_test[[1]]
+hem_summary_test <- hem_list_test[[2]]
+hem_melt_test <- hem_list_test[[3]]
+hem_cast_test <- hem_list_test[[4]]
+
+chem_hem_micro_kable(hem_cast_test)
+
+micro_list_test <- lab_sum_summarize_new(data = scc_sun_wday_master,
+                                         LabDivision = "Microbiology RRL")
+
+micro_subset_test <- micro_list_test[[1]]
+micro_summary_test <- micro_list_test[[2]]
+micro_melt_test <- micro_list_test[[3]]
+micro_cast_test <- micro_list_test[[4]]
+
+# Manually remove C. diff ambulatory TAT since TAT are not monitored for this
+# lab/setting combination
+micro_cast_test <- micro_cast_test %>%
+  filter(!(Test == "C. diff" & DashboardSetting == "Amb"))
+row.names(micro_cast_test) <- 1:nrow(micro_cast_test)
+
+chem_hem_micro_kable(micro_cast_test)
+
+#
+# Create volume table for Microbiology RRL that mimics TAT table layout
+micro_volume_melt <- melt(micro_summary_test,
+                               id.var = c("Test",
+                                          "Site",
+                                          "DashboardPriority",
+                                          "TestAndPriority",
+                                          "DashboardSetting",
+                                          "ReceiveResultTarget",
+                                          "CollectResultTarget"),
+                               measure.vars = "ResultedVolume")
+
+micro_volume_cast <- dcast(micro_volume_melt,
+                           Test + DashboardPriority + TestAndPriority +
+                             DashboardSetting + ReceiveResultTarget +
+                             CollectResultTarget ~
+                             variable + Site,
+                           value.var = "value")
+
+original_length <- ncol(micro_volume_cast)
+
+micro_volume_cast <- micro_volume_cast %>%
+  mutate(
+    # Replace TAT targets with "Resulted Volume"
+    ReceiveResultTarget = "Resulted Volume",
+    CollectResultTarget = "Resulted Volume",
+    #
+    # Duplicate dashboard setting column
+    DashboardSetting2 = DashboardSetting,
+    #
+    # Duplicate resulted volume columns
+    ResultedVolume_MSH2 = ResultedVolume_MSH,
+    ResultedVolume_MSQ2 = ResultedVolume_MSQ,
+    ResultedVolume_MSBI2 = ResultedVolume_MSBI,
+    ResultedVolume_MSB2 = ResultedVolume_MSB,
+    ResultedVolume_MSW2 = ResultedVolume_MSW,
+    ResultedVolume_MSM2 = ResultedVolume_MSM) %>%
+  select(Test,
+         DashboardPriority,
+         TestAndPriority,
+         ReceiveResultTarget,
+         DashboardSetting,
+         ResultedVolume_MSH,
+         ResultedVolume_MSQ,
+         ResultedVolume_MSBI,
+         ResultedVolume_MSB,
+         ResultedVolume_MSW,
+         ResultedVolume_MSM,
+         CollectResultTarget,
+         DashboardSetting2,
+         ResultedVolume_MSH2,
+         ResultedVolume_MSQ2,
+         ResultedVolume_MSBI2,
+         ResultedVolume_MSB2,
+         ResultedVolume_MSW2,
+         ResultedVolume_MSM2)
+
+# Rename columns to match TAT table for binding
+colnames(micro_volume_cast) <- colnames(micro_cast_test)
+
+micro_volume_cast[, c(original_length:ncol(micro_volume_cast))] <- ""
+
+micro_tat_vol_cast <- rbind(micro_cast_test, micro_volume_cast)  
+
+micro_tat_vol_cast <- micro_tat_vol_cast %>%
+  arrange(Test, ReceiveResultTarget)
+
+
+chem_hem_micro_kable(micro_tat_vol_cast)
+
+```
 
 
 
