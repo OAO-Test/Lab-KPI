@@ -1107,7 +1107,8 @@ rep_test_setting_tat <- sort(rep(test_names, length(dashboard_pt_setting)))
 rep_setting_tat <- rep(dashboard_pt_setting, length(test_names))
 
 test_setting_comb_tat <- data.frame("Test" = rep_test_setting_tat,
-                                "DashboardSetting" = rep_setting_tat)
+                                "DashboardSetting" = rep_setting_tat,
+                                stringsAsFactors = FALSE)
 
 # Create data frame of test and setting combinations for volume lookback tables
 rep_test_setting_vol <- sort(rep(test_names, length(pt_setting_order)))
@@ -1115,7 +1116,8 @@ rep_test_setting_vol <- sort(rep(test_names, length(pt_setting_order)))
 rep_setting_vol <- rep(pt_setting_order, length(test_names))
 
 test_setting_comb_vol <- data.frame("Test" = rep_test_setting_vol,
-                                "PtSetting" = rep_setting_vol)
+                                "PtSetting" = rep_setting_vol,
+                                stringsAsFactors = FALSE)
 
 # Combine data frames to create data frame with all combinations of tests,
 # sites, priority, and settings for both TAT tables and lookback tables
