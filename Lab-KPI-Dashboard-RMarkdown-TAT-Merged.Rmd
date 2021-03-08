@@ -1928,7 +1928,7 @@ summarize_cp_tat <- function(x, lab_division) {
                          lab_dashboard_cast)
   #
   lab_sub_output
- 
+
 }
 
 # Custom function for creating kables for each CP lab division ----------------
@@ -2848,7 +2848,7 @@ kpi_form <- kpi_form %>%
   mutate(Completion_Hour = format(Completion.time, format = "%H:%M:%S"))
 
 
-kpi_form_today  <- 
+kpi_form_today  <-
   kpi_form[which(kpi_form$Completion_Date == as.Date(today) |
                    (kpi_form$Completion_Date == as.Date(yesterday) &
                       kpi_form$Completion_Hour >= "17:00:00")), ]
@@ -2860,7 +2860,7 @@ colnames(kpi_form_today) <- c("ID", "Start_time", "Completion_time", "Email",
                               "Service_Changes", "Volume", "Staffing",
                               "Comments", "NEVER_EVENTS",
                               "NEVER_EVENTS_COMMENTS", "Good_Catch",
-                              "LIS_Staffing", 
+                              "LIS_Staffing",
                               "LIS_Unplanned_Service",
                               "LIS_Preplanned_Downtime",
                               "Completion_Date", "Completion_Hour")
@@ -3455,7 +3455,7 @@ kable_cp_vol(hem_vol_wday_table)
 ### Surgical Pathology   
 #### *Surgical Pathology Signed Out Cases Volume (As of `r wday_result_date`)*
 ```{r Surgical Pathology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
-table_formatting_volume(sp_strat_vol_weekday_new2, 
+table_formatting_volume(sp_strat_vol_weekday_new2,
                         sp_vol_column_names)
 ```
 
@@ -3464,9 +3464,9 @@ table_formatting_volume(sp_strat_vol_weekday_new2,
 #### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
 ```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
 
-backlog_acc_table_new2 %>% 
+backlog_acc_table_new2 %>%
   kable(escape = F, align = "c",
-        col.names = c("Case Type","Cases Accessioned","Backlog Volume",
+        col.names = c("Case Type", "Cases Accessioned", "Backlog Volume",
                       "25th Percentile", "50th Percentile", "Maximum")) %>%
   kable_styling(bootstrap_options = "hover", full_width = TRUE,
                 position = "center", row_label_position = "c",
