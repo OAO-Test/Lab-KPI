@@ -58,14 +58,14 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 
-#today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
-today <- as.timeDate(as.Date("03/04/2021", format = "%m/%d/%Y"))
+today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
+#today <- as.timeDate(as.Date("03/04/2021", format = "%m/%d/%Y"))
 
 
 #Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-#yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
-yesterday <- as.timeDate(as.Date("03/03/2021", format = "%m/%d/%Y"))
+yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
+#yesterday <- as.timeDate(as.Date("03/03/2021", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 yesterday_day <- dayOfWeek(yesterday)
@@ -391,7 +391,8 @@ mshs_site <- read_excel(reference_file, sheet = "SiteNames")
 scc_wday <- scc_weekday
 sun_wday <- sq_weekday
 
-cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT", "Rapid Flu", "C. diff")
+cp_micro_lab_order <- c("Troponin", "Lactate WB", "BUN", "HGB", "PT",
+                        "Rapid Flu", "C. diff")
 
 site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
 city_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
