@@ -58,14 +58,14 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 
-#today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
-today <- as.timeDate(as.Date("03/04/2021", format = "%m/%d/%Y"))
+today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
+# today <- as.timeDate(as.Date("03/04/2021", format = "%m/%d/%Y"))
 
 
 #Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-#yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
-yesterday <- as.timeDate(as.Date("03/03/2021", format = "%m/%d/%Y"))
+yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
+# yesterday <- as.timeDate(as.Date("03/03/2021", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 yesterday_day <- dayOfWeek(yesterday)
@@ -965,7 +965,7 @@ wday_result_date <- format(unique(scc_sun_wday_master$ResultDate),
 
 
 if (!is.null(scc_sun_not_wday_master)) {
-  not_wday_result_date <- sort(unique(not_wday_dates_df$ResultDate))
+  not_wday_result_date <- sort(unique(scc_sun_not_wday_master$ResultDate))
   wkend_holiday_result_date <- ifelse(
     length(not_wday_result_date) == 1,
     format(not_wday_result_date, format = "%a %m/%d/%y"),
@@ -1060,10 +1060,10 @@ existing_repo <- readRDS(file =
 # Convert ResultDate from date-time to date
 existing_repo <- existing_repo %>%
    mutate(ResultDate  = date(ResultDate))
-  
+
 # Bind new data with existing repository
 cp_repo <- rbind(existing_repo, cp_all_days)
-  
+
 # Remove any duplicates
 cp_repo <- unique(cp_repo)
 
@@ -2571,7 +2571,7 @@ table_formatting_volume <- function(vol_table, column_names) {
 <span style = "color:orange">Yellow:</span> >=80% & <95%,
 <span style = "color:green">Green:</span> >=95%</h5>
 ```{r Chemistry dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
-kable_cp_tat(x = chem_cast_test)
+kable_cp_tat(x = chem_dashboard_cast)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
@@ -2582,7 +2582,7 @@ kable_cp_tat(x = chem_cast_test)
 <span style = "color:orange">Yellow:</span> >=80% & <95%,
 <span style = "color:green">Green:</span> >=95%</h5>
 ```{r Hematology dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
-kable_cp_tat(x = hem_cast_test)
+kable_cp_tat(x = hem_dashboard_cast)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
@@ -3494,40 +3494,38 @@ table_formatting_volume(cyto_strat_vol_weekday_new2, cyto_vol_column_names)
 ```{r Conditional Block for Weekends, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 
 # Chemistry
-chem_sub_output_not_wday <- lab_sub_summarize(scc_sun_not_wday_master,
-                                             lab_division = "Chemistry")
-chem_subset_not_wday <- chem_sub_output_not_wday[[1]]
-chemistry_summary_not_wday <- chem_sub_output_not_wday[[2]]
-chemistry_dashboard1_not_wday <- chem_sub_output_not_wday[[3]]
-chemistry_dashboard2_not_wday <- chem_sub_output_not_wday[[4]]
+chem_not_wday_sub_output <- summarize_cp_tat(cp_not_wday_summary,
+                                          lab_division = "Chemistry")
 
-# Chemistry: Manually remove unused combinations
-chemistry_dashboard2_not_wday <- chemistry_dashboard2_not_wday[!(((chemistry_dashboard2_not_wday$Test == "Troponin" | chemistry_dashboard2_not_wday$Test == "Lactate WB") & (chemistry_dashboard2_not_wday$DashboardPriority != "All" | chemistry_dashboard2_not_wday$DashboardSetting == "Amb")) | (chemistry_dashboard2_not_wday$Test == "BUN" & chemistry_dashboard2_not_wday$DashboardPriority == "All")), ]
-row.names(chemistry_dashboard2_not_wday) <- 1:nrow(chemistry_dashboard2_not_wday)
-
-chem_table_not_wday <- chemistry_dashboard2_not_wday[ , 3:ncol(chemistry_dashboard2_not_wday)]
+chem_not_wday_subset <- chem_not_wday_sub_output[[1]]
+chem_not_wday_summary <- chem_not_wday_sub_output[[2]]
+chem_not_wday_dashboard_melt <- chem_not_wday_sub_output[[3]]
+chem_not_wday_dashboard_cast <- chem_not_wday_sub_output[[4]]
 
 # Hematology
-hem_sub_output_not_wday <-lab_sub_summarize(scc_sun_not_wday_master, lab_division = "Hematology")
-hem_subset_not_wday <- hem_sub_output_not_wday[[1]]
-hematology_summary_not_wday <- hem_sub_output_not_wday[[2]]
-hematology_dashboard1_not_wday <- hem_sub_output_not_wday[[3]]
-hematology_dashboard2_not_wday <- hem_sub_output_not_wday[[4]]
+hem_not_wday_sub_output <-summarize_cp_tat(cp_not_wday_summary,
+                                        lab_division = "Hematology")
 
-hem_table_not_wday <- hematology_dashboard2_not_wday[ , 3:ncol(hematology_dashboard2_not_wday)]
+hem_not_wday_subset <- hem_not_wday_sub_output[[1]]
+hem_not_wday_summary <- hem_not_wday_sub_output[[2]]
+hem_not_wday_dashboard_melt <- hem_not_wday_sub_output[[3]]
+hem_not_wday_dashboard_cast <- hem_not_wday_sub_output[[4]]
 
 # Microbiology RRL
-micro_sub_output_not_wday <-lab_sub_summarize(scc_sun_not_wday_master, lab_division = "Microbiology RRL")
-micro_subset_not_wday <- micro_sub_output_not_wday[[1]]
-micro_summary_not_wday <- micro_sub_output_not_wday[[2]]
-micro_dashboard1_not_wday <- micro_sub_output_not_wday[[3]]
-micro_dashboard2_not_wday <- micro_sub_output_not_wday[[4]]
+micro_not_wday_sub_output <-summarize_cp_tat(cp_not_wday_summary,
+                                             lab_division = "Microbiology RRL")
+micro_not_wday_subset <- micro_not_wday_sub_output[[1]]
+micro_not_wday_summary <- micro_not_wday_sub_output[[2]]
+micro_not_wday_dashboard_melt <- micro_not_wday_sub_output[[3]]
+micro_not_wday_dashboard_cast <- micro_not_wday_sub_output[[4]]
 
-# Microbiology RRL: Manually remove unused combinations
-micro_dashboard2_not_wday <- micro_dashboard2_not_wday[!(micro_dashboard2_not_wday$Test == "C. diff" & micro_dashboard2_not_wday$DashboardSetting == "Amb"), ]
-row.names(micro_dashboard2_not_wday) <- 1:nrow(micro_dashboard2_not_wday)
+# Microbiology RRL: Manually remove C. diff ambulatory TAT since only volume
+# is monitored for this lab/setting combination
+micro_not_wday_dashboard_cast <- micro_not_wday_dashboard_cast %>%
+  filter(!(Test == "C. diff" & DashboardSetting == "Amb"))
+row.names(micro_not_wday_dashboard_cast) <-
+  seq_len(nrow(micro_not_wday_dashboard_cast))
 
-micro_table_not_wday <- micro_dashboard2_not_wday[ , 3:ncol(micro_dashboard2_not_wday)]
 ```
 
 `r #Begin weekend/holiday dashboard visualizations`
@@ -3541,10 +3539,10 @@ micro_table_not_wday <- micro_dashboard2_not_wday[ , 3:ncol(micro_dashboard2_not
 <span style = "color:orange">Yellow:</span> >=80% & <95%, 
 <span style = "color:green">Green:</span> >=95%</h5>'
 ```{r Chemistry dashboard table for weekends and holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-# asis_output(paste('<h4> *Chemistry KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
-# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <95%, <span style = "color:green">Green:</span> >=95%</h5>')
-chem_hem_micro_kable(chem_table_not_wday)
-# asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
+
+kable_cp_tat(chem_not_wday_dashboard_cast)
+
+
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>'
 
@@ -3554,38 +3552,116 @@ chem_hem_micro_kable(chem_table_not_wday)
 <span style = "color:orange">Yellow:</span> >=80% & <95%, 
 <span style = "color:green">Green:</span> >=95%</h5>
 ```{r Hematology dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-# asis_output('<h3> Hematology </h3>')
-# asis_output(paste('<h4> *Hematology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
-# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <95%, <span style = "color:green">Green:</span> >=95%</h5>')
-chem_hem_micro_kable(hem_table_not_wday)
-# asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
+
+kable_cp_tat(hem_not_wday_dashboard_cast)
+
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
 ```{r Microbiology RRL volume and TAT table creation for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+#
+# Create volume table for Microbiology RRL that mimics TAT table layout
+micro_not_wday_volume_melt <- melt(micro_not_wday_summary,
+                                   id.var = c("Test",
+                                              "Site",
+                                              "DashboardPriority",
+                                              "TestAndPriority",
+                                              "DashboardSetting",
+                                              "ReceiveResultTarget",
+                                              "CollectResultTarget"),
+                                   measure.vars = "ResultedVolume")
 
-micro_volume_dashboard1_not_wday <- melt(micro_summary_not_wday, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = "ResultedVolume")
+# Ensure all Microbiology RRL test, site, and priority combinations are included
+micro_not_wday_vol_templ <- tat_dashboard_templ %>%
+  filter(Division == "Microbiology RRL") %>%
+  mutate(Incl = NULL,
+         Division = NULL)
 
-# Create a table with micro volume with similar formatting to TAT tables to later combine with TAT
-micro_volume_dashboard2_not_wday <- dcast(micro_volume_dashboard1_not_wday, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value") 
+micro_not_wday_volume_melt <- left_join(micro_vol_templ,
+                               micro_not_wday_volume_melt,
+                               by = c("Test" = "Test",
+                                      "Site" = "Site",
+                                      "DashboardPriority" = "DashboardPriority",
+                                      "DashboardSetting" = "DashboardSetting"))
 
-micro_volume_dashboard2_not_wday[c("ReceiveResultTarget", "CollectResultTarget")] <- "Resulted Volume"
-original_length_not_wday <- ncol(micro_volume_dashboard2_not_wday)
 
-micro_volume_dashboard2_not_wday <- micro_volume_dashboard2_not_wday[ ,c(1:ncol(micro_volume_dashboard2_not_wday), (ncol(micro_volume_dashboard2_not_wday)-(6-1)):ncol(micro_volume_dashboard2_not_wday))]
+# Replace NA with 0 and format site, tests, priority, and settings as factors
+micro_not_wday_volume_melt <- micro_not_wday_volume_melt %>%
+  mutate(
+    #
+    # Replace NA with 0
+    value = ifelse(is.na(value), 0, value),
+    #
+    # Set test, site, priority, and setting as factors
+    Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
+    Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+    DashboardPriority = droplevels(factor(DashboardPriority,
+                                          levels = dashboard_priority_order,
+                                          ordered = TRUE)),
+    DashboardSetting = droplevels(factor(DashboardSetting,
+                                         levels = dashboard_pt_setting,
+                                         ordered = TRUE)))
 
-micro_volume_dashboard2_not_wday <- micro_volume_dashboard2_not_wday[ , c(1:3, 5, 4, 7:12, 6, 4, 13:18)]
-colnames(micro_volume_dashboard2_not_wday) <- colnames(micro_dashboard2_not_wday)
+micro_not_wday_volume_cast <- dcast(micro_not_wday_volume_melt,
+                           Test + DashboardPriority + TestAndPriority +
+                             DashboardSetting + ReceiveResultTarget +
+                             CollectResultTarget ~
+                             variable + Site,
+                           value.var = "value")
 
-micro_volume_dashboard2_not_wday[ , (original_length_not_wday):ncol(micro_volume_dashboard2_not_wday)] <- " "
+original_length <- ncol(micro_not_wday_volume_cast)
 
-# Combine TAT table and volume table
-micro_tat_vol_comb_not_wday <- rbind(micro_dashboard2_not_wday, micro_volume_dashboard2_not_wday)
+micro_not_wday_volume_cast <- micro_not_wday_volume_cast %>%
+  mutate(
+    #
+    # Replace TAT targets with "Resulted Volume"
+    ReceiveResultTarget = "Resulted Volume",
+    CollectResultTarget = "Resulted Volume",
+    #
+    # Duplicate dashboard setting column
+    DashboardSetting2 = DashboardSetting,
+    #
+    # Duplicate resulted volume columns
+    ResultedVolume_MSH2 = ResultedVolume_MSH,
+    ResultedVolume_MSQ2 = ResultedVolume_MSQ,
+    ResultedVolume_MSBI2 = ResultedVolume_MSBI,
+    ResultedVolume_MSB2 = ResultedVolume_MSB,
+    ResultedVolume_MSW2 = ResultedVolume_MSW,
+    ResultedVolume_MSM2 = ResultedVolume_MSM) %>%
+  select(Test,
+         DashboardPriority,
+         TestAndPriority,
+         ReceiveResultTarget,
+         DashboardSetting,
+         ResultedVolume_MSH,
+         ResultedVolume_MSQ,
+         ResultedVolume_MSBI,
+         ResultedVolume_MSB,
+         ResultedVolume_MSW,
+         ResultedVolume_MSM,
+         CollectResultTarget,
+         DashboardSetting2,
+         ResultedVolume_MSH2,
+         ResultedVolume_MSQ2,
+         ResultedVolume_MSBI2,
+         ResultedVolume_MSB2,
+         ResultedVolume_MSW2,
+         ResultedVolume_MSM2)
 
-micro_tat_vol_comb_not_wday <- micro_tat_vol_comb_not_wday[order(micro_tat_vol_comb_not_wday$Test, micro_tat_vol_comb_not_wday$ReceiveResultTarget), ]
-row.names(micro_tat_vol_comb_not_wday) <- 1:nrow(micro_tat_vol_comb_not_wday)
+# Rename columns to match TAT table for binding
+colnames(micro_not_wday_volume_cast) <- colnames(micro_not_wday_dashboard_cast)
 
-micro_tat_vol_table_not_wday <- micro_tat_vol_comb_not_wday[ , 3:ncol(micro_tat_vol_comb_not_wday)]
+micro_not_wday_volume_cast[
+  , c(original_length:ncol(micro_not_wday_volume_cast))] <- ""
+
+micro_not_wday_tat_vol_cast <- rbind(micro_not_wday_dashboard_cast,
+                                     micro_not_wday_volume_cast)
+
+micro_not_wday_tat_vol_cast <- micro_not_wday_tat_vol_cast %>%
+  arrange(Test, ReceiveResultTarget)
+
+
+
 ```
 
 ### Microbiology RRL
@@ -3594,11 +3670,9 @@ micro_tat_vol_table_not_wday <- micro_tat_vol_comb_not_wday[ , 3:ncol(micro_tat_
 <span style = "color:orange">Yellow:</span> >=90% & <100%, 
 <span style = "color:green">Green:</span> =100%</h5>
 ```{r Microbiology RRL dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-# asis_output('<h3> Microbiology RRL  </h3>')
-# asis_output(paste('<h4> *Microbiology RRL KPI (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
-# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <90%, <span style = "color:orange">Yellow:</span> >=90% & <100%, <span style = "color:green">Green:</span> =100%</h5>')
-chem_hem_micro_kable(micro_tat_vol_table_not_wday) 
-# asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
+
+kable_cp_tat(micro_not_wday_tat_vol_cast) 
+
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
@@ -3610,55 +3684,105 @@ chem_hem_micro_kable(micro_tat_vol_table_not_wday)
 <span style = "color:orange">Yellow:</span> <=15% & >5%, 
 <span style = "color:green">Green:</span> <=5%</h5>
 ```{r Missing Collection Times Tables for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-# asis_output('<h3> Missing Collections & Add On Orders </h3>')
-# asis_output(paste('<h4>*Missing Collection Times and Add On Order Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
-# asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> >15%, <span style = "color:orange">Yellow:</span> <=15% & >5%, <span style = "color:green">Green:</span> <=5%</h5>')
 
 # Determine percentage of labs with missing collection times -------------------------------
-missing_collect_not_wday <- scc_sun_not_wday_master[scc_sun_not_wday_master$TATInclude == TRUE, ] %>%
-  group_by(Site, .drop = FALSE) %>%
-  summarize(ResultedVolume = n(), MissingCollection = sum(MissingCollect, na.rm = TRUE), Percent = MissingCollection/ResultedVolume)
-
-# Format percentage of labs with missing collection times as percentage
-missing_collect_not_wday$Percent <- percent(missing_collect_not_wday$Percent, digits = 0)
-
-# Apply conditional formatting to percentage of labs with missing collection times
-missing_collect_not_wday <- missing_collect_not_wday %>%
-  mutate(Percent = cell_spec(Percent, "html", color = ifelse(is.na(Percent), "grey",
-                                                         ifelse(Percent <= 0.05, "green",
-                                                                ifelse(Percent >0.05 &  Percent <= 0.15, "orange", "red")))))
-
-missing_collect_table_not_wday <- dcast(missing_collect_not_wday, "Percentage of Specimens" ~ Site, value.var = "Percent")
-
+missing_collect_not_wday <- cp_not_wday_summary %>%
+  filter(Site %in% city_sites) %>%
+  group_by(Site) %>%
+  summarize(ResultedVolume = sum(TotalResultedTAT),
+            MissingCollection = sum(TotalMissingCollections, na.rm = TRUE),
+            Percent = percent(MissingCollection / ResultedVolume,
+                              digits = 0)) %>%
+  mutate(
+    # Apply conditional formatting based on percentage of labs with missing
+    # collections
+    Percent = cell_spec(
+      Percent, "html",
+      color = ifelse(is.na(Percent), "grey",
+                     ifelse(Percent <= 0.05, "green",
+                            ifelse(Percent <= 0.15, "orange", "red")))),
+    # Format site as factors
+    Site = factor(Site, levels = city_sites, ordered = TRUE))
+#
+# Cast missing collections into table format
+missing_collect_table_not_wday <- dcast(missing_collect_not_wday,
+                               "Percentage of Specimens" ~ Site,
+                               value.var = "Percent")
+#
+# Create a kable of missing collection percentages
 missing_collect_table_not_wday %>%
-  kable(format = "html", escape = FALSE, align = "c",  
+  kable(format = "html", escape = FALSE, align = "c",
         col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
-  kable_styling(bootstrap = "hover", position = "float_left", font_size = 11, full_width = FALSE) %>%
-  add_header_above(c(" " = 1, "Percentage of Labs with Missing Collect Times" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
-  column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black") %>%
-  #column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit", width_max = 0.15) %>%
-  row_spec(row = 0, font_size =13)
+  kable_styling(
+    bootstrap = "hover",
+    position = "float_left",
+    font_size = 11,
+    full_width = FALSE) %>%
+  add_header_above(
+    c(" " = 1,
+      "Percentage of Labs Missing Collect Times" =
+        ncol(missing_collect_table) - 1),
+    background = c("white", "#00AEEF"),
+    color = "white",
+    line = FALSE,
+    font_size = 13) %>%
+  column_spec(column = c(1, ncol(missing_collect_table)),
+              border_right = "thin solid lightgray") %>%
+  column_spec(column = c(2:ncol(missing_collect_table)),
+              background = "#E6F8FF",
+              color = "black") %>%
+ # column_spec(column = c(2:ncol(missing_collect_table)),
+ #             background = "inherit",
+ #             color = "inherit",
+ #             width_max = 0.15) %>%
+  row_spec(row = 0, font_size = 13)
 
-add_on_volume_not_wday <- scc_sun_not_wday_master %>%
-  group_by(Test, Site, .drop = FALSE) %>%
-  summarize(AddOnVolume = sum(AddOnMaster == "AddOn", na.rm = TRUE))
+add_on_volume_not_wday <- cp_not_wday_summary %>%
+  filter(Site %in% city_sites) %>%
+  group_by(Test, Site) %>%
+  summarize(AddOnVolume = sum(TotalAddOnOrder, na.rm = TRUE))
 
-add_on_table_not_wday <- dcast(add_on_volume_not_wday, Test ~ Site, value.var = "AddOnVolume")
+add_on_volume_not_wday <- left_join(test_site_comb, add_on_volume_not_wday,
+                            by = c("Site" = "Site",
+                                  "Test" = "Test"))
+
+add_on_volume_not_wday <- add_on_volume_not_wday %>%
+  mutate(
+    # Set test and site as factors
+    Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
+    Site = factor(Site, levels = city_sites, ordered = TRUE),
+    AddOnVolume = ifelse(is.na(AddOnVolume), 0, AddOnVolume))
+
+add_on_table_not_wday <- dcast(add_on_volume_not_wday,
+                               Test ~ Site, value.var = "AddOnVolume")
 
 add_on_table_not_wday %>%
   kable(format = "html", escape = FALSE, align = "c",
-        col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"), color = "gray") %>%
-  kable_styling(bootstrap = "hover", position = "right", font_size = 11, full_width = FALSE) %>%
-  add_header_above(c(" " = 1, "Volume of Add On Labs" = ncol(missing_collect_table)-1), background = c("white", "#00AEEF"), color = "white", line = FALSE, font_size = 13) %>%
-  column_spec(column = c(1, ncol(missing_collect_table)), border_right = "thin solid lightgray") %>%
-  column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black") %>%
-  #column_spec(column = c(2:ncol(missing_collect_table)), background = "#E6F8FF", color = "black", include_thead = TRUE) %>%
-  #column_spec(column = c(2:ncol(missing_collect_table)), background = "inherit", color = "inherit") %>%
-  row_spec(row = 0, font_size =13)
+        col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"),
+        color = "gray") %>%
+  kable_styling(
+    bootstrap = "hover",
+    position = "right",
+    font_size = 11,
+    full_width = FALSE) %>%
+  add_header_above(
+    c(" " = 1,
+      "Volume of Add On Labs" = ncol(missing_collect_table) - 1),
+    background = c("white", "#00AEEF"),
+    color = "white",
+    line = FALSE,
+    font_size = 13) %>%
+  column_spec(
+    column = c(1, ncol(missing_collect_table)),
+    border_right = "thin solid lightgray") %>%
+  column_spec(
+    column = c(2:ncol(missing_collect_table)),
+    background = "#E6F8FF", color = "black") %>%
+  # column_spec(column = c(2:ncol(missing_collect_table)),
+  #             background = "inherit",
+  #             color = "inherit") %>%
+  row_spec(row = 0, font_size = 13)
 
-# asis_output('<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
-# ')
 ```
 <h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
 
@@ -3671,37 +3795,22 @@ add_on_table_not_wday %>%
 ### Chemistry
 #### *Chemistry Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
 ```{r Chemistry Weekend/Holiday: volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-# asis_output('<h3> Chemistry </h3>')
-# asis_output(paste('<h4> *Chemistry Resulted Lab Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
-chem_vol_not_wday_output <- lab_volume_summarize(scc_sun_not_wday_master, lab_division = "Chemistry")
-chem_vol_not_wday_df <- chem_vol_not_wday_output[[1]]
-chem_vol_not_wday_summary <- chem_vol_not_wday_output[[2]]
-chem_vol_not_wday_table <- chem_vol_not_wday_output[[3]]
 
-# Manually remove unused combinations (ie. Troponin & Lactate w/o "All" as priority, BUN with "All" priority)
-chem_vol_not_wday_table2 <- chem_vol_not_wday_table[!(((chem_vol_not_wday_table$Test == "Troponin" | chem_vol_not_wday_table$Test == "Lactate WB")&(chem_vol_not_wday_table$DashboardPriority != "All")) | (chem_vol_not_wday_table$Test == "BUN" & chem_vol_not_wday_table$DashboardPriority == "All")), ]
+chem_vol_not_wday_table <- summarize_cp_vol(x = cp_not_wday_summary,
+                                         lab_division = "Chemistry")
 
-chem_vol_not_wday_table2 <- chem_vol_not_wday_table2[ , 3:ncol(chem_vol_not_wday_table2)]
-rownames(chem_vol_not_wday_table2) <- 1:nrow(chem_vol_not_wday_table2)
-
-lab_vol_kable_format(chem_vol_not_wday_table2)
+kable_cp_vol(chem_vol_not_wday_table)
 ```
 
 ### Hematology
 #### *Hematology Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
 ```{r Hematology Weekend/Holiday: volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
-# asis_output('<h3> Hematology </h3>')
-# asis_output(paste('<h4> *Hematology Resulted Lab Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
 
-hem_vol_not_wday_output <- lab_volume_summarize(scc_sun_not_wday_master, lab_division = "Hematology")
-hem_vol_not_wday_df <- hem_vol_not_wday_output[[1]]
-hem_vol_not_wday_summary <- hem_vol_not_wday_output[[2]]
-hem_vol_not_wday_table <- hem_vol_not_wday_output[[3]]
+hem_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
+                                         lab_division = "Hematology")
 
-hem_vol_not_wday_table <- hem_vol_not_wday_table[ , 3:ncol(hem_vol_not_wday_table)]
-rownames(hem_vol_not_wday_table) <- 1:nrow(hem_vol_not_wday_table)
+kable_cp_vol(hem_vol_wday_table)
 
-lab_vol_kable_format(hem_vol_not_wday_table)
 ```
 
 
