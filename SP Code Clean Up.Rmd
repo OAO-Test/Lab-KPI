@@ -58,14 +58,14 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 
-today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
-#today <- as.timeDate(as.Date("12/10/2020", format = "%m/%d/%Y"))
+#today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
+today <- as.timeDate(as.Date("03/04/2021", format = "%m/%d/%Y"))
 
 
 #Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
-#yesterday <- as.timeDate(as.Date("12/9/2020", format = "%m/%d/%Y"))
+#yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
+yesterday <- as.timeDate(as.Date("03/03/2021", format = "%m/%d/%Y"))
 
 #Get yesterday's DOW
 yesterday_day <- dayOfWeek(yesterday)
@@ -2501,23 +2501,14 @@ kpi_form_today <-
 #read historical repo
 historical_repo_form <- read_excel(
   paste0(user_directory, "/Lab KPI Form/Lab KPI Hsitorical Repo/",
-         "Historical_Repo_Form", "_", yesterday, ".xlsx"))
+         "Lab_KPI_Form_Repo", "_", yesterday, ".xlsx"))
 
-#make sure the data types for both dataframes are the same
-common <-
-  names(historical_repo_form)[names(historical_repo_form) 
-                              %in% names(kpi_form_today)]
 
-historical_repo_form[common] <- lapply(common, function(x) {
-  match.fun(paste0("as.",
-                   class(kpi_form_today[[x]])))(historical_repo_form[[x]])
-})
-
-#3. combine the current summary with the historical repo and write them
+#2. combine the current summary with the historical repo and write them
 #into a xlsx file
 historical_repo_form2 <- rbind(historical_repo_form, kpi_form_today)
 
-#4. to ensure that the selected rows are the unique ones only without
+#3. to ensure that the selected rows are the unique ones only without
 #any dupilacation
 
 historical_repo_form2 <- unique(historical_repo_form2)
