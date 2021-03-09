@@ -83,7 +83,7 @@ create.calendar("MSHS_working_days", mshs_holiday,
 bizdays.options$set(default.calendar = "MSHS_working_days")
 ```
 
-#### *Dashboard Creation Date: `r format(Today, "%m/%d/%Y")`*
+#### *Dashboard Creation Date: `r format(today, "%m/%d/%Y")`*
 
 ```{r Import all data, warning = FALSE, message = FALSE, echo = FALSE}
 # Select file/folder path for easier file selection and navigation
@@ -1073,7 +1073,7 @@ end_date <- format(max(cp_repo$ResultDate), "%m%d%y")
 # Save updated repository
 # write_xlsx(scc_sun_repo, path = paste0(user_directory,
 #                                        "\\SCC Sunquest Historical Repo",
-#                                        "\\Hist Repo Test ", start_date, " to ",
+#                                        "\\Hist Repo Test ", start_date, " to",
 #                                        end_date, " Created ", Sys.Date(),
 #                                        ".xlsx"))
 saveRDS(cp_repo, file = paste0(user_directory,
@@ -1085,98 +1085,102 @@ saveRDS(cp_repo, file = paste0(user_directory,
 
 
 ```{r Custom function for preprocessing raw Powerpath and Epic data and calling function, warning = FALSE, message = FALSE, echo = FALSE}
-##preprocessing for epic data
 
-#we are only looking for the specimens that were finalized/final edited in epic
-epic_weekday_final <-
-  epic_weekday[which(epic_weekday$LAB_STATUS == "Final result" |
-                       epic_weekday$LAB_STATUS == "Edited Result - FINAL"), ]
+#create a function to prepare cytology data for pre-processing
+cyto_prep <- function(epic_data, raw_data) {
+  if (is.null(raw_data) || nrow(raw_data) == 0) {
+    raw_data <- NULL
+  } else {
+    #preprocessing for epic data
+    #we are only looking for the specimens that were finalized/final
+    #edited in epic
+    epic_data_final <-
+      epic_data[which(epic_data$LAB_STATUS == "Final result" |
+                           epic_data$LAB_STATUS == "Edited Result - FINAL"), ]
 
-#get only the SPECIMEN_ID Column from Epic data
-epic_final_spec <- NULL
-epic_final_spec <- as.data.frame(epic_weekday_final$SPECIMEN_ID)
-colnames(epic_final_spec) <- c("Case_no")
+    globalVariables(names(epic_data_final))
 
-#keep only the unique spec IDs
-epic_final_spec <- unique(epic_final_spec)
+    #get only the SPECIMEN_ID Column from Epic data
+    epic_data_spec <- NULL
+    epic_data_spec <- as.data.frame(epic_data_final$SPECIMEN_ID)
+    colnames(epic_data_spec) <- c("Case_no")
 
-# create an extra column for old Fcaility
-pp_weekday <- pp_weekday %>%
-  mutate(Facility_Old = Facility)
+    #keep only the unique spec IDs
+    epic_data_spec <- unique(epic_data_spec)
 
-pp_weekday$Facility[pp_weekday$Facility_Old == "MSS"] <- "MSH"
-pp_weekday$Facility[pp_weekday$Facility_Old == "STL"] <- "SL"
-pp_weekday$spec_group[pp_weekday$spec_group == "BREAST"] <- "Breast"
+    # create an extra column for old Fcaility
+    raw_data <- raw_data %>%
+      mutate(Facility_Old = Facility)
 
-#---------------Extract the Cytology GYN and NON-GYN Data Only-----------------#
-#Cytology
-#Keep the cyto gyn and cyto non-gyn
+    raw_data$Facility[raw_data$Facility_Old == "MSS"] <- "MSH"
+    raw_data$Facility[raw_data$Facility_Old == "STL"] <- "SL"
+    raw_data$spec_group[raw_data$spec_group == "BREAST"] <- "Breast"
 
-cyto_weekday_raw <-
-  pp_weekday[which((pp_weekday$spec_group == "CYTO NONGYN" |
-                      pp_weekday$spec_group == "CYTO GYN") &
-                     pp_weekday$spec_sort_order == "A"), ]
+    #--------------Extract the Cytology GYN and NON-GYN Data Only------------#
+    #Cytology
+    #Keep the cyto gyn and cyto non-gyn
 
-cyto_not_weekday_raw <-
-  pp_not_weekday[which((pp_not_weekday$spec_group == "CYTO NONGYN" |
-                          pp_not_weekday$spec_group == "CYTO GYN") &
-                         pp_not_weekday$spec_sort_order == "A"), ]
+    cyto_raw <-
+      raw_data[which((raw_data$spec_group == "CYTO NONGYN" |
+                          raw_data$spec_group == "CYTO GYN") &
+                         raw_data$spec_sort_order == "A"), ]
 
-cyto_weekday_final <- merge(x = cyto_weekday_raw,
-                                    y = epic_final_spec)
+    cyto_final <- merge(x = cyto_raw, y = epic_data_spec)
+    }
 
-#--------------Extract the All Breast and GI specs Data Only-------------------#
+  return(cyto_final)
 
-#Merge the exclusion/inclusion cloumn into the modified powerpath Dataset
-#for weekdays and not weekdays
+  }
 
-pp_weekday <- merge(x = pp_weekday, y = gi_codes, all.x = TRUE)
+cyto_weekday_final <- cyto_prep(epic_weekday, pp_weekday)
+cyto_not_weekday_final <- cyto_prep(epic_not_weekday, pp_not_weekday)
 
-#find case numbers with GI_Code = exclude
-exclude_gi_codes_df <-
-  pp_weekday[
-    which
-    ((
-      pp_weekday$spec_group == "GI") &
-        (pp_weekday$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies. ==
-           "Exclude")), ]
+#create a function to prepare pathology data for pre-processing
 
-must_exclude_cnum <- unique(exclude_gi_codes_df$Case_no)
+patho_prep <- function(raw_data, gi_codes) {
+  if (is.null(raw_data) || nrow(raw_data) == 0) {
+    raw_data <- NULL
+    } else {
 
-#this dataframe has all the GI specs and biopsies that should be excluded
-#it includes any biopsy that came with another excluded code
-#this DF is only for our reference
-must_exclude_cnum_df <-
-  pp_weekday[which(pp_weekday$Case_no %in% must_exclude_cnum), ]
+    #------------Extract the All Breast and GI specs Data Only--------------#
+    #Merge the exclusion/inclusion cloumn into the modified powerpath Dataset
+    #for weekdays and not weekdays
 
-sp_weekday <-
-  pp_weekday[which((((pp_weekday$spec_group == "GI") &
-                       (!(pp_weekday$Case_no %in% must_exclude_cnum))) |
-                      (pp_weekday$spec_group == "Breast")) &
-                     pp_weekday$spec_sort_order == "A"), ]
+    raw_data <- merge(x = raw_data, y = gi_codes, all.x = TRUE)
 
-sp_weekday <-
-  sp_weekday[which(
-    sp_weekday$Facility != "NYEE"), ]
+    #find case numbers with GI_Code = exclude
+    exclude_gi_codes_df <-
+      raw_data[
+        which
+        ((
+          raw_data$spec_group == "GI") &
+            (raw_data$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies. ==
+               "Exclude")), ]
 
+    must_exclude_cnum <- unique(exclude_gi_codes_df$Case_no)
 
-#-----------Reporting Dates-----------#
-#1. Weekday Date
-report_date_weekday <- unique(as.timeDate(format(pp_weekday$signed_out_date,
-                                                 "%m/%d/%Y")))
+    #this dataframe has all the GI specs and biopsies that should be excluded
+    #it includes any biopsy that came with another excluded code
+    #this DF is only for our reference
+    must_exclude_cnum_df <-
+      raw_data[which(raw_data$Case_no %in% must_exclude_cnum), ]
 
-report_date_weekday_day <- unique(dayOfWeek(report_date_weekday))
+    sp_data <-
+      raw_data[which((((raw_data$spec_group == "GI") &
+                           (!(raw_data$Case_no %in% must_exclude_cnum))) |
+                          (raw_data$spec_group == "Breast")) &
+                         raw_data$spec_sort_order == "A"), ]
 
-#2. Weekend/Holiday Dates
-if (is.null(pp_not_weekday)) {
-  report_date_weekend <- NULL
-  report_date_weekend_day <- NULL
-}else {
-  report_date_weekend <-
-    unique(as.timeDate(format(pp_not_weekday$signed_out_date,
-                              "%m/%d/%Y")))
-  report_date_weekend_day <- unique(dayOfWeek(report_date_weekend))
-}
+    sp_data <-
+      sp_data[which(
+        sp_data$Facility != "NYEE"), ]
+    }
+
+  return(sp_data)
+
+  }
+
+sp_weekday <- patho_prep(pp_weekday, gi_codes)
 
 #------------------------------Data Pre-Processing-----------------------------#
 ############Create a function for Data pre-processing############
@@ -1362,7 +1366,7 @@ cyto_table_weekday <-
   pre_processing_pp(cyto_weekday_final)[[1]]
 
 cyto_table_not_weekday <-
-  pre_processing_pp(cyto_not_weekday_raw)[[1]]
+  pre_processing_pp(cyto_not_weekday_final)[[1]]
 
 #This table will give us the summarized TAT for cyto with an assumption that
 #receive to result is centralized.
@@ -1370,14 +1374,14 @@ cyto_table_weekday_v2 <-
   pre_processing_pp(cyto_weekday_final)[[2]]
 
 cyto_table_not_weekday_v2 <-
-  pre_processing_pp(cyto_not_weekday_raw)[[2]]
+  pre_processing_pp(cyto_not_weekday_final)[[2]]
 
 #this table summarizes the volume for cyto per hospital per patient setting
 cyto_strat_vol_weekday <-
   pre_processing_pp(cyto_weekday_final)[[3]]
 
 cyto_strat_vol_not_weekday <-
-  pre_processing_pp(cyto_not_weekday_raw)[[3]]
+  pre_processing_pp(cyto_not_weekday_final)[[3]]
 
 #this table gives the processed and cleaned raw cyto data only
 cyto_table_weekday_raw <-
@@ -2189,7 +2193,7 @@ conditional_formatting_cyto <- function(table_new2) {
 
     table_new2[, 4:19] <- lapply(table_new2[, 4:19], as.numeric)
 
-    table_new2[, 4:11] <- lapply(table_new2[, 4:11], percent)
+    table_new2[, 4:11] <- lapply(table_new2[, 4:11], formattable::percent)
 
     #steps for conditional formatting:
 
@@ -2292,7 +2296,7 @@ conditional_formatting_cyto2 <- function(table_new2_v2) {
   } else {
 
     table_new2_v2[4] <- lapply(table_new2_v2[4], as.numeric)
-    table_new2_v2[4] <- lapply(table_new2_v2[4], percent, d = 0)
+    table_new2_v2[4] <- lapply(table_new2_v2[4], formattable::percent, d = 0)
 
     #steps for conditional formatting:
 
@@ -2377,7 +2381,8 @@ conditional_formatting_patho <- function(table_new2) {
   } else {
 
     table_new2[, 4:17] <- lapply(table_new2[, 4:17], as.numeric)
-    table_new2[, 4:10] <- lapply(table_new2[, 4:10], percent, d = 0)
+    table_new2[, 4:10] <- lapply(table_new2[, 4:10], formattable::percent,
+                                 d = 0)
 
     #steps for conditional formatting:
 
@@ -2841,7 +2846,7 @@ kpi_form <- data.frame(read_excel(
 #Determine the dates within the KPI excel sheet and report only the latest date
 kpi_form <- kpi_form %>%
   mutate(Completion_Date = as.Date(as.POSIXct(Completion.time, tz = "",
-                                              format = '%m/%d/%y %I:%M %p')))
+                                              format = "%m/%d/%y %I:%M %p")))
 
 kpi_form <- kpi_form %>%
   mutate(Completion_Hour = format(Completion.time, format = "%H:%M:%S"))
@@ -3113,28 +3118,30 @@ never_events["Treatment based on false positive/false negative results"] <- NA
 
 #because we have multiple never events in one cell i created a
 #list with these by:
-splitting_ne_text <- sapply(never_events$NEVER_EVENTS, strsplit, "[;]")
+split_text <- sapply(never_events$NEVER_EVENTS, strsplit, "[;]")
 
 #created a nested for loop with nested if to determine which of these
 #never events are listed
 for (i in 1:nrow(never_events)) {
-  for (j in 1:length(splitting_ne_text[[i]])) {
-    if (splitting_ne_text[[i]][j] == colnames(never_events)[5]) {
+  for (j in 1:length(split_text[[i]])) {
+    if (split_text[[i]][j] == colnames(never_events)[5]) {
       never_events$`Specimen(s) Lost`[i] <- 1
       }
-    else if (splitting_ne_text[[i]][j] == colnames(never_events)[6]) {
+    else if (split_text[[i]][j] == colnames(never_events)[6]) {
       never_events$`QNS - specimen that cannot be recollected`[i] <- 1
       }
-    else if (splitting_ne_text[[i]][j] == colnames(never_events)[7]) {
-      never_events$`Treatment based on mislabeled/misidentified specimen`[i] <- 1
+    else if (split_text[[i]][j] == colnames(never_events)[7]) {
+      never_events$`Treatment based on mislabeled/misidentified specimen`[i] <- 
+        1
       }
-    else if (splitting_ne_text[[i]][j] == colnames(never_events)[8]) {
+    else if (split_text[[i]][j] == colnames(never_events)[8]) {
       never_events$`Treatment based on false positive/false negative results`[i] <- 1
       }
   }
 }
 
-never_events$NEVER_EVENTS <- NULL
+never_events <- never_events %>%
+  mutate(NEVER_EVENTS = NULL)
 
 never_events_melt <-
   melt(never_events,
@@ -3202,8 +3209,8 @@ rownames(formatted_never_event) <-
     "Central Processiong & Accessioning (CPA)",
     "Client Services - 4LABS")
 
-formatted_never_event$Facility <-
-  rownames(formatted_never_event)
+formatted_never_event <- formatted_never_event %>%
+  mutate(Facility = rownames(formatted_never_event))
 
 rownames(formatted_never_event) <- NULL
 
@@ -3502,7 +3509,7 @@ chem_not_wday_dashboard_melt <- chem_not_wday_sub_output[[3]]
 chem_not_wday_dashboard_cast <- chem_not_wday_sub_output[[4]]
 
 # Hematology
-hem_not_wday_sub_output <-summarize_cp_tat(cp_not_wday_summary,
+hem_not_wday_sub_output <- summarize_cp_tat(cp_not_wday_summary,
                                         lab_division = "Hematology")
 
 hem_not_wday_subset <- hem_not_wday_sub_output[[1]]
@@ -3511,7 +3518,7 @@ hem_not_wday_dashboard_melt <- hem_not_wday_sub_output[[3]]
 hem_not_wday_dashboard_cast <- hem_not_wday_sub_output[[4]]
 
 # Microbiology RRL
-micro_not_wday_sub_output <-summarize_cp_tat(cp_not_wday_summary,
+micro_not_wday_sub_output <- summarize_cp_tat(cp_not_wday_summary,
                                              lab_division = "Microbiology RRL")
 micro_not_wday_subset <- micro_not_wday_sub_output[[1]]
 micro_not_wday_summary <- micro_not_wday_sub_output[[2]]
@@ -3670,7 +3677,7 @@ micro_not_wday_tat_vol_cast <- micro_not_wday_tat_vol_cast %>%
 <span style = "color:green">Green:</span> =100%</h5>
 ```{r Microbiology RRL dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 
-kable_cp_tat(micro_not_wday_tat_vol_cast) 
+kable_cp_tat(micro_not_wday_tat_vol_cast)
 
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
@@ -3684,7 +3691,7 @@ kable_cp_tat(micro_not_wday_tat_vol_cast)
 <span style = "color:green">Green:</span> <=5%</h5>
 ```{r Missing Collection Times Tables for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 
-# Determine percentage of labs with missing collection times -------------------------------
+# Determine percentage of labs with missing collection times ----------------
 missing_collect_not_wday <- cp_not_wday_summary %>%
   filter(Site %in% city_sites) %>%
   group_by(Site) %>%
@@ -3874,7 +3881,8 @@ tat_targets_kable <- tat_targets %>%
                            ordered = TRUE)) %>%
   arrange(Test, Priority)
 
-tat_targets_kable$Concate <- NULL
+tat_targets_kable <- tat_targets_kable %>%
+  mutate(Concate = NULL)
 
 tat_targets_kable %>%
   kable(format = "html", escape = FALSE, align = "c",
@@ -3956,8 +3964,6 @@ gi_codes_updated  %>%
   row_spec(row = 0, font_size = 13, background = "#221f72",
            color = "white") %>%
   collapse_rows(columns = 1)
-
-
 ```
 
 <h4><b>Additional notes on target turnaround times:</b></h4>
