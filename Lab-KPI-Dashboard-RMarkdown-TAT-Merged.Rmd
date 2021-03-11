@@ -1254,11 +1254,11 @@ pre_processing_pp <- function(raw_data) {
     #prepare data for first part accessioned volume analysis
     #1. Find the date that we need to report --> the date of the last weekday
     acc_date <- as.Date(raw_data_new$signed_out_date[1])
-    
+
     #2. count the accessioned volume that was accessioned on that date
     #from the cyto report
     raw_data_new$acc_date_only <- as.Date(raw_data_new$Received_Date)
-    
+
     #summarize the data to be used for analysis and to be stored as historical
     #repo
     summarized_table <-
@@ -1324,7 +1324,7 @@ pre_processing_pp <- function(raw_data) {
       vol_cases_signed_strat,
       Spec_group + Patient_setting ~ Facility, value.var = "no_cases_signed")
 
-    vol_cases_signed_strat[is.na(vol_cases_signed_strat)] <- 0    
+    vol_cases_signed_strat[is.na(vol_cases_signed_strat)] <- 0
 
     #Calculate average collection to signed out
     patient_metric <- summarise(group_by(summarized_table,
@@ -1346,7 +1346,7 @@ pre_processing_pp <- function(raw_data) {
     #Calculate % Receive to result TAT within target
 
     #this part of the code creates the table for the received to result TAT
-    #within target with an assumption that the receive to result is not 
+    #within target with an assumption that the receive to result is not
     #centralized which means it is stratified by facility
     lab_metric <- summarise(group_by(summarized_table,
                                      Spec_group,
@@ -1377,7 +1377,7 @@ pre_processing_pp <- function(raw_data) {
                                     (Lab_metric_within_target *
                                        No_cases_signed_out) /
                                       sum(No_cases_signed_out),
-                                    na.rm = TRUE), 2)))  
+                                    na.rm = TRUE), 2)))
 
 
     #here I will merge number of cases signed, received to result TAT,
@@ -1396,12 +1396,12 @@ pre_processing_pp <- function(raw_data) {
     processed_data_table_v2 <-
       processed_data_table_v2[!(processed_data_table_v2$Patient_setting ==
                                   "Other"), ]
-    
+
     cyto_acc_vol1 <- summarise(group_by(summarized_table, Spec_group),
-                               cyto_acc_vol1 = 
+                               cyto_acc_vol1 =
                                  as.numeric(sum(cyto_acc_vol,
                                    na.rm = TRUE)))
-    
+
 
     return_tables <- list(processed_data_table,
                           processed_data_table_v2,
@@ -1434,7 +1434,7 @@ cyto_table_weekday_raw <-
 #this table gives the summarized cyto data for historical repo
 cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final)[[5]]
 
-#this table gives the volume of the accessioned specimens of the specific 
+#this table gives the volume of the accessioned specimens of the specific
 #accessioned date. This table will be used to poduce the total accession volume
 cyto_acc_vol1 <- pre_processing_pp(cyto_weekday_final)[[6]]
 
@@ -1545,14 +1545,19 @@ cyto_backlog_tbl <- function(cyto_backlog_raw) {
     "percentile_50th", "maximum", "cyto_acc_vol")
 
   cyto_backlog_vol <- summarise(group_by(summarized_table, Spec_group),
-                                cyto_backlog = sum(as.numeric(cyto_backlog), na.rm = TRUE),
-                                percentile_25th = ceiling(quantile(as.numeric(percentile_25th),
+                                cyto_backlog = sum(as.numeric(cyto_backlog),
+                                                   na.rm = TRUE),
+                                percentile_25th =
+                                  ceiling(quantile(as.numeric(percentile_25th),
                                                            prob = 0.25,
                                                            na.rm = TRUE)),
-                                percentile_50th = ceiling(quantile(as.numeric(percentile_50th),
+                                percentile_50th =
+                                  ceiling(quantile(as.numeric(percentile_50th),
                                                            prob = 0.5,
-                                                           na.rm = TRUE)), 
-                                maximum = ceiling(max(as.numeric(maximum), na.rm = TRUE))
+                                                           na.rm = TRUE)),
+                                maximum =
+                                  ceiling(max(as.numeric(maximum),
+                                              na.rm = TRUE))
                                 )
 
   cyto_backlog_vol$maximum[cyto_backlog_vol$maximum == "-Inf"] <- "NA"
@@ -1570,17 +1575,17 @@ cyto_backlog_tbl <- function(cyto_backlog_raw) {
                                    na.rm = TRUE)))
   #sum the two counts
   cyto_acc_vol3 <- merge(x = cyto_acc_vol1, y = cyto_acc_vol2)
-  
+
   cyto_acc_vol3$total_acc_vol <-
     cyto_acc_vol3$cyto_acc_vol1 + cyto_acc_vol3$cyto_acc_vol2
-  
+
   cyto_acc_vol3$cyto_acc_vol1 <- NULL
   cyto_acc_vol3$cyto_acc_vol2 <- NULL
-  
+
   backlog_acc_table <- merge(x = cyto_acc_vol3,
                              y = cyto_backlog_vol,
                              all = TRUE)
-  
+
   table_temp_backlog_acc <- data.frame(matrix(ncol = 6, nrow = 2))
   colnames(table_temp_backlog_acc) <- c("Spec_group",
                                         "total_accessioned_volume",
@@ -1588,24 +1593,24 @@ cyto_backlog_tbl <- function(cyto_backlog_raw) {
                                         "percentile_25th",
                                         "percentile_50th",
                                         "maximum")
-  
+
   table_temp_backlog_acc[1] <- c("CYTO GYN", "CYTO NONGYN")
-  
+
   backlog_acc_table_new <- merge(x = table_temp_backlog_acc,
                                  y = backlog_acc_table, all.y = TRUE)
-  
+
   backlog_acc_table_new2 <- merge(x = table_temp_backlog_acc[1],
                                   y = backlog_acc_table,
                                   all.x = TRUE, by = c("Spec_group"))
-  
+
   backlog_acc_table_new2[is.na(backlog_acc_table_new2)] <- 0
-  
-  #added this line to delete the cyto gyn from the table until we get correct data
-  #currently not in use
+
+  #added this line to delete the cyto gyn from the table until we get
+  #correct data. Currently not in use
   backlog_acc_table_new3 <- backlog_acc_table_new2[-c(1), ]
-  
+
   return_tables <- list(backlog_acc_table_new2, summarized_table)
-  
+
   return(return_tables)
 }
 
@@ -3212,7 +3217,7 @@ for (i in 1:nrow(never_events)) {
       never_events$`QNS - specimen that cannot be recollected`[i] <- 1
       }
     else if (split_text[[i]][j] == colnames(never_events)[7]) {
-      never_events$`Treatment based on mislabeled/misidentified specimen`[i] <- 
+      never_events$`Treatment based on mislabeled/misidentified specimen`[i] <-
         1
       }
     else if (split_text[[i]][j] == colnames(never_events)[8]) {
