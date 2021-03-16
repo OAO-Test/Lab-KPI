@@ -11,259 +11,495 @@ library(formattable)
 library(rmarkdown)
 library(writexl)
 
+#Clear existing history
 rm(list = ls())
-
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
-#Today <- as.timeDate(as.Date("07/20/2020", format = "%m/%d/%Y"))
 
-#Determine if yesterday was a holiday/weekend 
+today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
+
+#Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
-#Yesterday <- as.timeDate(as.Date("07/19/2020", format = "%m/%d/%Y"))
+yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
 
 #Get yesterday's DOW
-Yesterday_Day <- dayOfWeek(Yesterday)
+yesterday_day <- dayOfWeek(yesterday)
 
 #Remove Good Friday from MSHS Holidays
-NYSE_Holidays <- as.Date(holidayNYSE(year = 1990:2100))
-GoodFriday <- as.Date(GoodFriday())
-MSHS_Holiday <- NYSE_Holidays[GoodFriday != NYSE_Holidays]
+nyse_holidays <- as.Date(holidayNYSE(year = 1990:2100))
+good_friday <- as.Date(GoodFriday())
+mshs_holiday <- nyse_holidays[good_friday != nyse_holidays]
 
 #Determine whether yesterday was a holiday/weekend
-Holiday_Det <- isHoliday(Yesterday, holidays = MSHS_Holiday)
+holiday_det <- isHoliday(yesterday, holidays = mshs_holiday)
 
-#Set up a default calendar for collect to received TAT calculations for Pathology and Cytology
-create.calendar("MSHS_working_days", MSHS_Holiday, weekdays=c("saturday","sunday"))
-bizdays.options$set(default.calendar="MSHS_working_days")
+#Set up a calendar for collect to received TAT calculations for Path & Cyto
+create.calendar("MSHS_working_days", mshs_holiday,
+                weekdays = c("saturday", "sunday"))
+bizdays.options$set(default.calendar = "MSHS_working_days")
 
 
-# Set working directory
-user_wd <- "J:\\deans\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data"
-setwd(user_wd)
+# Select file/folder path for easier file selection and navigation
+
+if ("Presidents" %in% list.files("J://")) {
+  user_directory <- paste0("J:/Presidents/HSPI-PM/",
+                           "Operations Analytics and Optimization/Projects/",
+                           "Service Lines/Lab Kpi/Data")
+} else {
+  user_directory <- paste0("J:/deans/Presidents/HSPI-PM/",
+                           "Operations Analytics and Optimization/Projects/",
+                           "Service Lines/Lab Kpi/Data")
+}
+
 
 #import historical data for first run vs. future runs
-initial_run <- FALSE
+initial_run <- TRUE
 
 if (initial_run == TRUE) {
-  
-  ##### pull powerpath daily data 
-  file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = "^KPI REPORT\\ - \\RAW DATA V4_V2.+(2020)|(2021)\\-[0-9]{2}\\-[0-9]{2}")
-  
-  SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
-  
+  existing_powerpath_repo <- NULL
+  ##### pull powerpath daily data
+  file_list_sp <-
+    list.files(
+      path =
+        paste0(user_directory, "\\AP & Cytology Signed Cases Reports"),
+      pattern =
+        paste0("(KPI REPORT - RAW DATA V4_V2)"))
+
+  sp_list <-
+    lapply(file_list_sp,
+           function(x) read_excel(
+             path = paste0(user_directory,
+                           "\\AP & Cytology Signed Cases Reports\\", x),
+             skip = 1))
+
   ### fix the collection date for the powerpath daily data
-  for (i in (1: length(SP_list))){
+  for (i in (1:length(sp_list))) {
     #check if any of the dates was imported as char
-    if (is.character(SP_list[[i]]$Collection_Date)){
-      SP_list[[i]]$Collection_Date <- as.numeric(SP_list[[i]]$Collection_Date)
-      SP_list[[i]]$Collection_Date <- as.Date(SP_list[[i]]$Collection_Date, origin = "1899-12-30")
-      SP_list[[i]]$Collection_Date <- as.POSIXct(SP_list[[i]]$Collection_Date,tz="", format='%m/%d/%y %I:%M %p')
+    if (is.character(sp_list[[i]]$Collection_Date)) {
+      sp_list[[i]] <- sp_list[[i]] %>%
+        mutate(Collection_Date = as.numeric(Collection_Date))
+      sp_list[[i]] <- sp_list[[i]] %>%
+        mutate(Collection_Date = as.Date(Collection_Date,
+                                         origin = "1899-12-30"))
+      sp_list[[i]] <- sp_list[[i]] %>%
+        mutate(Collection_Date = as.POSIXct(Collection_Date,
+                                            tz = "",
+                                            format = "%m/%d/%y %I:%M %p"))
     } else {
-      SP_list[[i]]$Collection_Date <- SP_list[[i]]$Collection_Date
+      sp_list[[i]] <- sp_list[[i]] %>%
+        mutate(Collection_Date = Collection_Date)
     }
   }
-  ##### pull the powerpath aggregated data 
-  aggregated_1 <- read_excel(path = paste0(user_wd,"\\AP & Cytology Signed Cases Reports\\KPI_RAW_V4_V2_Jan-Sept-2020 file1.xlsx"))
-  aggregated_2 <- read_excel(path = paste0(user_wd,"\\AP & Cytology Signed Cases Reports\\KPI_RAW_V4_V2_Jan-Sept-2020 file2.xlsx"))
-  
+
+  ##### pull the powerpath aggregated data
+  aggregated_1 <-
+    read_excel(
+      path =
+        paste0(
+          user_directory,
+          "\\AP & Cytology Signed Cases Reports\\",
+          "KPI_RAW_V4_V2_Jan-Sept-2020 file1.xlsx"))
+
+  aggregated_2 <-
+    read_excel(
+      path =
+        paste0(
+          user_directory,
+          "\\AP & Cytology Signed Cases Reports\\",
+          "KPI_RAW_V4_V2_Jan-Sept-2020 file2.xlsx"))
+
   ## correct the collection date
   aggregated_1_2 <- rbind(aggregated_1, aggregated_2)
-  aggregated_1_2$Collection_Date <- as.numeric(aggregated_1_2$Collection_Date)
-  aggregated_1_2$Collection_Date <- as.Date(aggregated_1_2$Collection_Date, origin = "1899-12-30")
-  aggregated_1_2$Collection_Date <- as.POSIXct(aggregated_1_2$Collection_Date,tz="", format='%m/%d/%y %I:%M %p')
-  
-  ##change the column names of the aggregated data and their order to match the daily data
-  colnames(aggregated_1_2) <- c("Facility",	"Priority",	"spec_group",	"spec_sort_order",	"Spec_code",	"Specimen_description",	"CPT_code",	"Fee_sch",	"Rev_ctr",	"Encounter_no",	"MRN",	"AGE",	"Case_no",	"Case_created_date",	"Collection_Date",	"Received_Date",	"signed_out_date",	"TAT",	"signed_out_Pathologist",	"Refmd_name",	"Refmd_code",	"NPI_NO",	"patient_type")
-  aggregated_1_2 <- aggregated_1_2[, c("Facility",	"Priority",	"spec_group", "Spec_code",	"Specimen_description",	"CPT_code",	"Fee_sch",	"Rev_ctr",	"Encounter_no",	"MRN",	"AGE",	"Case_no",	"Case_created_date",	"Collection_Date",	"Received_Date",	"signed_out_date",	"TAT",	"signed_out_Pathologist",	"Refmd_name",	"Refmd_code",	"NPI_NO",	"spec_sort_order","patient_type")]
-  
+  aggregated_1_2 <- aggregated_1_2 %>%
+    mutate(Collection_Date = as.numeric(Collection_Date))
+  aggregated_1_2 <- aggregated_1_2 %>%
+    mutate(Collection_Date = as.Date(Collection_Date,
+                                     origin = "1899-12-30"))
+  aggregated_1_2 <- aggregated_1_2 %>%
+    mutate(Collection_Date = as.POSIXct(Collection_Date, tz = "",
+                                        format = "%m/%d/%y %I:%M %p"))
+
+  ##change the column names of the aggregated data and their
+  #order to match the daily data
+  colnames(aggregated_1_2) <- c("Facility",
+                                "Priority",
+                                "spec_group",
+                                "spec_sort_order",
+                                "Spec_code",
+                                "Specimen_description",
+                                "CPT_code",
+                                "Fee_sch",
+                                "Rev_ctr",
+                                "Encounter_no",
+                                "MRN",
+                                "AGE",
+                                "Case_no",
+                                "Case_created_date",
+                                "Collection_Date",
+                                "Received_Date",
+                                "signed_out_date",
+                                "TAT",
+                                "signed_out_Pathologist",
+                                "Refmd_name",
+                                "Refmd_code",
+                                "NPI_NO",
+                                "patient_type")
+
+  aggregated_1_2 <- aggregated_1_2[, c("Facility",
+                                       "Priority",
+                                       "spec_group",
+                                       "Spec_code",
+                                       "Specimen_description",
+                                       "CPT_code",
+                                       "Fee_sch",
+                                       "Rev_ctr",
+                                       "Encounter_no",
+                                       "MRN",
+                                       "AGE",
+                                       "Case_no",
+                                       "Case_created_date",
+                                       "Collection_Date",
+                                       "Received_Date",
+                                       "signed_out_date",
+                                       "TAT",
+                                       "signed_out_Pathologist",
+                                       "Refmd_name",
+                                       "Refmd_code",
+                                       "NPI_NO",
+                                       "spec_sort_order",
+                                       "patient_type")]
+
   #### bind the rows for the daily data
-  SP_Dataframe_combined_ <- bind_rows(SP_list)
-  SP_Dataframe_combined_ <- SP_Dataframe_combined_[!SP_Dataframe_combined_$Facility ==  "Page -1 of 1",]
-  
+  sp_df_combined_ <- bind_rows(sp_list)
+  sp_df_combined_ <-
+    sp_df_combined_[!sp_df_combined_$Facility ==
+                             "Page -1 of 1", ]
+
   #### bind the daily data with the aggregated data
-  SP_Dataframe_combined <- rbind(aggregated_1_2, SP_Dataframe_combined_)
-  
+  sp_df_combined <- rbind(aggregated_1_2, sp_df_combined_)
+
   ##### pull EPIC cytology daily data
   ### pull daily data
-  file_list_epic <- list.files(path = paste0(user_wd, "\\EPIC Cytology"), pattern = "^MSHS Pathology Orders EPIC.+(2020)\\-[0-9]{2}\\-[0-9]{2}")
-  epic_cyto_list <- lapply(file_list_epic, function(x) read_excel(path = paste0(user_wd, "\\EPIC Cytology\\", x)))
-  epic_Dataframe_combined_ <- bind_rows(epic_cyto_list)
-  
-  ##### pull EPIC aggregated data 
-  aggregatedEpic <- read_excel(path = paste0(user_wd,"\\EPIC Cytology\\MSHS Pathology Orders EPIC 2020-01-01  to 2020-11-04.xlsx"))
-  
-  #### bind the daily data with the aggregated data
-  epic_Dataframe_combined <- rbind(aggregatedEpic, epic_Dataframe_combined_)
-  
+  file_list_epic <-
+    list.files(
+      path =
+        paste0(
+          user_directory, "\\EPIC Cytology"),
+      pattern = "^MSHS Pathology Orders EPIC")
+
+  epic_cyto_list <-
+    lapply(file_list_epic, function(x) read_excel(path =
+                                                    paste0(user_directory,
+                                                           "\\EPIC Cytology\\",
+                                                           x)))
+  epic_df_combined <- bind_rows(epic_cyto_list)
+
 } else{
   # Import existing historical repository
-  existing_powerpath_repo <- read_excel(choose.files(default = user_wd, caption = "Select Historical Repository"), sheet = 1, col_names = TRUE)
+  existing_powerpath_repo <-
+    read_excel(
+      choose.files(
+        default =
+          user_directory,
+        caption = "Select Historical Repository"),
+      sheet = 1, col_names = TRUE)
   #
   # Find last date of resulted lab data in historical repository
-  last_date <- as.Date(max(existing_powerpath_repo$Signed_out_date_only), format = "%Y-%m-%d")
+  last_date <- as.Date(max(existing_powerpath_repo$Signed_out_date_only),
+                       format = "%Y-%m-%d")
   # Determine today's date to determine last possible data report
   todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
   # Create vector with possible data report dates
   date_range <- seq(from = last_date + 2, to = todays_date, by = "day")
 
-  ##### pull powerpath daily data 
-  file_list_SP <- list.files(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports"), pattern = paste0("^KPI REPORT\\ - \\RAW DATA V4_V2.+",date_range, collapse = "|"))
-  
-  SP_list <- lapply(file_list_SP, function(x) read_excel(path = paste0(user_wd, "\\AP & Cytology Signed Cases Reports\\", x),skip = 1))
-  
-  for (i in (1: length(SP_list))){
+  ##### pull powerpath daily data
+  file_list_sp <-
+    list.files(
+      path =
+        paste0(
+          user_directory,
+          "\\AP & Cytology Signed Cases Reports"),
+      pattern =
+        paste0(
+          "^KPI REPORT\\ - \\RAW DATA V4_V2.+", date_range, collapse = "|"))
+
+  sp_list <-
+    lapply(
+      file_list_sp,
+      function(x) read_excel(
+        path =
+          paste0(user_directory,
+                 "\\AP & Cytology Signed Cases Reports\\", x),
+        skip = 1))
+
+  for (i in (1:length(sp_list))) {
     #check if any of the dates was imported as char
-    if (is.character(SP_list[[i]]$Collection_Date)){
-      SP_list[[i]]$Collection_Date <- as.numeric(SP_list[[i]]$Collection_Date)
-      SP_list[[i]]$Collection_Date <- as.Date(SP_list[[i]]$Collection_Date, origin = "1899-12-30")
-      SP_list[[i]]$Collection_Date <- as.POSIXct(SP_list[[i]]$Collection_Date,tz="", format='%m/%d/%y %I:%M %p')
+    if (is.character(sp_list[[i]]$Collection_Date)) {
+      sp_list[[i]] <- sp_list[[i]] %>%
+        mutate(Collection_Date = as.numeric(Collection_Date))
+      sp_list[[i]] <- sp_list[[i]] %>%
+        mutate(Collection_Date = as.Date(Collection_Date,
+                                         origin = "1899-12-30"))
+      sp_list[[i]] <- sp_list[[i]] %>%
+        mutate(Collection_Date = as.POSIXct(Collection_Date,
+                                            tz = "",
+                                            format = "%m/%d/%y %I:%M %p"))
     } else {
-      SP_list[[i]]$Collection_Date <- SP_list[[i]]$Collection_Date
+      sp_list[[i]] <- sp_list[[i]] %>%
+        mutate(Collection_Date = Collection_Date)
     }
   }
-  SP_Dataframe_combined <- bind_rows(SP_list)
-  SP_Dataframe_combined <- SP_Dataframe_combined[!SP_Dataframe_combined$Facility ==  "Page -1 of 1",]
-  
+
+  sp_df_combined <- bind_rows(sp_list)
+  sp_df_combined <-
+    sp_df_combined[!sp_df_combined$Facility ==  "Page -1 of 1", ]
+
   ##### pull EPIC cytology daily data
-  file_list_epic <- list.files(path = paste0(user_wd, "\\EPIC Cytology"), pattern = paste0("^MSHS Pathology Orders EPIC.+",date_range, collapse = "|"))
-  epic_cyto_list <- lapply(file_list_epic, function(x) read_excel(path = paste0(user_wd, "\\EPIC Cytology\\", x)))
-  epic_Dataframe_combined <- bind_rows(epic_cyto_list)
+  file_list_epic <-
+    list.files(
+      path =
+        paste0(
+          user_directory, "\\EPIC Cytology"),
+      pattern = paste0("^MSHS Pathology Orders EPIC.+",
+                       date_range, collapse = "|"))
+
+  epic_cyto_list <-
+    lapply(file_list_epic,
+           function(x) read_excel(path = paste0(user_directory,
+                                                "\\EPIC Cytology\\", x)))
+  epic_df_combined <- bind_rows(epic_cyto_list)
 }
 
-#cyto_gyn_combined <- SP_Dataframe_combined[which(SP_Dataframe_combined$spec_group == "CYTO GYN"),]
-#write.csv(cyto_gyn_combined, "cyto_gyn_combined.csv")
-#unique_case_numbers <- unique(cyto_gyn_combined$Case_no) 
-  
-# Import analysis reference data starting with test codes for SCC and Sunquest
-# reference_file <- "J:\\Presidents\\HSPI-PM\\Operations Analytics and Optimization\\Projects\\Service Lines\\Lab KPI\\Data\\Code Reference\\Analysis Reference 2020-01-22.xlsx"
-reference_file <- choose.files(caption = "Select analysis reference file")
+# Import analysis reference data
+reference_file <- paste0(user_directory,
+                         "/Code Reference/",
+                         "Analysis Reference 2021-02-23.xlsx")
+
 
 #-----------Patient Setting Excel File-----------#
 #Using Rev Center to determine patient setting
-Patient_Setting <- data.frame(read_excel(reference_file, sheet = "AP_Patient Setting"), stringsAsFactors = FALSE)
+patient_setting <- data.frame(read_excel(reference_file,
+                                         sheet = "AP_Patient Setting"),
+                              stringsAsFactors = FALSE)
 
 #-----------Anatomic Pathology Targets Excel File-----------#
-TAT_Targets <- data.frame(read_excel(reference_file, sheet = "AP_TAT Targets"), stringsAsFactors = FALSE)
+tat_targets_ap <- data.frame(read_excel(reference_file,
+                                        sheet = "AP_TAT Targets"),
+                             stringsAsFactors = FALSE)
 
 #-----------GI Codes Excel File-----------#
 #Upload the exclusion vs inclusion criteria associated with the GI codes
-GI_Codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"), stringsAsFactors = FALSE)
+gi_codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"),
+                       stringsAsFactors = FALSE)
 
 ##preprocessing for epic data
 
 #we are only looking for the specimens that were finalized/final edited
-Epic_Weekday_Final <- epic_Dataframe_combined[which(epic_Dataframe_combined$LAB_STATUS =="Final result" | epic_Dataframe_combined$LAB_STATUS =="Edited Result - FINAL"),]
+epic_weekday_final <-
+  epic_df_combined[which(
+    epic_df_combined$LAB_STATUS == "Final result" |
+      epic_df_combined$LAB_STATUS == "Edited Result - FINAL"), ]
 
 #get only the SPECIMEN_ID Column from Epic data
-Epic_finalized_specimen <- NULL
-Epic_finalized_specimen <- as.data.frame(Epic_Weekday_Final$SPECIMEN_ID)
-colnames(Epic_finalized_specimen) <- c("Case_no")
+epic_finalized_specimen <- NULL
+epic_finalized_specimen <- as.data.frame(epic_weekday_final$SPECIMEN_ID)
+colnames(epic_finalized_specimen) <- c("Case_no")
 
 #keep only the unique specimen IDs
-Epic_finalized_specimen <- unique(Epic_finalized_specimen)
+epic_finalized_specimen <- unique(epic_finalized_specimen)
 
-# create an extra column for old Facility and change the facility from MSSM to MSH 
-SP_Dataframe_combined$Facility_Old <- SP_Dataframe_combined$Facility
-SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "*failed to decode utf16*MSH"] <- "MSH"
-SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "MSS"] <- "MSH"
-SP_Dataframe_combined$Facility[SP_Dataframe_combined$Facility_Old == "STL"] <- "SL"
-SP_Dataframe_combined$spec_group[SP_Dataframe_combined$spec_group == "BREAST"] <- "Breast"
+sp_df_combined <- sp_df_combined %>% mutate(Facility_Old = Facility)
+sp_df_combined$Facility[sp_df_combined$Facility_Old ==
+                                 "*failed to decode utf16*MSH"] <- "MSH"
+sp_df_combined$Facility[sp_df_combined$Facility_Old ==
+                                 "MSS"] <- "MSH"
+sp_df_combined$Facility[sp_df_combined$Facility_Old ==
+                                 "STL"] <- "SL"
+sp_df_combined$spec_group[sp_df_combined$spec_group ==
+                                   "BREAST"] <- "Breast"
 
-#------------------------------Extract the All Breast, GI Specimens, cyto gyn and cyto nongyn Data Only------------------------------#
+#---Extract the All Breast, GI Specimens, cyto gyn and cyto nongyn Data Only
 
 #Merge the exclusion/inclusion cloumn into the combined PP data
 
-SP_Dataframe_combined_Exc <- merge(x = SP_Dataframe_combined, y= GI_Codes, all.x = TRUE)
+sp_df_exc <- merge(x = sp_df_combined,
+                                   y = gi_codes, all.x = TRUE)
 
-Cytology_ <- SP_Dataframe_combined_Exc[which((SP_Dataframe_combined_Exc$spec_group=="CYTO NONGYN" | SP_Dataframe_combined_Exc$spec_group=="CYTO GYN") & SP_Dataframe_combined_Exc$spec_sort_order=="A"),]
+cytology_ <-
+  sp_df_exc[which(
+    (sp_df_exc$spec_group == "CYTO NONGYN" |
+       sp_df_exc$spec_group == "CYTO GYN") &
+      sp_df_exc$spec_sort_order == "A"), ]
+
 # order dataframe by signed out date from newest to oldest
-Cytology_ <- Cytology_[order(Cytology_$signed_out_date, decreasing =TRUE ),]
+cytology_ <- cytology_[order(cytology_$signed_out_date, decreasing = TRUE), ]
 # order dataframe based on case no
-Cytology_ <- Cytology_[order(Cytology_$Case_no),]
-Cytology_ <- unique(Cytology_)
+cytology_ <- cytology_[order(cytology_$Case_no), ]
+cytology_ <- unique(cytology_)
 
 #create a column for unique case numbers
-Cytology_$unique_Case_no <- TRUE
+cytology_$unique_case_no <- TRUE
 
-#add false next to the not unique case number and the older date 
-for (i in 1: length(Cytology_$Case_no)){
-  ifelse(Cytology_$Case_no[i+1] == Cytology_$Case_no[i], Cytology_$unique_Case_no[i+1] <- FALSE, Cytology_$unique_Case_no[i+1] <- TRUE)
-  } 
+#add false next to the not unique case number and the older date
+for (i in 1:length(cytology_$Case_no)) {
+  ifelse(
+    cytology_$Case_no[i + 1] == cytology_$Case_no[i],
+    cytology_$unique_case_no[i + 1] <- FALSE,
+    cytology_$unique_case_no[i + 1] <- TRUE)
+  }
 
-#only keep the unique case number with the newest date 
-Cytology_ <- Cytology_[which(Cytology_$unique_Case_no == TRUE),]
+#only keep the unique case number with the newest date
+cytology_ <- cytology_[which(cytology_$unique_case_no == TRUE), ]
 
 #only keep the powerpath data that matched with EPIC cytology
-Cytology <- merge(x = Cytology_, y= Epic_finalized_specimen )
-Cytology$unique_Case_no <- NULL
+cytology <- merge(x = cytology_, y = epic_finalized_specimen)
+cytology$unique_case_no <- NULL
 
 #find case numbers with GI_Code = exclude
-Exclude_GI_Codes_DF <- SP_Dataframe_combined_Exc[which((SP_Dataframe_combined_Exc$spec_group=="GI") & (SP_Dataframe_combined_Exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Exclude")),]
-Must_Exclude_CNum <- unique(Exclude_GI_Codes_DF$Case_no)
+exclude_gi_codes_df <-
+  sp_df_exc[
+    which(
+      (sp_df_exc$spec_group == "GI") &
+        (sp_df_exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies. ==
+           "Exclude")), ]
+must_exclude_cnum <- unique(exclude_gi_codes_df$Case_no)
 
-Surgical_Pathology<- SP_Dataframe_combined_Exc[which((((SP_Dataframe_combined_Exc$spec_group=="GI") & (!(SP_Dataframe_combined_Exc$Case_no %in% Must_Exclude_CNum))) | (SP_Dataframe_combined_Exc$spec_group=="Breast")) & SP_Dataframe_combined_Exc$spec_sort_order=="A"),]
+surgical_pathology <-
+  sp_df_exc[
+    which(
+      (((sp_df_exc$spec_group == "GI") &
+          (!(sp_df_exc$Case_no %in% must_exclude_cnum))) |
+         (sp_df_exc$spec_group == "Breast")) &
+        sp_df_exc$spec_sort_order == "A"), ]
 
-#SP_Dataframe_combined_Exc <- SP_Dataframe_combined_Exc[which(((SP_Dataframe_combined_Exc$spec_group=="GI") &(SP_Dataframe_combined_Exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.=="Include")) | SP_Dataframe_combined_Exc$spec_group=="Breast" | SP_Dataframe_combined_Exc$spec_group=="CYTO NONGYN" | SP_Dataframe_combined_Exc$spec_group=="CYTO GYN"),]
+sp_df_combined_new <- rbind(cytology, surgical_pathology)
+sp_df_combined_new <- unique(sp_df_combined_new)
 
-SP_Dataframe_combined_New <- rbind(Cytology, Surgical_Pathology)
-SP_Dataframe_combined_New <- unique(SP_Dataframe_combined_New)
-#------------------------------Data Pre-Processing------------------------------#
+#------------------------Data Pre-Processing-------------------------#
 ############Create a function for Data pre-processing############
 
-pre_processing_historical <- function(Raw_Data){
-  if (is.null(Raw_Data) || nrow(Raw_Data)==0){
-    Raw_Data_PS <- NULL
-    Raw_Data_New <- NULL
-    Summarized_Table <- NULL
+pre_processing_historical <- function(raw_data) {
+  if (is.null(raw_data) || nrow(raw_data) == 0) {
+    raw_data_ps <- NULL
+    raw_data_new <- NULL
+    summarized_table <- NULL
   } else {
-    #vlookup the Rev_Center and its corresponding patient setting for the PowerPath Data
-    Raw_Data_PS <- merge(x=Raw_Data, y=Patient_Setting, all.x = TRUE ) 
-    
-    #make sure to fix the MSBK patient type based on the extra column in the new report
-    
-    Raw_Data_PS$Patient.Setting[Raw_Data_PS$Rev_ctr == "MSBK" & (Raw_Data_PS$patient_type == "A" | Raw_Data_PS$patient_type == "O")] <- "Amb"
-    
-    Raw_Data_PS$Patient.Setting[Raw_Data_PS$Rev_ctr == "MSBK" & Raw_Data_PS$patient_type == "IN"] <- "IP"
-    
+    #vlookup the Rev_Center and its corresponding patient setting for the
+    #PowerPath Data
+    raw_data_ps <- merge(x = raw_data, y = patient_setting, all.x = TRUE)
+
+    #make sure to fix the MSBK patient type based on the extra column in the
+    #new report
+    raw_data_ps$Patient.Setting[raw_data_ps$Rev_ctr == "MSBK" &
+                                  (raw_data_ps$patient_type == "A" |
+                                     raw_data_ps$patient_type == "O")] <- "Amb"
+
+    raw_data_ps$Patient.Setting[raw_data_ps$Rev_ctr == "MSBK" &
+                                  raw_data_ps$patient_type == "IN"] <- "IP"
+
     #vlookup targets based on spec_group and patient setting
-    Raw_Data_New <- merge(x=Raw_Data_PS, y=TAT_Targets, all.x = TRUE, by = c("spec_group","Patient.Setting"))
-    
+    raw_data_new <- merge(x = raw_data_ps, y = tat_targets_ap,
+                          all.x = TRUE, by = c("spec_group", "Patient.Setting"))
+
+    #check if any of the dates was imported as char
+    if (is.character(raw_data_new$Collection_Date)) {
+      raw_data_new <- raw_data_new %>%
+        mutate(Collection_Date = as.numeric(Collection_Date)) %>%
+        mutate(Collection_Date = as.Date(Collection_Date,
+                                         origin = "1899-12-30"))
+    } else {
+      raw_data_new <- raw_data_new %>%
+        mutate(Collection_Date = Collection_Date)
+    }
     #Change all Dates into POSIXct format to start the calculations
-    
-    Raw_Data_New[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")] <- lapply(Raw_Data_New[c("Case_created_date","Collection_Date","Received_Date","signed_out_date")], as.POSIXct,tz="", format='%m/%d/%y %I:%M %p')
-    
-    #add columns for calculations: collection to signed out and received to signed out
+    raw_data_new[c("Case_created_date",
+                   "Collection_Date",
+                   "Received_Date",
+                   "signed_out_date")] <-
+      lapply(raw_data_new[c("Case_created_date",
+                            "Collection_Date",
+                            "Received_Date",
+                            "signed_out_date")],
+             as.POSIXct, tz = "", format = "%m/%d/%y %I:%M %p")
+
+    #add columns for calculations:
+    #collection to signed out and received to signed out
     #collection to signed out
     #All days in the calendar
-    Raw_Data_New$Collection_to_signed_out <- as.numeric(difftime(Raw_Data_New$signed_out_date, Raw_Data_New$Collection_Date, units = "days"))
-    
+    raw_data_new <- raw_data_new %>%
+      mutate(Collection_to_signed_out =
+               as.numeric(difftime(signed_out_date, Collection_Date,
+                                   units = "days")))
     #recieve to signed out
     #without weekends and holidays
-    Raw_Data_New$Received_to_signed_out <- bizdays(Raw_Data_New$Received_Date, Raw_Data_New$signed_out_date)
-    
-    Summarized_Table <- summarise(group_by(Raw_Data_New,Spec_code, spec_group, Facility,Patient.Setting, Rev_ctr ,as.Date(signed_out_date),weekdays(as.Date(signed_out_date)),Received.to.signed.out.target..Days.,Collected.to.signed.out.target..Days.),  No_Cases_Signed = n(), Lab_Metric_TAT_Avg = round(mean(Received_to_signed_out, na.rm = TRUE),0), Lab_Metric_TAT_med = round(median(Received_to_signed_out, na.rm = TRUE),0), Lab_Metric_TAT_sd =round(sd(Received_to_signed_out, na.rm = TRUE),1), Lab_Metric_within_target = format(round(sum(Received_to_signed_out <= Received.to.signed.out.target..Days., na.rm = TRUE)/sum(Received_to_signed_out >= 0, na.rm = TRUE),2)), Patient_Metric_TAT_avg=format(ceiling(mean(Collection_to_signed_out, na.rm = TRUE))), Patient_Metric_TAT_med = round(median(Collection_to_signed_out, na.rm = TRUE),0), Patient_Metric_TAT_sd =round(sd(Collection_to_signed_out, na.rm = TRUE),1))
-    
+    raw_data_new <- raw_data_new %>%
+      mutate(Received_to_signed_out = bizdays(Received_Date, signed_out_date))
+
+    #prepare data for first part accessioned volume analysis
+    #1. Find the date that we need to report --> the date of the last weekday
+    acc_date <- as.Date(raw_data_new$signed_out_date[1])
+
+    #2. count the accessioned volume that was accessioned on that date
+    #from the cyto report
+    raw_data_new$acc_date_only <- as.Date(raw_data_new$Received_Date)
+
+    #summarize the data to be used for analysis and to be stored as historical
+    #repo
+    summarized_table <-
+      summarise(
+        group_by(raw_data_new,
+                 Spec_code,
+                 spec_group,
+                 Facility,
+                 Patient.Setting,
+                 Rev_ctr,
+                 as.Date(signed_out_date),
+                 weekdays(as.Date(signed_out_date)),
+                 Received.to.signed.out.target..Days.,
+                 Collected.to.signed.out.target..Days.,
+                 acc_date_only,
+                 weekdays(acc_date_only)),
+        no_cases_signed = n(),
+        lab_metric_tat_avg = round(mean(Received_to_signed_out,
+                                        na.rm = TRUE), 0),
+        lab_metric_tat_med = round(median(Received_to_signed_out,
+                                          na.rm = TRUE), 0),
+        lab_metric_tat_sd = round(sd(Received_to_signed_out, na.rm = TRUE), 1),
+        lab_metric_within_target = as.numeric(format(
+          round(
+            sum(Received_to_signed_out <= Received.to.signed.out.target..Days.,
+                na.rm = TRUE) / sum(
+                  Received_to_signed_out >= 0, na.rm = TRUE), 2))),
+        patient_metric_tat_avg = as.numeric(format(
+          ceiling(mean(Collection_to_signed_out, na.rm = TRUE)))),
+        patient_metric_tat_med = round(median(Collection_to_signed_out,
+                                              na.rm = TRUE), 0),
+        patient_metric_tat_sd = round(sd(Collection_to_signed_out,
+                                         na.rm = TRUE), 1),
+        cyto_acc_vol = as.numeric(sum(acc_date == acc_date_only,
+                                      na.rm = TRUE)))
   }
-  return(Summarized_Table)
+  return(summarized_table)
 }
 
-Historical_Data_Summarized <- pre_processing_historical(SP_Dataframe_combined_New)
-colnames(Historical_Data_Summarized) <- c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr", "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target", "Patient_metric_target", "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std","Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med", "Patient_metric_std")
+hist_data_summarized <- pre_processing_historical(sp_df_combined_new)
+colnames(hist_data_summarized) <-
+  c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
+    "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target",
+    "Patient_metric_target", "acc_date_only", "acc_day_only",
+    "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std",
+    "Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med",
+    "Patient_metric_std", "cyto_acc_vol")
 
-Historical_Data_Summarized <- as.data.frame(Historical_Data_Summarized)
+hist_data_summarized <- as.data.frame(hist_data_summarized)
 
 #Bind new repo with old repo
-Historical_Data_Summarized_New <- rbind(existing_powerpath_repo, Historical_Data_Summarized)
-Historical_Data_Summarized_New <- unique(Historical_Data_Summarized_New)
+hist_data_summarized_new <- rbind(existing_powerpath_repo, hist_data_summarized)
+hist_data_summarized_new <- unique(hist_data_summarized_new)
 
 #main historical repo
-xlsxFileName <- paste0(user_wd,"\\AP & Cytology Historical Repo\\", "Historical_Repo_Surgical_Pathology","_",Today,".xlsx")
-write_xlsx(Historical_Data_Summarized_New, xlsxFileName)
+file_name <-
+  paste0(user_directory, "\\AP & Cytology Historical Repo\\",
+         "Historical_Repo_Surgical_Pathology", "_", today, ".RDS")
 
-
-
-
-
-
+saveRDS(hist_data_summarized_new, file = file_name)
