@@ -88,7 +88,7 @@ bizdays.options$set(default.calendar = "MSHS_working_days")
 ```{r Import all data, warning = FALSE, message = FALSE, echo = FALSE}
 # Select file/folder path for easier file selection and navigation
 
-if (list.files("J://") == "Presidents") {
+if ("Presidents" %in% list.files("J://")) {
   user_directory <- paste0("J:/Presidents/HSPI-PM/",
                            "Operations Analytics and Optimization/Projects/",
                            "Service Lines/Lab Kpi/Data")
