@@ -222,7 +222,7 @@ if (initial_run == TRUE) {
 
   backlog_rep_date_new <-
     lapply(backlog_rep_date,
-           function(x) strapplyc(colnames(x),"\\d+/\\d+/\\d+",
+           function(x) strapplyc(colnames(x), "\\d+/\\d+/\\d+",
                                  simplify = TRUE))
   backlog_list_trial <-
     mapply(cbind, backlog_list,
@@ -241,7 +241,7 @@ if (initial_run == TRUE) {
           user_directory,
         caption = "Select Historical Repository"),
       sheet = 1, col_names = TRUE)
-  
+
   existing_backlog_repo <-
     read_excel(
       choose.files(
@@ -325,7 +325,7 @@ if (initial_run == TRUE) {
       pattern =
         paste0(
           "^KPI REPORT - CYTOLOGY PENDING CASES.+", date_range, collapse = "|"))
-  
+
   backlog_list <-
     lapply(
       file_list_backlog,
@@ -346,7 +346,7 @@ if (initial_run == TRUE) {
 
   backlog_rep_date_new <-
     lapply(backlog_rep_date,
-           function(x) strapplyc(colnames(x),"\\d+/\\d+/\\d+",
+           function(x) strapplyc(colnames(x), "\\d+/\\d+/\\d+",
                                  simplify = TRUE))
 
   backlog_list_trial <-
@@ -573,8 +573,9 @@ pre_processing_historical <- function(raw_data) {
     colnames(summarized_table) <-
       c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
         "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target",
-        "Patient_metric_target", "acc_date_only", "acc_day_only", "report_date_only", "report_day_only",
-        "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std",
+        "Patient_metric_target", "acc_date_only", "acc_day_only",
+        "report_date_only", "report_day_only", "No_cases_signed_out",
+        "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std",
         "Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med",
         "Patient_metric_std", "cyto_acc_vol")
 
@@ -603,21 +604,21 @@ cyto_backlog_hist <- function(cyto_backlog_raw) {
   #cyto backlog Calculation
   #vlookup the Rev_Center and its corresponding patient setting for the
   #PowerPath Data
-  
+
   cyto_backlog_ps <- merge(x = backlog_df_combined, y = patient_setting,
                            all.x = TRUE)
-  
+
   #vlookup targets based on spec_group and patient setting
   cyto_backlog_ps_target <- merge(x = cyto_backlog_ps, y = tat_targets_ap,
                                   all.x = TRUE,
                                   by = c("spec_group", "Patient.Setting"))
-  
+
   #Keep the cyto gyn and cyto non-gyn
   cyto_backlog <-
     cyto_backlog_ps_target[which(
       cyto_backlog_ps_target$spec_group == "CYTO NONGYN" |
         cyto_backlog_ps_target$spec_group == "CYTO GYN"), ]
-  
+
   #Change all Dates into POSIXct format to start the calculations
   cyto_backlog[c("Case_created_date", "Collection_Date", "Received_Date",
                  "signed_out_date")] <-
@@ -631,7 +632,7 @@ cyto_backlog_hist <- function(cyto_backlog_raw) {
   #without weekends and holidays, subtract one so we don't include today's date
   cyto_backlog$backlog <-
     bizdays(cyto_backlog$Case_created_date, cyto_backlog$Report_Date) - 1
-  
+
   cyto_backlog$acc_date_only <- as.Date(cyto_backlog$Received_Date)
 
   #summarize the data to be used for analysis and to be stored as historical
@@ -651,38 +652,38 @@ cyto_backlog_hist <- function(cyto_backlog_raw) {
           sum(
             backlog > Received.to.signed.out.target..Days.,
             na.rm = TRUE), 0)),
-      
+
       percentile_25th =
         format(
           ceiling(
             quantile(
               backlog[backlog > Received.to.signed.out.target..Days.],
               prob = 0.25, na.rm = TRUE))),
-      
+
       percentile_50th =
         format(
           ceiling(
             quantile(
               backlog[backlog > Received.to.signed.out.target..Days.],
               prob = 0.5, na.rm = TRUE))),
-      
+
       maximum = format(
         ceiling(
           max(
             backlog[backlog > Received.to.signed.out.target..Days.],
             na.rm = TRUE))),
-      
+
       cyto_acc_vol = as.numeric(sum((Report_Date - 1) == acc_date_only,
                                     na.rm = TRUE)))
-  
+
   summarized_table$maximum[summarized_table$maximum == "-Inf"] <- "NA"
-  
+
   #standardize the name for the current summary to match the historical repo
   colnames(summarized_table) <-
     c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
       "acc_date_only", "acc_day_only", "cyto_backlog", "percentile_25th",
       "percentile_50th", "maximum", "cyto_acc_vol")
-  
+
   return(summarized_table)
 }
 
@@ -700,14 +701,3 @@ file_name_ <-
          "Backlog_Repo", "_", today, ".RDS")
 
 saveRDS(backlog_data_summarized_new, file = file_name_)
-
-
-
-
-
-
-
-
-
-
-
