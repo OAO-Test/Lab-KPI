@@ -221,6 +221,8 @@ dashboard_priority_order <- c("All", "Stat", "Routine")
 # Custom function for preprocessing SCC data ---------------------------------
 preprocess_scc <- function(raw_scc)  {
   # Preprocess SCC data -------------------------------
+  # Remove any duplicates
+  raw_scc <- unique(raw_scc)
   # Correct and format any timestamps that were not imported correctly
   raw_scc[c("ORDERING_DATE",
             "COLLECTION_DATE",
@@ -427,6 +429,8 @@ preprocess_scc <- function(raw_scc)  {
 preprocess_sun <- function(raw_sun) {
   
   # Preprocess Sunquest data --------------------------------
+  # Remove any duplicates
+  raw_sun <- unique(raw_sun)
   # Correct and format any timestamps that were not imported correctly
   raw_sun[c("OrderDateTime",
             "CollectDateTime",
