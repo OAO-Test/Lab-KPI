@@ -1997,16 +1997,16 @@ kable_add_on_volume <- function(x) {
       full_width = FALSE) %>%
     add_header_above(
       c(" " = 1,
-        "Volume of Add On Labs" = ncol(missing_collect_table) - 1),
+        "Volume of Add On Labs" = ncol(add_on_table) - 1),
       background = c("white", "#00AEEF"),
       color = "white",
       line = FALSE,
       font_size = 13) %>%
     column_spec(
-      column = c(1, ncol(missing_collect_table)),
+      column = c(1, ncol(add_on_table)),
       border_right = "thin solid lightgray") %>%
     column_spec(
-      column = c(2:ncol(missing_collect_table)),
+      column = c(2:ncol(add_on_table)),
       background = "#E6F8FF", color = "black") %>%
     # column_spec(column = c(2:ncol(missing_collect_table)),
     #             background = "inherit",

@@ -35,7 +35,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
   # SCC lookup references ----------------------------------------------
   # Crosswalk in scope labs
   raw_scc <- left_join(raw_scc,
-                       test_code[, c("Test", "SCC_TestID", "Division")],
+                       scc_test_code,
                        by = c("TEST_ID" = "SCC_TestID"))
   
   # Determine if test is included based on crosswalk results
@@ -228,9 +228,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
   
   # Sunquest lookup references
   # Crosswalk labs included and remove out of scope labs
-  raw_sun <- left_join(raw_sun, test_code[, c("Test",
-                                              "SUN_TestCode",
-                                              "Division")],
+  raw_sun <- left_join(raw_sun, sun_test_code,
                        by = c("TestCode" = "SUN_TestCode"))
   
   # Determine if test is included based on crosswalk results
@@ -759,4 +757,114 @@ kable_cp_vol <- function(x) {
     #             include_thead = TRUE) %>%
     row_spec(row = 0, font_size = 13) %>%
     collapse_rows(columns = c(1, 2))
+}
+
+# Custom function for creating a kable of labs with missing collections --------
+kable_missing_collections <- function(x) {
+  # Filter data for city sites and summarize
+  missing_collect <- x %>%
+    filter(Site %in% city_sites) %>%
+    group_by(Site) %>%
+    summarize(ResultedVolume = sum(TotalResultedTAT),
+              MissingCollection = sum(TotalMissingCollections, na.rm = TRUE),
+              Percent = percent(MissingCollection / ResultedVolume,
+                                digits = 0),
+              .groups = "keep") %>%
+    ungroup() %>%
+    mutate(
+      # Apply conditional formatting based on percentage of labs with missing
+      # collections
+      Percent = cell_spec(
+        Percent, "html",
+        color = ifelse(is.na(Percent), "grey",
+                       ifelse(Percent <= 0.05, "green",
+                              ifelse(Percent <= 0.15, "orange", "red")))),
+      # Format site as factors
+      Site = factor(Site, levels = city_sites, ordered = TRUE))
+  #
+  # Cast missing collections into table format
+  missing_collect_table <- dcast(missing_collect,
+                                 "Percentage of Specimens" ~ Site,
+                                 value.var = "Percent")
+  #
+  # Create kable with summarized data
+  missing_collect_table %>%
+    kable(format = "html", escape = FALSE, align = "c",
+          col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
+    kable_styling(
+      bootstrap = "hover",
+      position = "float_left",
+      font_size = 11,
+      full_width = FALSE) %>%
+    add_header_above(
+      c(" " = 1,
+        "Percentage of Labs Missing Collect Times" =
+          ncol(missing_collect_table) - 1),
+      background = c("white", "#00AEEF"),
+      color = "white",
+      line = FALSE,
+      font_size = 13) %>%
+    column_spec(column = c(1, ncol(missing_collect_table)),
+                border_right = "thin solid lightgray") %>%
+    column_spec(column = c(2:ncol(missing_collect_table)),
+                background = "#E6F8FF",
+                color = "black") %>%
+    # column_spec(column = c(2:ncol(missing_collect_table)),
+    #             background = "inherit",
+    #             color = "inherit",
+    #             width_max = 0.15) %>%
+    row_spec(row = 0, font_size = 13)
+}
+
+# Custom function for creating a kable of add-on order volume
+kable_add_on_volume <- function(x) {
+  # Filter data for city sites and summarize
+  add_on_volume <- x %>%
+    filter(Site %in% city_sites) %>%
+    group_by(Test, Site) %>%
+    summarize(AddOnVolume = sum(TotalAddOnOrder, na.rm = TRUE),
+              .groups = "keep") %>%
+    ungroup()
+  
+  add_on_volume <- left_join(test_site_comb, add_on_volume,
+                             by = c("Site" = "Site",
+                                    "Test" = "Test"))
+  
+  add_on_volume <- add_on_volume %>%
+    mutate(
+      # Set test and site as factors
+      Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
+      Site = factor(Site, levels = city_sites, ordered = TRUE),
+      AddOnVolume = ifelse(is.na(AddOnVolume), 0, AddOnVolume))
+  
+  add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
+  
+  # Create kable of add on orders
+  add_on_table %>%
+    kable(format = "html", escape = FALSE, align = "c",
+          col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"),
+          color = "gray") %>%
+    kable_styling(
+      bootstrap = "hover",
+      position = "right",
+      font_size = 11,
+      full_width = FALSE) %>%
+    add_header_above(
+      c(" " = 1,
+        "Volume of Add On Labs" = ncol(add_on_table) - 1),
+      background = c("white", "#00AEEF"),
+      color = "white",
+      line = FALSE,
+      font_size = 13) %>%
+    column_spec(
+      column = c(1, ncol(add_on_table)),
+      border_right = "thin solid lightgray") %>%
+    column_spec(
+      column = c(2:ncol(add_on_table)),
+      background = "#E6F8FF", color = "black") %>%
+    # column_spec(column = c(2:ncol(add_on_table)),
+    #             background = "inherit",
+    #             color = "inherit") %>%
+    row_spec(row = 0, font_size = 13)
+  
 }
