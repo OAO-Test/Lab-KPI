@@ -66,4 +66,11 @@ cp_repo <- readRDS(file = choose.files(
   default = paste0(user_directory, "/CP Historical Repo/*.*"),
   caption = "Select CP Historical Repository"))
 
+# Subset CP data for most recent weekday
+cp_wday_summary <- cp_repo %>%
+  filter(ResultDate %in% wkday_date)
+
+# Subset CP data for weekend/holidays
+cp_not_wday_summary <- cp_repo %>%
+  filter(ResultDate %in% wkend_holiday_date)
 
