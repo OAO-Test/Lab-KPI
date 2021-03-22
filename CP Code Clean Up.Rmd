@@ -426,9 +426,10 @@ if (((Holiday_Det) & (Yesterday_Day == "Mon")) |
 # Import analysis reference data starting with test codes for SCC and Sunquest
 reference_file <- paste0(user_directory,
                          "/Code Reference/",
-                         "Analysis Reference 2021-02-23.xlsx")
+                         "Analysis Reference 2021-03-22.xlsx")
 
-test_code <- read_excel(reference_file, sheet = "TestNames")
+scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
+sun_test_code <- read_excel(reference_file, sheet = "SUN_TestCodes")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 #
@@ -530,6 +531,8 @@ dashboard_priority_order <- c("All", "Stat", "Routine")
 preprocess_cp <- function(raw_scc, raw_sun)  {
   
   # Preprocess SCC data -------------------------------
+  # Remove any duplicates
+  raw_scc <- unique(raw_scc)
   # Correct and format any timestamps that were not imported correctly
   raw_scc[c("ORDERING_DATE", 
             "COLLECTION_DATE", 
@@ -558,7 +561,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
   # SCC lookup references ----------------------------------------------
   # Crosswalk in scope labs
   raw_scc <- left_join(raw_scc,
-                       test_code[ , c("Test", "SCC_TestID", "Division")],
+                       scc_test_code,
                        by = c("TEST_ID" = "SCC_TestID"))
   
   # Determine if test is included based on crosswalk results
@@ -725,6 +728,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
   
   # Preprocess Sunquest data --------------------------------
   # Correct and format any timestamps that were not imported correctly
+  raw_sun <- unique(raw_sun)
   # raw_sun <- SQ_Weekday
   raw_sun[c("OrderDateTime", 
             "CollectDateTime", 
@@ -749,9 +753,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
   
   # Sunquest lookup references
   # Crosswalk labs included and remove out of scope labs
-  raw_sun <- left_join(raw_sun, test_code[ , c("Test", 
-                                               "SUN_TestCode",
-                                               "Division")],
+  raw_sun <- left_join(raw_sun, sun_test_code,
                        by = c("TestCode" = "SUN_TestCode"))
   
   # Determine if test is included based on crosswalk results
@@ -1794,10 +1796,230 @@ kable_cp_vol(summarize_cp_vol(x = cp_wday_summary,
 ```
 
 
+```{r Existing code for missing collections and add on order volume}
+
+# Labs with missing collection times -----------------------
+# Determine percentage of labs with missing collection times
+missing_collect <- cp_wday_summary %>%
+  filter(Site %in% city_sites) %>%
+  group_by(Site) %>%
+  summarize(ResultedVolume = sum(TotalResultedTAT),
+            MissingCollection = sum(TotalMissingCollections, na.rm = TRUE),
+            Percent = percent(MissingCollection / ResultedVolume,
+                              digits = 0)) %>%
+  mutate(
+    # Apply conditional formatting based on percentage of labs with missing
+    # collections
+    Percent = cell_spec(
+      Percent, "html",
+      color = ifelse(is.na(Percent), "grey",
+                     ifelse(Percent <= 0.05, "green",
+                            ifelse(Percent <= 0.15, "orange", "red")))),
+    # Format site as factors
+    Site = factor(Site, levels = city_sites, ordered = TRUE))
+#
+# Cast missing collections into table format
+missing_collect_table <- dcast(missing_collect,
+                               "Percentage of Specimens" ~ Site,
+                               value.var = "Percent")
+#
+# Create a kable of missing collection percentages
+missing_collect_table %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
+  kable_styling(
+    bootstrap = "hover",
+    position = "float_left",
+    font_size = 11,
+    full_width = FALSE) %>%
+  add_header_above(
+    c(" " = 1,
+      "Percentage of Labs Missing Collect Times" =
+        ncol(missing_collect_table) - 1),
+    background = c("white", "#00AEEF"),
+    color = "white",
+    line = FALSE,
+    font_size = 13) %>%
+  column_spec(column = c(1, ncol(missing_collect_table)),
+              border_right = "thin solid lightgray") %>%
+  column_spec(column = c(2:ncol(missing_collect_table)),
+              background = "#E6F8FF",
+              color = "black") %>%
+ # column_spec(column = c(2:ncol(missing_collect_table)),
+ #             background = "inherit",
+ #             color = "inherit",
+ #             width_max = 0.15) %>%
+  row_spec(row = 0, font_size = 13)
+
+# Add On Order Volume ---------------------------------
+# Determine add on order volume
+add_on_volume <- cp_wday_summary %>%
+  filter(Site %in% city_sites) %>%
+  group_by(Test, Site) %>%
+  summarize(AddOnVolume = sum(TotalAddOnOrder, na.rm = TRUE))
+
+add_on_volume <- left_join(test_site_comb, add_on_volume,
+                            by = c("Site" = "Site",
+                                  "Test" = "Test"))
+
+add_on_volume <- add_on_volume %>%
+  mutate(
+    # Set test and site as factors
+    Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
+    Site = factor(Site, levels = city_sites, ordered = TRUE),
+    AddOnVolume = ifelse(is.na(AddOnVolume), 0, AddOnVolume))
+
+add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
+
+add_on_table %>%
+  kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"),
+        color = "gray") %>%
+  kable_styling(
+    bootstrap = "hover",
+    position = "right",
+    font_size = 11,
+    full_width = FALSE) %>%
+  add_header_above(
+    c(" " = 1,
+      "Volume of Add On Labs" = ncol(missing_collect_table) - 1),
+    background = c("white", "#00AEEF"),
+    color = "white",
+    line = FALSE,
+    font_size = 13) %>%
+  column_spec(
+    column = c(1, ncol(missing_collect_table)),
+    border_right = "thin solid lightgray") %>%
+  column_spec(
+    column = c(2:ncol(missing_collect_table)),
+    background = "#E6F8FF", color = "black") %>%
+  # column_spec(column = c(2:ncol(missing_collect_table)),
+  #             background = "inherit",
+  #             color = "inherit") %>%
+  row_spec(row = 0, font_size = 13)
 
 
 
+```
 
+
+```{r Custom functions for missing collections and add on orders}
+
+# Custom function for percentage of labs with missing collection times
+kable_missing_collections <- function(x) {
+  # Filter data for city sites and summarize
+  missing_collect <- x %>%
+  filter(Site %in% city_sites) %>%
+  group_by(Site) %>%
+  summarize(ResultedVolume = sum(TotalResultedTAT),
+            MissingCollection = sum(TotalMissingCollections, na.rm = TRUE),
+            Percent = percent(MissingCollection / ResultedVolume,
+                              digits = 0),
+            .groups = "keep") %>%
+    ungroup() %>%
+  mutate(
+    # Apply conditional formatting based on percentage of labs with missing
+    # collections
+    Percent = cell_spec(
+      Percent, "html",
+      color = ifelse(is.na(Percent), "grey",
+                     ifelse(Percent <= 0.05, "green",
+                            ifelse(Percent <= 0.15, "orange", "red")))),
+    # Format site as factors
+    Site = factor(Site, levels = city_sites, ordered = TRUE))
+  #
+  # Cast missing collections into table format
+  missing_collect_table <- dcast(missing_collect,
+                               "Percentage of Specimens" ~ Site,
+                               value.var = "Percent")
+  #
+  # Create kable with summarized data
+  missing_collect_table %>%
+    kable(format = "html", escape = FALSE, align = "c",
+        col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
+    kable_styling(
+      bootstrap = "hover",
+      position = "float_left",
+      font_size = 11,
+      full_width = FALSE) %>%
+    add_header_above(
+      c(" " = 1,
+        "Percentage of Labs Missing Collect Times" =
+          ncol(missing_collect_table) - 1),
+      background = c("white", "#00AEEF"),
+      color = "white",
+      line = FALSE,
+      font_size = 13) %>%
+    column_spec(column = c(1, ncol(missing_collect_table)),
+                border_right = "thin solid lightgray") %>%
+    column_spec(column = c(2:ncol(missing_collect_table)),
+                background = "#E6F8FF",
+                color = "black") %>%
+    # column_spec(column = c(2:ncol(missing_collect_table)),
+    #             background = "inherit",
+    #             color = "inherit",
+    #             width_max = 0.15) %>%
+    row_spec(row = 0, font_size = 13)
+}
+
+# Custom function for add-on order volume
+kable_add_on_volume <- function(x) {
+  # Filter data for city sites and summarize
+  add_on_volume <- x %>%
+    filter(Site %in% city_sites) %>%
+    group_by(Test, Site) %>%
+    summarize(AddOnVolume = sum(TotalAddOnOrder, na.rm = TRUE),
+              .groups = "keep") %>%
+    ungroup()
+  
+  add_on_volume <- left_join(test_site_comb, add_on_volume,
+                              by = c("Site" = "Site",
+                                     "Test" = "Test"))
+  
+  add_on_volume <- add_on_volume %>%
+    mutate(
+      # Set test and site as factors
+      Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
+      Site = factor(Site, levels = city_sites, ordered = TRUE),
+      AddOnVolume = ifelse(is.na(AddOnVolume), 0, AddOnVolume))
+  
+  add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
+  
+  # Create kable of add on orders
+  add_on_table %>%
+    kable(format = "html", escape = FALSE, align = "c",
+          col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"),
+          color = "gray") %>%
+    kable_styling(
+      bootstrap = "hover",
+      position = "right",
+      font_size = 11,
+      full_width = FALSE) %>%
+    add_header_above(
+      c(" " = 1,
+        "Volume of Add On Labs" = ncol(add_on_table) - 1),
+      background = c("white", "#00AEEF"),
+      color = "white",
+      line = FALSE,
+      font_size = 13) %>%
+    column_spec(
+      column = c(1, ncol(add_on_table)),
+      border_right = "thin solid lightgray") %>%
+    column_spec(
+      column = c(2:ncol(add_on_table)),
+      background = "#E6F8FF", color = "black") %>%
+    # column_spec(column = c(2:ncol(missing_collect_table)),
+    #             background = "inherit",
+    #             color = "inherit") %>%
+    row_spec(row = 0, font_size = 13)
+
+}
+
+kable_missing_collections(x = cp_wday_summary)
+
+kable_add_on_volume(x = cp_wday_summary)
+
+```
 
 
 

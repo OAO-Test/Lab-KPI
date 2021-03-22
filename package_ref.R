@@ -76,11 +76,11 @@ if (list.files("J://") == "Presidents") {
 # Import analysis reference data
 reference_file <- paste0(user_directory,
                          "/Code Reference/",
-                         "Analysis Reference 2021-02-23.xlsx")
+                         "Analysis Reference 2021-03-22.xlsx")
 
 # CP and Micro --------------------------------
-
-test_code <- read_excel(reference_file, sheet = "TestNames")
+scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
+sun_test_code <- read_excel(reference_file, sheet = "SUN_TestCodes")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 #

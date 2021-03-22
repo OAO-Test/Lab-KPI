@@ -182,9 +182,10 @@ if (initial_run == TRUE) {
 # Import Clinical Pathology analysis reference data ---------------
 reference_file <- paste0(user_directory,
                          "/Code Reference/",
-                         "Analysis Reference 2021-02-23.xlsx")
+                         "Analysis Reference 2021-03-22.xlsx")
 
-test_code <- read_excel(reference_file, sheet = "TestNames")
+scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
+sun_test_code <- read_excel(reference_file, sheet = "SUN_TestCodes")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 
@@ -221,6 +222,8 @@ dashboard_priority_order <- c("All", "Stat", "Routine")
 # Custom function for preprocessing SCC data ---------------------------------
 preprocess_scc <- function(raw_scc)  {
   # Preprocess SCC data -------------------------------
+  # Remove any duplicates
+  raw_scc <- unique(raw_scc)
   # Correct and format any timestamps that were not imported correctly
   raw_scc[c("ORDERING_DATE",
             "COLLECTION_DATE",
@@ -249,7 +252,7 @@ preprocess_scc <- function(raw_scc)  {
   # SCC lookup references ----------------------------------------------
   # Crosswalk in scope labs
   raw_scc <- left_join(raw_scc,
-                       test_code[, c("Test", "SCC_TestID", "Division")],
+                       scc_test_code,
                        by = c("TEST_ID" = "SCC_TestID"))
   
   # Determine if test is included based on crosswalk results
@@ -427,6 +430,8 @@ preprocess_scc <- function(raw_scc)  {
 preprocess_sun <- function(raw_sun) {
   
   # Preprocess Sunquest data --------------------------------
+  # Remove any duplicates
+  raw_sun <- unique(raw_sun)
   # Correct and format any timestamps that were not imported correctly
   raw_sun[c("OrderDateTime",
             "CollectDateTime",
@@ -451,9 +456,7 @@ preprocess_sun <- function(raw_sun) {
   
   # Sunquest lookup references
   # Crosswalk labs included and remove out of scope labs
-  raw_sun <- left_join(raw_sun, test_code[, c("Test",
-                                              "SUN_TestCode",
-                                              "Division")],
+  raw_sun <- left_join(raw_sun, sun_test_code,
                        by = c("TestCode" = "SUN_TestCode"))
   
   # Determine if test is included based on crosswalk results
