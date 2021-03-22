@@ -1,3 +1,11 @@
+#######
+# Code for compiling the historical data for pathology and cytology analysis
+# Data compiled include:
+# 1. PowerPath daily data for Pathology and Cytology
+# 2. EPIC daily data for cytology
+# 3. Cytology Backlog Data
+#######
+
 #Required packages: run these everytime you run the code
 library(timeDate)
 library(readxl)
@@ -54,7 +62,7 @@ if ("Presidents" %in% list.files("J://")) {
 
 
 #import historical data for first run vs. future runs
-initial_run <- TRUE
+initial_run <- FALSE
 
 if (initial_run == TRUE) {
   existing_powerpath_repo <- NULL
@@ -235,20 +243,17 @@ if (initial_run == TRUE) {
 } else{
   # Import existing historical repository
   existing_powerpath_repo <-
-    read_excel(
-      choose.files(
-        default =
-          user_directory,
-        caption = "Select Historical Repository"),
-      sheet = 1, col_names = TRUE)
-
+    readRDS(file =
+              choose.files(default =
+                             paste0(user_directory,
+                                    "/AP & Cytology Historical Repo/*.*"),
+                           caption = "Select Historical Repository"))
   existing_backlog_repo <-
-    read_excel(
-      choose.files(
-        default =
-          user_directory,
-        caption = "Select Backlog Repository"),
-      sheet = 1, col_names = TRUE)
+    readRDS(file =
+              choose.files(default =
+                             paste0(user_directory,
+                                    "/AP & Cytology Historical Repo/*.*"),
+                           caption = "Select Backlog Repository"))
   #
   # Find last date of resulted lab data in historical repository
   last_date <- as.Date(max(existing_powerpath_repo$Signed_out_date_only),
