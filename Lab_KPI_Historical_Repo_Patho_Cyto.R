@@ -10,6 +10,7 @@ library(kableExtra)
 library(formattable)
 library(rmarkdown)
 library(writexl)
+library(gsubfn)
 
 #Clear existing history
 rm(list = ls())
@@ -57,6 +58,7 @@ initial_run <- TRUE
 
 if (initial_run == TRUE) {
   existing_powerpath_repo <- NULL
+  existing_backlog_repo <- NULL
   ##### pull powerpath daily data
   file_list_sp <-
     list.files(
@@ -194,6 +196,42 @@ if (initial_run == TRUE) {
                                                            x)))
   epic_df_combined <- bind_rows(epic_cyto_list)
 
+  #pull backlog cytology daily data
+  file_list_backlog <-
+    list.files(
+      path =
+        paste0(
+          user_directory, "\\Cytology Backlog Reports"),
+      pattern = "^KPI REPORT - CYTOLOGY PENDING CASES")
+
+  backlog_list <-
+    lapply(file_list_backlog,
+           function(x) read_excel(
+             path = paste0(user_directory,
+                           "\\Cytology Backlog Reports\\", x),
+             skip = 1))
+
+  backlog_rep_date <-
+    lapply(
+      file_list_backlog,
+      function(x) read_excel(
+        path =
+          paste0(user_directory,
+                 "\\Cytology Backlog Reports\\", x),
+        range = "A1"))
+
+  backlog_rep_date_new <-
+    lapply(backlog_rep_date,
+           function(x) strapplyc(colnames(x), "\\d+/\\d+/\\d+",
+                                 simplify = TRUE))
+  backlog_list_trial <-
+    mapply(cbind, backlog_list,
+           "Report_Date" = backlog_rep_date_new,
+           SIMPLIFY = F)
+  backlog_df_combined <- bind_rows(backlog_list_trial)
+  backlog_df_combined <-
+    backlog_df_combined[!backlog_df_combined$Facility == "Page -1 of 1", ]
+
 } else{
   # Import existing historical repository
   existing_powerpath_repo <-
@@ -202,6 +240,14 @@ if (initial_run == TRUE) {
         default =
           user_directory,
         caption = "Select Historical Repository"),
+      sheet = 1, col_names = TRUE)
+
+  existing_backlog_repo <-
+    read_excel(
+      choose.files(
+        default =
+          user_directory,
+        caption = "Select Backlog Repository"),
       sheet = 1, col_names = TRUE)
   #
   # Find last date of resulted lab data in historical repository
@@ -268,6 +314,50 @@ if (initial_run == TRUE) {
            function(x) read_excel(path = paste0(user_directory,
                                                 "\\EPIC Cytology\\", x)))
   epic_df_combined <- bind_rows(epic_cyto_list)
+
+  #pull backlog cytology daily data
+  file_list_backlog <-
+    list.files(
+      path =
+        paste0(
+          user_directory,
+          "\\Cytology Backlog Reports"),
+      pattern =
+        paste0(
+          "^KPI REPORT - CYTOLOGY PENDING CASES.+", date_range, collapse = "|"))
+
+  backlog_list <-
+    lapply(
+      file_list_backlog,
+      function(x) read_excel(
+        path =
+          paste0(user_directory,
+                 "\\Cytology Backlog Reports\\", x),
+        skip = 1))
+
+  backlog_rep_date <-
+    lapply(
+      file_list_backlog,
+      function(x) read_excel(
+        path =
+          paste0(user_directory,
+                 "\\Cytology Backlog Reports\\", x),
+        range = "A1"))
+
+  backlog_rep_date_new <-
+    lapply(backlog_rep_date,
+           function(x) strapplyc(colnames(x), "\\d+/\\d+/\\d+",
+                                 simplify = TRUE))
+
+  backlog_list_trial <-
+    mapply(cbind, backlog_list,
+           "Report_Date" = backlog_rep_date_new,
+           SIMPLIFY = F)
+
+  backlog_df_combined <- bind_rows(backlog_list_trial)
+  backlog_df_combined <-
+    backlog_df_combined[!backlog_df_combined$Facility == "Page -1 of 1", ]
+
 }
 
 # Import analysis reference data
@@ -322,8 +412,7 @@ sp_df_combined$spec_group[sp_df_combined$spec_group ==
 
 #Merge the exclusion/inclusion cloumn into the combined PP data
 
-sp_df_exc <- merge(x = sp_df_combined,
-                                   y = gi_codes, all.x = TRUE)
+sp_df_exc <- merge(x = sp_df_combined, y = gi_codes, all.x = TRUE)
 
 cytology_ <-
   sp_df_exc[which(
@@ -437,7 +526,7 @@ pre_processing_historical <- function(raw_data) {
 
     #prepare data for first part accessioned volume analysis
     #1. Find the date that we need to report --> the date of the last weekday
-    acc_date <- as.Date(raw_data_new$signed_out_date[1])
+    raw_data_new$report_date_only <- as.Date(raw_data_new$signed_out_date)
 
     #2. count the accessioned volume that was accessioned on that date
     #from the cyto report
@@ -458,7 +547,9 @@ pre_processing_historical <- function(raw_data) {
                  Received.to.signed.out.target..Days.,
                  Collected.to.signed.out.target..Days.,
                  acc_date_only,
-                 weekdays(acc_date_only)),
+                 weekdays(acc_date_only),
+                 report_date_only,
+                 weekdays(report_date_only)),
         no_cases_signed = n(),
         lab_metric_tat_avg = round(mean(Received_to_signed_out,
                                         na.rm = TRUE), 0),
@@ -476,21 +567,24 @@ pre_processing_historical <- function(raw_data) {
                                               na.rm = TRUE), 0),
         patient_metric_tat_sd = round(sd(Collection_to_signed_out,
                                          na.rm = TRUE), 1),
-        cyto_acc_vol = as.numeric(sum(acc_date == acc_date_only,
+        cyto_acc_vol = as.numeric(sum(report_date_only == acc_date_only,
                                       na.rm = TRUE)))
+
+    colnames(summarized_table) <-
+      c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
+        "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target",
+        "Patient_metric_target", "acc_date_only", "acc_day_only",
+        "report_date_only", "report_day_only", "No_cases_signed_out",
+        "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std",
+        "Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med",
+        "Patient_metric_std", "cyto_acc_vol")
+
+
   }
   return(summarized_table)
 }
 
 hist_data_summarized <- pre_processing_historical(sp_df_combined_new)
-colnames(hist_data_summarized) <-
-  c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
-    "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target",
-    "Patient_metric_target", "acc_date_only", "acc_day_only",
-    "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std",
-    "Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med",
-    "Patient_metric_std", "cyto_acc_vol")
-
 hist_data_summarized <- as.data.frame(hist_data_summarized)
 
 #Bind new repo with old repo
@@ -503,3 +597,107 @@ file_name <-
          "Historical_Repo_Surgical_Pathology", "_", today, ".RDS")
 
 saveRDS(hist_data_summarized_new, file = file_name)
+
+#------------------------backlog Data Pre-Processing-------------------------#
+#############################################################################
+cyto_backlog_hist <- function(cyto_backlog_raw) {
+  #cyto backlog Calculation
+  #vlookup the Rev_Center and its corresponding patient setting for the
+  #PowerPath Data
+
+  cyto_backlog_ps <- merge(x = backlog_df_combined, y = patient_setting,
+                           all.x = TRUE)
+
+  #vlookup targets based on spec_group and patient setting
+  cyto_backlog_ps_target <- merge(x = cyto_backlog_ps, y = tat_targets_ap,
+                                  all.x = TRUE,
+                                  by = c("spec_group", "Patient.Setting"))
+
+  #Keep the cyto gyn and cyto non-gyn
+  cyto_backlog <-
+    cyto_backlog_ps_target[which(
+      cyto_backlog_ps_target$spec_group == "CYTO NONGYN" |
+        cyto_backlog_ps_target$spec_group == "CYTO GYN"), ]
+
+  #Change all Dates into POSIXct format to start the calculations
+  cyto_backlog[c("Case_created_date", "Collection_Date", "Received_Date",
+                 "signed_out_date")] <-
+    lapply(cyto_backlog[c("Case_created_date", "Collection_Date",
+                          "Received_Date", "signed_out_date")],
+           as.POSIXct, tz = "", format = "%m/%d/%y %I:%M %p")
+  cyto_backlog <- cyto_backlog %>%
+    mutate(Report_Date = as.Date(Report_Date, format = "%m/%d/%Y"))
+
+  #Backlog Calculations: Report Date - case created date
+  #without weekends and holidays, subtract one so we don't include today's date
+  cyto_backlog$backlog <-
+    bizdays(cyto_backlog$Case_created_date, cyto_backlog$Report_Date) - 1
+
+  cyto_backlog$acc_date_only <- as.Date(cyto_backlog$Received_Date)
+
+  #summarize the data to be used for analysis and to be stored as historical
+  #repo
+  summarized_table <-
+    summarise(
+      group_by(cyto_backlog,
+               Spec_code,
+               spec_group,
+               Facility,
+               Patient.Setting,
+               Rev_ctr,
+               acc_date_only,
+               weekdays(acc_date_only)),
+      cyto_backlog = format(
+        round(
+          sum(
+            backlog > Received.to.signed.out.target..Days.,
+            na.rm = TRUE), 0)),
+
+      percentile_25th =
+        format(
+          ceiling(
+            quantile(
+              backlog[backlog > Received.to.signed.out.target..Days.],
+              prob = 0.25, na.rm = TRUE))),
+
+      percentile_50th =
+        format(
+          ceiling(
+            quantile(
+              backlog[backlog > Received.to.signed.out.target..Days.],
+              prob = 0.5, na.rm = TRUE))),
+
+      maximum = format(
+        ceiling(
+          max(
+            backlog[backlog > Received.to.signed.out.target..Days.],
+            na.rm = TRUE))),
+
+      cyto_acc_vol = as.numeric(sum((Report_Date - 1) == acc_date_only,
+                                    na.rm = TRUE)))
+
+  summarized_table$maximum[summarized_table$maximum == "-Inf"] <- "NA"
+
+  #standardize the name for the current summary to match the historical repo
+  colnames(summarized_table) <-
+    c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
+      "acc_date_only", "acc_day_only", "cyto_backlog", "percentile_25th",
+      "percentile_50th", "maximum", "cyto_acc_vol")
+
+  return(summarized_table)
+}
+
+backlog_data_summarized <- cyto_backlog_hist(backlog_df_combined)
+backlog_data_summarized <- as.data.frame(backlog_data_summarized)
+
+#Bind new repo with old repo
+backlog_data_summarized_new <-
+  rbind(existing_backlog_repo, backlog_data_summarized)
+backlog_data_summarized_new <- unique(backlog_data_summarized_new)
+
+#main historical repo
+file_name_ <-
+  paste0(user_directory, "\\AP & Cytology Historical Repo\\",
+         "Backlog_Repo", "_", today, ".RDS")
+
+saveRDS(backlog_data_summarized_new, file = file_name_)

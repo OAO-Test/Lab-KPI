@@ -1622,10 +1622,11 @@ cyto_backlog_summarized <- cyto_backlog_tbl(cyto_backlog_raw)[[2]]
 ```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
 
 #1. import the historical repo
-historical_repo <- read_excel(
-  paste0(user_directory, "/AP & Cytology Historical Repo/",
-         "Historical_Repo_Surgical_Pathology", "_", yesterday, ".xlsx"))
-
+hist_repo_ap <- readRDS(file =
+  choose.files(default = paste0(user_directory,
+                                "/AP & Cytology Historical Repo/",
+                                "/*.*"),
+               caption = "Select Pathology and Cytology Historical Repository"))
 #2. append all the summary tables together
 
 #bind the cyto repo with the surgical pathology repo to prepare for the
@@ -1638,36 +1639,35 @@ current_summary <- as.data.frame(current_summary)
 
 #make sure the data types for both dataframes are the same
 common <-
-  names(historical_repo)[names(historical_repo) %in% names(current_summary)]
+  names(hist_repo_ap)[names(hist_repo_ap) %in% names(current_summary)]
 
-historical_repo[common] <- lapply(common, function(x) {
-  match.fun(paste0("as.", class(current_summary[[x]])))(historical_repo[[x]])
+hist_repo_ap[common] <- lapply(common, function(x) {
+  match.fun(paste0("as.", class(current_summary[[x]])))(hist_repo_ap[[x]])
 })
 
 #3. combine the current summary with the historical repo and write them
 #into a xlsx file
 
-historical_repo_updated <- rbind(historical_repo, current_summary)
+hist_repo_ap_updated <- rbind(hist_repo_ap, current_summary)
 
 #4. to ensure that the selected rows are the unique ones only without
 #any dupilacation
 
-historical_repo_updated <- unique(historical_repo_updated)
+hist_repo_ap_updated <- unique(hist_repo_ap_updated)
 
-xlsx_file_name <- paste0(user_directory, "/AP & Cytology Historical Repo/",
+ap_file_name <- paste0(user_directory, "/AP & Cytology Historical Repo/",
                        "Historical_Repo_Surgical_Pathology", "_",
-                       today, ".xlsx")
+                       today, ".RDS")
 
-write_xlsx(historical_repo_updated, xlsx_file_name)
-
+saveRDS(hist_repo_ap_updated, file = ap_file_name)
 ```
 
 ```{r Add the current summary to the historical repo for cytology backlog, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
-
-backlog_repo <- read_excel(
-  paste0(user_directory, "/AP & Cytology Historical Repo/",
-         "Backlog_Repo", "_", yesterday, ".xlsx"))
-
+backlog_repo <- readRDS(file =
+  choose.files(default = paste0(user_directory,
+                                "/AP & Cytology Historical Repo/",
+                                "/*.*"),
+               caption = "Select Cytology Backlog Historical Repository"))
 #make sure that the summarized data is a data frame
 cyto_backlog_df <- as.data.frame(cyto_backlog_summarized)
 
@@ -1692,7 +1692,7 @@ backlog_repo_updated <- unique(backlog_repo_updated)
 backlog_file_name <- paste0(user_directory, "/AP & Cytology Historical Repo/",
                        "Backlog_Repo", "_", today, ".xlsx")
 
-write_xlsx(backlog_repo_updated, backlog_file_name)
+saveRDS(backlog_repo_updated, file = backlog_file_name)
 
 ```
 

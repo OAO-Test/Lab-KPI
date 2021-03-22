@@ -119,6 +119,118 @@ dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
 
+# Create template dataframes for combinations of tests, priority, and settings
+# that will be used in TAT and volume look back tables. These templates ensure
+# all relevant combinations are included in the tables regardless of resulted
+# volume
+# Create template data frames for combinations of tests, priority and settings
+# that will be used in TAT tables and volume lookback tables
+test_name_division <- unique(test_code[, c("Division", "Test")])
+
+test_names <- unique(test_code$Test)
+
+# Create data frame of test and site combinations
+rep_test_site <- sort(rep(test_names, length(city_sites)))
+
+rep_sites <- rep(city_sites, length(test_names))
+
+test_site_comb <- data.frame("Test" = rep_test_site,
+                             "Site" = rep_sites,
+                             stringsAsFactors = FALSE)
+
+# Create data frame of test and priority combinations
+rep_test_priority <- sort(rep(test_names, length(dashboard_priority_order)))
+
+rep_priority <- rep(dashboard_priority_order, length(test_names))
+
+test_priority_comb <- data.frame("Test" = rep_test_priority,
+                                 "DashboardPriority" = rep_priority,
+                                 stringsAsFactors = FALSE)
+
+# Create data frame of test and setting combinations for TAT tables
+rep_test_setting_tat <- sort(rep(test_names, length(dashboard_pt_setting)))
+
+rep_setting_tat <- rep(dashboard_pt_setting, length(test_names))
+
+test_setting_comb_tat <- data.frame("Test" = rep_test_setting_tat,
+                                    "DashboardSetting" = rep_setting_tat,
+                                    stringsAsFactors = FALSE)
+
+# Create data frame of test and setting combinations for volume lookback tables
+rep_test_setting_vol <- sort(rep(test_names, length(pt_setting_order)))
+
+rep_setting_vol <- rep(pt_setting_order, length(test_names))
+
+test_setting_comb_vol <- data.frame("Test" = rep_test_setting_vol,
+                                    "PtSetting" = rep_setting_vol,
+                                    stringsAsFactors = FALSE)
+
+# Combine data frames to create data frame with all combinations of tests,
+# sites, priority, and settings for both TAT tables and lookback tables
+test_site_prty <- left_join(test_site_comb,
+                            test_priority_comb,
+                            by = c("Test" = "Test"))
+
+test_site_prty_setting_tat <- left_join(test_site_prty,
+                                        test_setting_comb_tat,
+                                        by = c("Test" = "Test"))
+
+test_site_prty_setting_tat <- left_join(test_site_prty_setting_tat,
+                                        unique(test_code[, c("Test", "Division")]),
+                                        by = c("Test" = "Test"))
+
+test_site_prty_setting_vol <- left_join(test_site_prty,
+                                        test_setting_comb_vol,
+                                        by = c("Test" = "Test"))
+
+test_site_prty_setting_vol <- left_join(test_site_prty_setting_vol,
+                                        unique(test_code[, c("Test", "Division")]),
+                                        by = c("Test" = "Test"))
+
+# Select applicable test, priority, setting combinations based on lab operations
+tat_dashboard_templ <- test_site_prty_setting_tat %>%
+  mutate(
+    # Create column for applicable combinations
+    Incl = ifelse(
+      # Remove ED & ICU labs with Routine priority since all labs in these
+      # these settings are treated as stat
+      (DashboardPriority %in% c("Routine") &
+         DashboardSetting %in% c("ED & ICU")) |
+        # Remove ambulatory troponin and lactate since these labs are collected
+        # in ambulatory settings. Remove stat and routine stratification for
+        # these labs since all are treated as stat.
+        (Test %in% c("Troponin", "Lactate WB") &
+           (DashboardPriority %in% c("Stat", "Routine") |
+              DashboardSetting %in% c("Amb"))) |
+        # Remove "all" priority for BUN, PT, and HGB labs
+        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All")) |
+        # Remove priority stratification for rapid flu and c. diff since all
+        # are treated as stat
+        (Test %in% c("Rapid Flu", "C. diff") &
+           !(DashboardPriority %in% c("All"))), "Excl", "Incl")) %>%
+  filter(Incl == "Incl")
+
+vol_dashboard_templ <- test_site_prty_setting_vol %>%
+  mutate(
+    # Create column for applicable combinations
+    Incl = ifelse(
+      # Remove ED & ICU labs with Routine priority since all labs in these
+      # these settings are treated as stat
+      (DashboardPriority %in% c("Routine") &
+         PtSetting %in% c("ED", "ICU")) |
+        # Remove stat and routine stratification for troponin and lactate labs
+        # these labs since all are treated as stat
+        (Test %in% c("Troponin", "Lactate WB") &
+           (DashboardPriority %in% c("Stat", "Routine"))) |
+        # Remove "all" priority for BUN, PT, and HGB labs
+        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All")) |
+        # Remove Microbiology RRL since resulted volume is included already in
+        # TAT tables
+        (Division %in% c("Microbiology RRL")), "Excl", "Incl")) %>%
+  filter(Incl == "Incl")
+
+
+####addmore descriptive notes for pathology
 #-----------Patient Setting Excel File-----------#
 #Using Rev Center to determine patient setting
 patient_setting <- data.frame(read_excel(reference_file,
