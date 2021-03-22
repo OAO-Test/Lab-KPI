@@ -5,6 +5,8 @@
 preprocess_cp <- function(raw_scc, raw_sun)  {
   
   # Preprocess SCC data -------------------------------
+  # Remove any duplicates
+  raw_scc <- unique(raw_scc)
   # Correct and format any timestamps that were not imported correctly
   raw_scc[c("ORDERING_DATE",
             "COLLECTION_DATE",
@@ -200,6 +202,8 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "TATInclude")
   
   # Preprocess Sunquest data --------------------------------
+  # Remove any duplicates
+  raw_sun <- unique(raw_sun)
   # Correct and format any timestamps that were not imported correctly
   raw_sun[c("OrderDateTime",
             "CollectDateTime",
