@@ -1184,7 +1184,8 @@ sp_weekday <- patho_prep(pp_weekday, gi_codes)
 
 #------------------------------Data Pre-Processing-----------------------------#
 ############Create a function for Data pre-processing############
-
+##### This function helps in preprocessing the raw AP data.
+# Will be used in first run
 pre_processing_pp <- function(raw_data) {
   if (is.null(raw_data) || nrow(raw_data) == 0) {
     raw_data_ps <- NULL
@@ -1467,8 +1468,9 @@ sp_strat_vol_weekday <-
 ```
 
 ```{r Cytology backlog preprocessing and analysis, echo=FALSE, warning = FALSE, message=FALSE}
-
-cyto_backlog_tbl <- function(cyto_backlog_raw) {
+##### This function helps in preprocessing the raw backlog data.
+# Will be used in first run
+pre_processing_backlog <- function(cyto_backlog_raw) {
   #cyto backlog Calculation
   #vlookup the Rev_Center and its corresponding patient setting for the
   #PowerPath Data
@@ -1553,6 +1555,15 @@ cyto_backlog_tbl <- function(cyto_backlog_raw) {
     "acc_date_only", "acc_day_only", "cyto_backlog", "percentile_25th",
     "percentile_50th", "maximum", "cyto_acc_vol")
 
+  return(summarized_table)
+
+}
+
+##### This function helps in creating the analysis and tables from the
+# summarized table. Will be used in first run and second run as well.
+cyto_backlog_summarized <- pre_processing_backlog(cyto_backlog_raw)
+
+analyze_backlog <- function(summarized_table) {
   cyto_backlog_vol <- summarise(group_by(summarized_table, Spec_group),
                                 cyto_backlog = sum(as.numeric(cyto_backlog),
                                                    na.rm = TRUE),
@@ -1618,13 +1629,10 @@ cyto_backlog_tbl <- function(cyto_backlog_raw) {
   #correct data. Currently not in use
   backlog_acc_table_new3 <- backlog_acc_table_new2[-c(1), ]
 
-  return_tables <- list(backlog_acc_table_new2, summarized_table)
-
-  return(return_tables)
+  return(backlog_acc_table_new2)
 }
 
-backlog_acc_table_new2 <- cyto_backlog_tbl(cyto_backlog_raw)[[1]]
-cyto_backlog_summarized <- cyto_backlog_tbl(cyto_backlog_raw)[[2]]
+backlog_acc_table_new2 <- analyze_backlog(cyto_backlog_summarized)
 
 ```
 
