@@ -1323,7 +1323,8 @@ sp_table_weekday_summarized <- pre_processing_pp(sp_weekday)[[1]]
 sp_table_weekday_raw <-
   pre_processing_pp(sp_weekday)[[2]]
 
-
+##### This function helps in creating the analysis and tables from the
+# summarized table. Will be used in first run and second run as well.
 analyze_pp <- function(summarized_table) {
   if (is.null(summarized_table) || nrow(summarized_table) == 0) {
     return_tables <- NULL
