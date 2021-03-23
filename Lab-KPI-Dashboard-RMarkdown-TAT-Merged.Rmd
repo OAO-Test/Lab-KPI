@@ -1304,6 +1304,30 @@ pre_processing_pp <- function(raw_data) {
     "Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med",
     "Patient_metric_std", "cyto_acc_vol")
 
+    return_tables <- list(summarized_table,
+                          raw_data_new)
+
+    }
+  return(return_tables)
+}
+
+#this table gives the summarized cyto data for historical repo
+cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final)[[1]]
+#this table gives the processed and cleaned raw cyto data only
+cyto_table_weekday_raw <-
+  pre_processing_pp(cyto_weekday_final)[[2]]
+
+#this table gives the summarized surgical pathology data for historical repo
+sp_table_weekday_summarized <- pre_processing_pp(sp_weekday)[[1]]
+#this table gives the processed and cleaned raw surgical pathology data only
+sp_table_weekday_raw <-
+  pre_processing_pp(sp_weekday)[[2]]
+
+
+analyze_pp <- function(summarized_table) {
+  if (is.null(summarized_table) || nrow(summarized_table) == 0) {
+    return_tables <- NULL
+    } else {
     #Calculate total number of cases signed per spec group
     vol_cases_signed <- summarise(group_by(summarized_table,
                                            Spec_group,
@@ -1406,8 +1430,6 @@ pre_processing_pp <- function(raw_data) {
     return_tables <- list(processed_data_table,
                           processed_data_table_v2,
                           vol_cases_signed_strat,
-                          raw_data_new,
-                          summarized_table,
                           cyto_acc_vol1)
   }
   return(return_tables)
@@ -1416,44 +1438,30 @@ pre_processing_pp <- function(raw_data) {
 #This table will give us the summarized TAT for cyto with an assumption that
 #receive to result is not centralized.
 cyto_table_weekday <-
-  pre_processing_pp(cyto_weekday_final)[[1]]
+  analyze_pp(cyto_table_weekday_summarized)[[1]]
 
 #This table will give us the summarized TAT for cyto with an assumption that
 #receive to result is centralized.
 cyto_table_weekday_v2 <-
-  pre_processing_pp(cyto_weekday_final)[[2]]
+  analyze_pp(cyto_table_weekday_summarized)[[2]]
 
 #this table summarizes the volume for cyto per hospital per patient setting
 cyto_strat_vol_weekday <-
-  pre_processing_pp(cyto_weekday_final)[[3]]
-
-#this table gives the processed and cleaned raw cyto data only
-cyto_table_weekday_raw <-
-  pre_processing_pp(cyto_weekday_final)[[4]]
-
-#this table gives the summarized cyto data for historical repo
-cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final)[[5]]
+  analyze_pp(cyto_table_weekday_summarized)[[3]]
 
 #this table gives the volume of the accessioned specimens of the specific
 #accessioned date. This table will be used to poduce the total accession volume
-cyto_acc_vol1 <- pre_processing_pp(cyto_weekday_final)[[6]]
+cyto_acc_vol1 <- analyze_pp(cyto_table_weekday_summarized)[[4]]
 
 #This table will give us the summarized TAT for surgical pathology
 #with an assumption that receive to result is not centralized.
 sp_table_weekday <-
-  pre_processing_pp(sp_weekday)[[1]]
+  analyze_pp(sp_table_weekday_summarized)[[1]]
 
 #this table summarizes the volume for surgical pathology per hospital per
 #patient setting
 sp_strat_vol_weekday <-
-  pre_processing_pp(sp_weekday)[[3]]
-
-#this table gives the processed and cleaned raw surgical pathology data only
-sp_table_weekday_raw <-
-  pre_processing_pp(sp_weekday)[[4]]
-
-#this table gives the summarized surgical pathology data for historical repo
-sp_table_weekday_summarized <- pre_processing_pp(sp_weekday)[[5]]
+  analyze_pp(sp_table_weekday_summarized)[[3]]
 
 ```
 
