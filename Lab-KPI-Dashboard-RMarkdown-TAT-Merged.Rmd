@@ -1547,7 +1547,7 @@ pre_processing_backlog <- function(cyto_backlog_raw) {
       cyto_acc_vol = as.numeric(sum(acc_date == acc_date_only,
                                      na.rm = TRUE)))
 
-  summarized_table$maximum[summarized_table$maximum == "-Inf"] <- "NA"
+  summarized_table$maximum[summarized_table$maximum == "-Inf"] <- 0
 
   #standardize the name for the current summary to match the historical repo
   colnames(summarized_table) <-
@@ -1559,10 +1559,10 @@ pre_processing_backlog <- function(cyto_backlog_raw) {
 
 }
 
-##### This function helps in creating the analysis and tables from the
-# summarized table. Will be used in first run and second run as well.
 cyto_backlog_summarized <- pre_processing_backlog(cyto_backlog_raw)
 
+##### This function helps in creating the analysis and tables from the
+# summarized table. Will be used in first run and second run as well.
 analyze_backlog <- function(summarized_table) {
   cyto_backlog_vol <- summarise(group_by(summarized_table, Spec_group),
                                 cyto_backlog = sum(as.numeric(cyto_backlog),
@@ -1580,7 +1580,7 @@ analyze_backlog <- function(summarized_table) {
                                               na.rm = TRUE))
                                 )
 
-  cyto_backlog_vol$maximum[cyto_backlog_vol$maximum == "-Inf"] <- "NA"
+  cyto_backlog_vol$maximum[cyto_backlog_vol$maximum == "-Inf"] <- 0
   #Days of work
   cyto_case_vol_dow <- as.numeric(cyto_backlog_vol$cyto_backlog[1]) / 80
 
@@ -1615,9 +1615,6 @@ analyze_backlog <- function(summarized_table) {
                                         "maximum")
 
   table_temp_backlog_acc[1] <- c("CYTO GYN", "CYTO NONGYN")
-
-  backlog_acc_table_new <- merge(x = table_temp_backlog_acc,
-                                 y = backlog_acc_table, all.y = TRUE)
 
   backlog_acc_table_new2 <- merge(x = table_temp_backlog_acc[1],
                                   y = backlog_acc_table,

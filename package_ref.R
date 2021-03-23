@@ -316,3 +316,22 @@ colnames(table_temp_patho_vol) <- c("spec_group", "Patient.Setting",
 
 table_temp_patho_vol[1] <- c("Breast", "Breast", "GI", "GI")
 table_temp_patho_vol[2] <- c("IP", "Amb")
+
+sp_vol_column_order <- c("Spec_group", "Patient_setting",
+                         "MSH", "MSQ", "BIMC", "PACC", "KH", "R", "SL")
+
+cyto_vol_column_order <- c("Spec_group", "Patient_setting",
+                           "MSH", "MSQ", "BIMC", "PACC", "KH", "R", "SL",
+                           "NYEE")
+
+sp_standardized_column_names <-
+  c("Case Type", "Target", "Setting", "No. Cases Signed Out",
+    "MSH", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL",
+    "MSH", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL")
+
+sp_vol_column_names <- c("Case Type", "Setting",
+                         "MSH", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL")
+
+cyto_vol_column_names <- c("Case Type", "Setting",
+                           "MSH", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL",
+                           "NYEE")
