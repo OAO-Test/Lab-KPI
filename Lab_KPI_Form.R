@@ -107,27 +107,28 @@ renaming <- function(melted_dataset) {
   if (is.null(melted_dataset) || nrow(melted_dataset) == 0) {
     melted_dataset <- NULL
   } else {
-    
     melted_dataset[melted_dataset == "Green (No issues)"] <- "Safe"
-    
+
     melted_dataset[
       melted_dataset == "Yellow (Safe/Under Stress)" |
         melted_dataset == "Yellow (Delays)" |
         melted_dataset == "Yellow (Delays in pickup/delivery)" |
-        melted_dataset == "Yellow (Shortage with no/minimal significant impact)" |
+        melted_dataset ==
+        "Yellow (Shortage with no/minimal significant impact)" |
         melted_dataset ==
         "Yellow (Minor issues/Coordinating with Reference Labs)"] <-
       "Under Stress"
-    
+
     melted_dataset[
       melted_dataset == "Yellow (Safe/Under Stress)" |
         melted_dataset == "Yellow (Delays)" |
         melted_dataset == "Yellow (Delays in pickup/delivery)" |
-        melted_dataset == "Yellow (Shortage with no/minimal significant impact)" |
+        melted_dataset ==
+        "Yellow (Shortage with no/minimal significant impact)" |
         melted_dataset ==
         "Yellow (Minor issues/Coordinating with Reference Labs)"] <-
       "Under Stress"
-    
+
     melted_dataset[
       melted_dataset == "Red (Severe shortage of consumables)" |
         melted_dataset == "Red (Missed pickups)" |
@@ -136,14 +137,13 @@ renaming <- function(melted_dataset) {
         melted_dataset == "Red (Major issues/Requires Immediate Attention)"] <-
       "Not Safe"
   }
-  
+
   return(melted_dataset)
-  
+
 }
 
 clinical_labs_melt_new <- renaming(clinical_labs_melt)
 lis_melt_new <- renaming(lis_melt)
-
 
 ### create a function to format the data table into the correct colors
 conditional_format_form <- function(melted_data_new) {
@@ -161,11 +161,10 @@ conditional_format_form <- function(melted_data_new) {
                         ifelse((value == "Not Safe" | value == "Present"),
                                cell_spec(value, "html", color = "red"),
                                cell_spec(value, "html", color = "orange")))))
-    
     return(melted_data_new)
-    
+
   }
-  
+
 }
 
 formatted_clinical_labs <-
@@ -263,13 +262,13 @@ if (is.null(formatted_lis_new) || nrow(formatted_lis_new) == 0) {
           Facility +
             LIS_Unplanned_Service +
             LIS_Preplanned_Downtime ~ variable)
-  
+
   columns_order_form_lis <-
     c("Fcaility",
       "LIS_Staffing",
       "LIS_Unplanned_Service",
       "LIS_Preplanned_Downtime")
-  
+
   formatted_lis_new2 <- formatted_lis_new2[, columns_order_form_lis]
   rownames(formatted_lis_new2) <- NULL
   formatted_lis_new2[is.na(formatted_lis_new2)] <- "None"

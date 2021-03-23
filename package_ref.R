@@ -181,7 +181,8 @@ test_site_prty_setting_tat <- left_join(test_site_prty,
                                         by = c("Test" = "Test"))
 
 test_site_prty_setting_tat <- left_join(test_site_prty_setting_tat,
-                                        unique(test_code[, c("Test", "Division")]),
+                                        unique(test_code[, c("Test",
+                                                             "Division")]),
                                         by = c("Test" = "Test"))
 
 test_site_prty_setting_vol <- left_join(test_site_prty,
@@ -189,7 +190,8 @@ test_site_prty_setting_vol <- left_join(test_site_prty,
                                         by = c("Test" = "Test"))
 
 test_site_prty_setting_vol <- left_join(test_site_prty_setting_vol,
-                                        unique(test_code[, c("Test", "Division")]),
+                                        unique(test_code[, c("Test",
+                                                             "Division")]),
                                         by = c("Test" = "Test"))
 
 # Select applicable test, priority, setting combinations based on lab operations

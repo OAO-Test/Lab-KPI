@@ -1,5 +1,5 @@
 #######
-# Code for importing the raw data needed to carry-on the first run 
+# Code for importing the raw data needed to carry-on the first run
 # for the lab KPI daily dashboard with different logic based on the DOW.
 # Imported data includes:
 # 1. SCC data for clinical pathology
@@ -138,7 +138,7 @@ if (((holiday_det) & (yesterday_day == "Mon")) |
   epic_not_weekday <- data.frame(rbind(epic_hol_mon_fri,
                                        epic_sun,
                                        epic_sat), stringsAsFactors = FALSE)
-  
+
 } else if ((holiday_det) & (yesterday_day == "Sun")) {
   # Scenario 2: Regular Monday (Need to select 3 files)
   # Save scenario
@@ -204,7 +204,7 @@ if (((holiday_det) & (yesterday_day == "Mon")) |
   epic_not_weekday <- data.frame(rbind(epic_sun,
                                        epic_sat),
                                  stringsAsFactors = FALSE)
-  
+
 } else if ((holiday_det) & ((yesterday_day != "Mon") |
                             (yesterday_day != "Sun"))) {
   #Scenario 3: Midweek holiday (Need to select 2 files)
@@ -244,7 +244,7 @@ if (((holiday_det) & (yesterday_day == "Mon")) |
       default = paste0(user_directory, "/EPIC Cytology/*.*"),
       caption = "Select Epic Report for Spec Signed Out on Recent Holiday"), 1)
   epic_not_weekday <- data.frame(epic_hol_weekday, stringsAsFactors = FALSE)
-  
+
 } else {#Scenario 4: Tue-Fri without holidays (Need to select 1 file)
   # Save scenario
   scenario <- 4
@@ -268,7 +268,3 @@ cyto_backlog_raw <- read_excel(
   skip = 1, 1)
 cyto_backlog_raw <- data.frame(
   cyto_backlog_raw[-nrow(cyto_backlog_raw), ], stringsAsFactors = FALSE)
-
-
-
-

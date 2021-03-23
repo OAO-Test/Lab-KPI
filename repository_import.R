@@ -1,5 +1,5 @@
 #######
-# Code for importing the REPO data needed to carry-on the second run 
+# Code for importing the REPO data needed to carry-on the second run
 # for the lab KPI daily dashboard with different logic based on the DOW.
 # Imported data includes:
 # 1. CP repo data for clinical pathology
@@ -81,4 +81,3 @@ cp_wday_summary <- cp_repo %>%
 # Subset CP data for weekend/holidays
 cp_not_wday_summary <- cp_repo %>%
   filter(ResultDate %in% wkend_holiday_date)
-
