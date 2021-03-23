@@ -26,7 +26,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 
 ```{r raw_data_import file, warning = FALSE, message = FALSE, echo = FALSE}
 #######
-# Source Code for importing the raw data needed to carry-on the first run 
+# Source Code for importing the raw data needed to carry-on the first run
 # for the lab KPI daily dashboard with different logic based on the DOW.
 # Imported data includes:
 # 1. SCC data for clinical pathology
@@ -237,7 +237,6 @@ cyto_strat_vol_weekday_new3 <-
 
 #final cyto summarized table with conditional formatting and receive to result
 #targets with an assumption that received to result is not centralized
-
 cyto_table_weekday_new3 <- conditional_formatting_cyto(cyto_table_weekday_new2)
 
 #added this line to delete the cyto gyn from the table until we get correct data
@@ -246,7 +245,6 @@ cyto_table_weekday_new4 <- cyto_table_weekday_new3[-c(1, 2), ]
 
 #final cyto summarized table with conditional formatting and receive to
 #result targets with an assumption that received to result is centralized
-
 cyto_table_weekday_new3_v2 <-
   conditional_formatting_cyto2(cyto_table_weekday_new2_v2)
 
@@ -336,7 +334,4 @@ backlog_acc_table_new2 %>%
 ```{r Cytology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
 
 table_formatting_volume(cyto_strat_vol_weekday_new2, cyto_vol_column_names)
-
 ```
-
-
