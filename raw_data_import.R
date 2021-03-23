@@ -1,6 +1,15 @@
+#######
+# Code for importing the raw data needed to carry-on the first run 
+# for the lab KPI daily dashboard with different logic based on the DOW.
+# Imported data includes:
+# 1. SCC data for clinical pathology
+# 2. SunQuest data for clinical pathology
+# 3. PowerPath data for anatomic pathology
+# 4. Epic data for anatomic pathology especially cytology
+# 5. Backlog data for anatomic pathology especially cytology-----
+#######
 
 #------------------------------Read Excel sheets------------------------------#
-
 #Import weekday files
 scc_weekday <- read_excel(
   choose.files(

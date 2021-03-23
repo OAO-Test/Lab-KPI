@@ -1,3 +1,8 @@
+#######
+# Code for importing the needed packages, constants, reference files, and
+# data templates for the lab KPI dashboard pre-processing -----
+#######
+
 #Install packages only the first time you run the code
 # install.packages("timeDate")
 # install.packages("lubridate")

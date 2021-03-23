@@ -1,5 +1,13 @@
-# Determine today's date and whether or not yesterday was a holiday
+#######
+# Code for importing the REPO data needed to carry-on the second run 
+# for the lab KPI daily dashboard with different logic based on the DOW.
+# Imported data includes:
+# 1. CP repo data for clinical pathology
+# 2. AP repo data for anatomic pathology
+# 3. AP Backlog repo data for anatomic pathology
+#######
 
+# Determine today's date and whether or not yesterday was a holiday
 # today <- Sys.Date()
 today <- as.Date("1/19/2021", format = "%m/%d/%Y")
 
