@@ -1704,7 +1704,7 @@ backlog_repo_updated <- rbind(backlog_repo, cyto_backlog_df)
 backlog_repo_updated <- unique(backlog_repo_updated)
 
 backlog_file_name <- paste0(user_directory, "/AP & Cytology Historical Repo/",
-                       "Backlog_Repo", "_", today, ".xlsx")
+                       "Backlog_Repo", "_", today, ".RDS")
 
 saveRDS(backlog_repo_updated, file = backlog_file_name)
 
