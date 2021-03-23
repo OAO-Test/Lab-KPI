@@ -1,0 +1,342 @@
+---
+title: "MSHS Laboratory KPI Dashboard"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+---
+
+<h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red">
+
+
+
+
+```{r package_ref file, warning = FALSE, message = FALSE, echo = FALSE}
+#######
+# Source code for importing the needed packages, constants, reference files, and
+# data templates for the lab KPI dashboard pre-processing -----
+#######
+source(here::here("package_ref.R"))
+```
+
+```{r global_options, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r raw_data_import file, warning = FALSE, message = FALSE, echo = FALSE}
+#######
+# Source Code for importing the raw data needed to carry-on the first run 
+# for the lab KPI daily dashboard with different logic based on the DOW.
+# Imported data includes:
+# 1. SCC data for clinical pathology
+# 2. SunQuest data for clinical pathology
+# 3. PowerPath data for anatomic pathology
+# 4. Epic data for anatomic pathology especially cytology
+# 5. Backlog data for anatomic pathology especially cytology-----
+#######
+source(here::here("raw_data_import.R"))
+```
+
+```{r ap_custom_functions file, warning = FALSE, message = FALSE, echo = FALSE}
+#######
+# Source Code for preprocessing, analyzing, and displaying Anatomic Pathology
+# Anatomic Pathology (AP) includes Cytology and Surgical Pathology divisions
+#######
+#import source code
+source(here::here("ap_custom_functions.R"))
+```
+
+```{r Calling the Custom functions for preprocessing raw Powerpath and Epic data, warning = FALSE, message = FALSE, echo = FALSE}
+# a function to prepare cytology data for pre-processing
+cyto_weekday_final <- cyto_prep(epic_weekday, pp_weekday)
+
+# a function to prepare pathology data for pre-processing
+sp_weekday <- patho_prep(pp_weekday, gi_codes)
+
+##### This function helps in preprocessing the raw AP data.
+#this table gives the summarized cyto data for historical repo
+cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final)[[1]]
+
+#this table gives the processed and cleaned raw cyto data only
+cyto_table_weekday_raw <-
+  pre_processing_pp(cyto_weekday_final)[[2]]
+
+#this table gives the summarized surgical pathology data for historical repo
+sp_table_weekday_summarized <- pre_processing_pp(sp_weekday)[[1]]
+
+#this table gives the processed and cleaned raw surgical pathology data only
+sp_table_weekday_raw <-
+  pre_processing_pp(sp_weekday)[[2]]
+
+```
+
+```{r Calling the Custom functions for creating AP analysis tables, warning = FALSE, message = FALSE, echo = FALSE}
+##### This function helps in creating the analysis and tables from the
+# summarized table.
+#This table will give us the summarized TAT for cyto with an assumption that
+#receive to result is not centralized.
+cyto_table_weekday <-
+  analyze_pp(cyto_table_weekday_summarized)[[1]]
+
+#This table will give us the summarized TAT for cyto with an assumption that
+#receive to result is centralized.
+cyto_table_weekday_v2 <-
+  analyze_pp(cyto_table_weekday_summarized)[[2]]
+
+#this table summarizes the volume for cyto per hospital per patient setting
+cyto_strat_vol_weekday <-
+  analyze_pp(cyto_table_weekday_summarized)[[3]]
+
+#this table gives the volume of the accessioned specimens of the specific
+#accessioned date. This table will be used to poduce the total accession volume
+cyto_acc_vol1 <- analyze_pp(cyto_table_weekday_summarized)[[4]]
+
+#This table will give us the summarized TAT for surgical pathology
+#with an assumption that receive to result is not centralized.
+sp_table_weekday <-
+  analyze_pp(sp_table_weekday_summarized)[[1]]
+
+#this table summarizes the volume for surgical pathology per hospital per
+#patient setting
+sp_strat_vol_weekday <-
+  analyze_pp(sp_table_weekday_summarized)[[3]]
+
+```
+
+```{r Calling the Custom functions for preprocessing raw cytology backlog data, warning = FALSE, message = FALSE, echo = FALSE}
+##### This function helps in preprocessing the raw backlog data.
+cyto_backlog_summarized <- pre_processing_backlog(cyto_backlog_raw)
+
+```
+
+```{r Calling the Custom functions for creating cytology backlog analysis tables, warning = FALSE, message = FALSE, echo = FALSE}
+##### This function helps in creating the analysis and tables from the
+# summarized table.
+backlog_acc_table_new2 <- analyze_backlog(cyto_backlog_summarized)
+
+```
+
+```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
+
+#1. import the historical repo
+hist_repo_ap <- readRDS(file =
+  choose.files(default = paste0(user_directory,
+                                "/AP & Cytology Historical Repo/",
+                                "/*.*"),
+               caption = "Select Pathology and Cytology Historical Repository"))
+#2. append all the summary tables together
+
+#bind the cyto repo with the surgical pathology repo to prepare for the
+#merge with the historical repo
+current_summary <- rbind(cyto_table_weekday_summarized,
+                         sp_table_weekday_summarized)
+
+#make sure that the summarized data is a data frame
+current_summary <- as.data.frame(current_summary)
+
+#make sure the data types for both dataframes are the same
+common <-
+  names(hist_repo_ap)[names(hist_repo_ap) %in% names(current_summary)]
+
+hist_repo_ap[common] <- lapply(common, function(x) {
+  match.fun(paste0("as.", class(current_summary[[x]])))(hist_repo_ap[[x]])
+})
+
+#3. combine the current summary with the historical repo and write them
+#into a xlsx file
+
+hist_repo_ap_updated <- rbind(hist_repo_ap, current_summary)
+
+#4. to ensure that the selected rows are the unique ones only without
+#any dupilacation
+
+hist_repo_ap_updated <- unique(hist_repo_ap_updated)
+
+ap_file_name <- paste0(user_directory, "/AP & Cytology Historical Repo/",
+                       "Historical_Repo_Surgical_Pathology", "_",
+                       today, ".RDS")
+
+saveRDS(hist_repo_ap_updated, file = ap_file_name)
+```
+
+```{r Add the current summary to the historical repo for cytology backlog, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
+backlog_repo <- readRDS(file =
+  choose.files(default = paste0(user_directory,
+                                "/AP & Cytology Historical Repo/",
+                                "/*.*"),
+               caption = "Select Cytology Backlog Historical Repository"))
+#make sure that the summarized data is a data frame
+cyto_backlog_df <- as.data.frame(cyto_backlog_summarized)
+
+#make sure the data types for both dataframes are the same
+common <-
+  names(backlog_repo)[names(backlog_repo) %in% names(cyto_backlog_df)]
+
+backlog_repo[common] <- lapply(common, function(x) {
+  match.fun(paste0("as.", class(cyto_backlog_df[[x]])))(backlog_repo[[x]])
+})
+
+#3. combine the current summary with the historical repo and write them
+#into a xlsx file
+
+backlog_repo_updated <- rbind(backlog_repo, cyto_backlog_df)
+
+#4. to ensure that the selected rows are the unique ones only without
+#any dupilacation
+
+backlog_repo_updated <- unique(backlog_repo_updated)
+
+backlog_file_name <- paste0(user_directory, "/AP & Cytology Historical Repo/",
+                       "Backlog_Repo", "_", today, ".RDS")
+
+saveRDS(backlog_repo_updated, file = backlog_file_name)
+
+```
+
+```{r Custom functions for formatting Cytology dashboard tables, echo = FALSE, warning = FALSE, message = FALSE}
+###### Source function for Table standardization for cyto and patho########
+#To add all the missing rows and columns
+
+#final cyto summarized table with an assumption that
+#received to result is not centralized
+cyto_table_weekday_new2 <- table_merging_cyto(cyto_table_weekday)
+
+#final cyto summarized table with an assumption that
+#received to result is centralized
+cyto_table_weekday_new2_v2 <- table_merging_cyto_v2(cyto_table_weekday_v2)
+
+#final surgical pathology summarized table with an assumption that
+#received to result is not centralized
+sp_table_weekday_new2 <- table_merging_patho(sp_table_weekday)
+
+#final surgical pathology volume table per site per patient setting
+sp_strat_vol_weekday_new2 <- table_merging_volume(
+  table_temp_patho_vol,
+  sp_strat_vol_weekday,
+  sp_vol_column_order)
+
+sp_strat_vol_weekday_new2$Spec_group[
+  sp_strat_vol_weekday_new2$Spec_group == "GI"] <-
+  "GI Biopsies"
+
+sp_strat_vol_weekday_new2$Spec_group[
+  sp_strat_vol_weekday_new2$Spec_group == "Breast"] <-
+  "All Breast Specimens"
+
+#final cyto volume table per site per patient setting
+cyto_strat_vol_weekday_new2 <- table_merging_volume(
+  table_temp_cyto_vol,
+  cyto_strat_vol_weekday,
+  cyto_vol_column_order)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+#this line is not used anymore
+cyto_strat_vol_weekday_new3 <-
+  cyto_strat_vol_weekday_new2[-c(1, 2), ]
+
+#final cyto summarized table with conditional formatting and receive to result
+#targets with an assumption that received to result is not centralized
+
+cyto_table_weekday_new3 <- conditional_formatting_cyto(cyto_table_weekday_new2)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+#this line is not used anymore
+cyto_table_weekday_new4 <- cyto_table_weekday_new3[-c(1, 2), ]
+
+#final cyto summarized table with conditional formatting and receive to
+#result targets with an assumption that received to result is centralized
+
+cyto_table_weekday_new3_v2 <-
+  conditional_formatting_cyto2(cyto_table_weekday_new2_v2)
+
+#added this line to delete the cyto gyn from the table until we get correct data
+#this line is not in use anymore
+cyto_table_weekday_new3_v3 <- cyto_table_weekday_new3_v2[-c(1, 2), ]
+
+#final surgical pathology summarized table with conditional formatting and
+#receive to result targets with an assumption that received to result
+#is centralized
+sp_table_weekday_new3 <- conditional_formatting_patho(sp_table_weekday_new2)
+
+
+sp_table_weekday_new3$Spec_group[sp_table_weekday_new3$Spec_group == "GI"] <-
+  "GI Biopsies"
+
+sp_table_weekday_new3$Spec_group[
+  sp_table_weekday_new3$Spec_group == "Breast"] <-
+  "All Breast Specimens"
+
+```
+
+<br />
+
+## **Weekday Efficiency Indicators** {.tabset}
+
+### Surgical Pathology
+#### *Surgical Pathology KPI (Specimens Resulted on `r wday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <90%,
+<span style = "color:green">Green:</span> >=90%</h5>
+```{r Surgical Pathology Efficiency Indicator Weekday, echo=FALSE, warning=FALSE, message=FALSE}
+
+table_formatting(sp_table_weekday_new3, sp_standardized_column_names)
+
+```
+<h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>
+
+
+### Cytology
+#### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <90%,
+<span style = "color:green">Green:</span> >=90%</h5>
+```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
+
+table_formatting2(cyto_table_weekday_new3_v2)
+
+```
+
+<br />
+
+## **Weekday 24-Hour Volume Lookback** {.tabset}
+
+### Surgical Pathology
+#### *Surgical Pathology Signed Out Cases Volume (As of `r wday_result_date`)*
+```{r Surgical Pathology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+
+table_formatting_volume(sp_strat_vol_weekday_new2,
+                        sp_vol_column_names)
+
+```
+
+### Cytology
+#### *Cytology Accessioned Cases and Backlog Volume (As of `r wday_result_date`)*
+```{r Cytology Backlog and Accessioned, echo=FALSE, warning=FALSE, message=FALSE}
+
+backlog_acc_table_new2 %>%
+  kable(escape = F, align = "c",
+        col.names = c("Case Type", "Cases Accessioned", "Backlog Volume",
+                      "25th Percentile", "50th Percentile", "Maximum")) %>%
+  kable_styling(bootstrap_options = "hover", full_width = TRUE,
+                position = "center", row_label_position = "c",
+                font_size = 11) %>%
+  column_spec(2, background = "#E6F8FF", color = "black") %>%
+  column_spec(3:6, background = "#EBEBF9", color = "black") %>%
+  row_spec(row = 0, font_size = 13) %>%
+  add_header_above(c(
+    " " = 2,
+    "Elapsed Turn Around Time for Backlogged Cases From the Received Time" = 4),
+    background = c("white", "#221F72"), color = "white", font_size = 13) %>%
+  collapse_rows(columns = 1)
+
+```
+
+#### *Cytology Signed Out Cases Volume (As of `r wday_result_date`)*
+```{r Cytology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
+
+table_formatting_volume(cyto_strat_vol_weekday_new2, cyto_vol_column_names)
+
+```
+
+
