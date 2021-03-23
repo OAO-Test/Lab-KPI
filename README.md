@@ -1,4 +1,4 @@
-# Lab-KPI
+# Lab-KPI-Dashboard
 Coding for Lab KPI project.
 Project team: Kate Nevin and Asala Erekat
 Phase 1
