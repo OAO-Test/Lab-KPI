@@ -651,7 +651,8 @@ cyto_backlog_hist <- function(cyto_backlog_raw) {
                Patient.Setting,
                Rev_ctr,
                acc_date_only,
-               weekdays(acc_date_only)),
+               weekdays(acc_date_only),
+               Report_Date),
       cyto_backlog = format(
         round(
           sum(
@@ -681,13 +682,13 @@ cyto_backlog_hist <- function(cyto_backlog_raw) {
       cyto_acc_vol = as.numeric(sum((Report_Date - 1) == acc_date_only,
                                     na.rm = TRUE)))
 
-  summarized_table$maximum[summarized_table$maximum == "-Inf"] <- "NA"
+  summarized_table$maximum[summarized_table$maximum == "-Inf"] <- 0
 
   #standardize the name for the current summary to match the historical repo
   colnames(summarized_table) <-
     c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
-      "acc_date_only", "acc_day_only", "cyto_backlog", "percentile_25th",
-      "percentile_50th", "maximum", "cyto_acc_vol")
+      "acc_date_only", "acc_day_only", "Report_Date", "cyto_backlog",
+      "percentile_25th", "percentile_50th", "maximum", "cyto_acc_vol")
 
   return(summarized_table)
 }

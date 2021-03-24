@@ -1510,7 +1510,8 @@ pre_processing_backlog <- function(cyto_backlog_raw) {
   cyto_backlog$acc_date_only <- as.Date(cyto_backlog$Received_Date)
 
   acc_date <- cyto_table_weekday_summarized$Signed_out_date_only[1]
-
+  cyto_backlog$Report_Date <- acc_date + 1
+  
   #summarize the data to be used for analysis and to be stored as historical
   #repo
   summarized_table <-
@@ -1522,7 +1523,8 @@ pre_processing_backlog <- function(cyto_backlog_raw) {
                Patient.Setting,
                Rev_ctr,
                acc_date_only,
-               weekdays(acc_date_only)),
+               weekdays(acc_date_only),
+               Report_Date),
       cyto_backlog = format(
             round(
               sum(
@@ -1557,8 +1559,8 @@ pre_processing_backlog <- function(cyto_backlog_raw) {
   #standardize the name for the current summary to match the historical repo
   colnames(summarized_table) <-
     c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
-    "acc_date_only", "acc_day_only", "cyto_backlog", "percentile_25th",
-    "percentile_50th", "maximum", "cyto_acc_vol")
+      "acc_date_only", "acc_day_only", "Report_Date", "cyto_backlog",
+      "percentile_25th", "percentile_50th", "maximum", "cyto_acc_vol")
 
   return(summarized_table)
 
