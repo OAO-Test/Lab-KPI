@@ -25,14 +25,14 @@ rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
 
-today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
+today <- Sys.Date()
 
 #Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
+yesterday <- today - 1
 
 #Get yesterday's DOW
-yesterday_day <- dayOfWeek(yesterday)
+yesterday_day <- wday(yesterday, label = TRUE, abbr = TRUE)
 
 #Remove Good Friday from MSHS Holidays
 nyse_holidays <- as.Date(holidayNYSE(year = 1990:2100))
@@ -40,7 +40,7 @@ good_friday <- as.Date(GoodFriday())
 mshs_holiday <- nyse_holidays[good_friday != nyse_holidays]
 
 #Determine whether yesterday was a holiday/weekend
-holiday_det <- isHoliday(yesterday, holidays = mshs_holiday)
+holiday_det <- isHoliday(as.timeDate(yesterday), holidays = mshs_holiday)
 
 #Set up a calendar for collect to received TAT calculations for Path & Cyto
 create.calendar("MSHS_working_days", mshs_holiday,
@@ -259,7 +259,7 @@ if (initial_run == TRUE) {
   last_date <- as.Date(max(existing_powerpath_repo$Signed_out_date_only),
                        format = "%Y-%m-%d")
   # Determine today's date to determine last possible data report
-  todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
+  todays_date <- today
   # Create vector with possible data report dates
   date_range <- seq(from = last_date + 2, to = todays_date, by = "day")
 
@@ -598,7 +598,7 @@ hist_data_summarized_new <- unique(hist_data_summarized_new)
 
 #main historical repo
 file_name <-
-  paste0(user_directory, "\\AP & Cytology Historical Repo\\",
+  paste0(user_directory, "/AP & Cytology Historical Repo/",
          "Historical_Repo_Surgical_Pathology", "_", today, ".RDS")
 
 saveRDS(hist_data_summarized_new, file = file_name)
@@ -702,7 +702,7 @@ backlog_data_summarized_new <- unique(backlog_data_summarized_new)
 
 #main historical repo
 file_name_ <-
-  paste0(user_directory, "\\AP & Cytology Historical Repo\\",
+  paste0(user_directory, "/AP & Cytology Historical Repo/",
          "Backlog_Repo", "_", today, ".RDS")
 
 saveRDS(backlog_data_summarized_new, file = file_name_)
