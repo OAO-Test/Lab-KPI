@@ -130,9 +130,9 @@ dashboard_priority_order <- c("All", "Stat", "Routine")
 # volume
 # Create template data frames for combinations of tests, priority and settings
 # that will be used in TAT tables and volume lookback tables
-test_name_division <- unique(test_code[, c("Division", "Test")])
+test_name_division <- unique(scc_test_code[, c("Division", "Test")])
 
-test_names <- unique(test_code$Test)
+test_names <- unique(scc_test_code$Test)
 
 # Create data frame of test and site combinations
 rep_test_site <- sort(rep(test_names, length(city_sites)))

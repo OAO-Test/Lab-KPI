@@ -4031,10 +4031,10 @@ kable_cp_vol(chem_vol_not_wday_table)
 #### *Hematology Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
 ```{r Hematology Weekend/Holiday: volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 
-hem_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
+hem_vol_not_wday_table <- summarize_cp_vol(x = cp_not_wday_summary,
                                          lab_division = "Hematology")
 
-kable_cp_vol(hem_vol_wday_table)
+kable_cp_vol(hem_vol_not_wday_table)
 
 ```
 
