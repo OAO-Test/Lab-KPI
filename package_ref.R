@@ -87,6 +87,12 @@ reference_file <- paste0(user_directory,
 scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
 sun_test_code <- read_excel(reference_file, sheet = "SUN_TestCodes")
 
+# Create data frame of CP tests and divisions
+cp_test_divisions <- 
+  unique(
+    rbind(unique(scc_test_code[, c("Test", "Division")]),
+          unique(sun_test_code[, c("Test", "Division")])))
+
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 #
 # Add a column concatenating test, priority, and setting for matching later
@@ -130,9 +136,9 @@ dashboard_priority_order <- c("All", "Stat", "Routine")
 # volume
 # Create template data frames for combinations of tests, priority and settings
 # that will be used in TAT tables and volume lookback tables
-test_name_division <- unique(scc_test_code[, c("Division", "Test")])
+test_name_division <- unique(cp_test_divisions[, c("Division", "Test")])
 
-test_names <- unique(scc_test_code$Test)
+test_names <- cp_test_divisions$Test
 
 # Create data frame of test and site combinations
 rep_test_site <- sort(rep(test_names, length(city_sites)))
@@ -181,8 +187,7 @@ test_site_prty_setting_tat <- left_join(test_site_prty,
                                         by = c("Test" = "Test"))
 
 test_site_prty_setting_tat <- left_join(test_site_prty_setting_tat,
-                                        unique(test_code[, c("Test",
-                                                             "Division")]),
+                                        cp_test_divisions,
                                         by = c("Test" = "Test"))
 
 test_site_prty_setting_vol <- left_join(test_site_prty,
@@ -190,8 +195,7 @@ test_site_prty_setting_vol <- left_join(test_site_prty,
                                         by = c("Test" = "Test"))
 
 test_site_prty_setting_vol <- left_join(test_site_prty_setting_vol,
-                                        unique(test_code[, c("Test",
-                                                             "Division")]),
+                                        cp_test_divisions,
                                         by = c("Test" = "Test"))
 
 # Select applicable test, priority, setting combinations based on lab operations
