@@ -7,31 +7,6 @@
 # 3. AP Backlog repo data for anatomic pathology
 #######
 
-# Determine today's date and whether or not yesterday was a holiday
-# today <- Sys.Date()
-today <- as.Date("1/19/2021", format = "%m/%d/%Y")
-
-#Determine if yesterday was a holiday/weekend
-#get yesterday's DOW
-# yesterday <- Sys.Date() - 1
-yesterday <- today - 1
-
-#Get yesterday's DOW
-yesterday_day <- wday(yesterday, label = TRUE, abbr = TRUE)
-
-#Remove Good Friday from MSHS Holidays
-nyse_holidays <- as.Date(holidayNYSE(year = 1990:2100))
-good_friday <- as.Date(GoodFriday())
-mshs_holiday <- nyse_holidays[good_friday != nyse_holidays]
-
-#Determine whether yesterday was a holiday/weekend
-holiday_det <- isHoliday(as.timeDate(yesterday), holidays = mshs_holiday)
-
-#Set up a calendar for collect to received TAT calculations for Path & Cyto
-create.calendar("MSHS_working_days", mshs_holiday,
-                weekdays = c("saturday", "sunday"))
-bizdays.options$set(default.calendar = "MSHS_working_days")
-
 # Determine dates of most recent weekday and weekend/holiday if applicable
 if (((holiday_det) & (yesterday_day == "Mon")) |
     ((yesterday_day == "Sun") & (isHoliday(as.timeDate(yesterday - 2))))) {

@@ -119,7 +119,7 @@ backlog_acc_table_new2 <- analyze_backlog(cyto_backlog_summarized)
 #1. import the historical repo
 hist_repo_ap <- readRDS(file =
   choose.files(default = paste0(user_directory,
-                                "/AP & Cytology Historical Repo/",
+                                "/AP & Cytology Historical Repo",
                                 "/*.*"),
                caption = "Select Pathology and Cytology Historical Repository"))
 #2. append all the summary tables together
@@ -160,7 +160,7 @@ saveRDS(hist_repo_ap_updated, file = ap_file_name)
 ```{r Add the current summary to the historical repo for cytology backlog, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
 backlog_repo <- readRDS(file =
   choose.files(default = paste0(user_directory,
-                                "/AP & Cytology Historical Repo/",
+                                "/AP & Cytology Historical Repo",
                                 "/*.*"),
                caption = "Select Cytology Backlog Historical Repository"))
 #make sure that the summarized data is a data frame

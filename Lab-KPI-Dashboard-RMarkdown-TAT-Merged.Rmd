@@ -57,17 +57,14 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-
-today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
-#today <- as.timeDate(as.Date("03/04/2021", format = "%m/%d/%Y"))
+today <- Sys.Date()
 
 #Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
-#yesterday <- as.timeDate(as.Date("03/03/2021", format = "%m/%d/%Y"))
+yesterday <- today  - 1
 
 #Get yesterday's DOW
-yesterday_day <- dayOfWeek(yesterday)
+yesterday_day <- wday(yesterday, label = TRUE, abbr = TRUE)
 
 #Remove Good Friday from MSHS Holidays
 nyse_holidays <- as.Date(holidayNYSE(year = 1990:2100))
@@ -75,12 +72,14 @@ good_friday <- as.Date(GoodFriday())
 mshs_holiday <- nyse_holidays[good_friday != nyse_holidays]
 
 #Determine whether yesterday was a holiday/weekend
-holiday_det <- isHoliday(yesterday, holidays = mshs_holiday)
+#holiday_det <- isHoliday(yesterday, holidays = mshs_holiday)
+holiday_det <- isHoliday(as.timeDate(yesterday), holidays = mshs_holiday)
 
 #Set up a calendar for collect to received TAT calculations for Path & Cyto
 create.calendar("MSHS_working_days", mshs_holiday,
                 weekdays = c("saturday", "sunday"))
 bizdays.options$set(default.calendar = "MSHS_working_days")
+
 ```
 
 #### *Dashboard Creation Date: `r format(today, "%m/%d/%Y")`*
@@ -135,7 +134,7 @@ epic_weekday <- read_excel(
 # each file from the relevant folder.
 
 if (((holiday_det) & (yesterday_day == "Mon")) |
-   ((yesterday_day == "Sun") & (isHoliday(yesterday - (86400 * 2))))) {
+   ((yesterday_day == "Sun") & (isHoliday(as.timeDate(yesterday) - (86400 * 2))))) {
   # Scenario 1: Mon Holiday or Friday Holiday (Need to select 4 files)
   # Save scenario
   scenario <- 1
@@ -1115,8 +1114,7 @@ cyto_prep <- function(epic_data, raw_data) {
 
     raw_data$Facility[raw_data$Facility_Old == "MSS"] <- "MSH"
     raw_data$Facility[raw_data$Facility_Old == "STL"] <- "SL"
-    raw_data$spec_group[raw_data$spec_group == "BREAST"] <- "Breast"
-
+    
     #--------------Extract the Cytology GYN and NON-GYN Data Only------------#
     #Cytology
     #Keep the cyto gyn and cyto non-gyn
@@ -1147,7 +1145,15 @@ patho_prep <- function(raw_data, gi_codes) {
     #for weekdays and not weekdays
 
     raw_data <- merge(x = raw_data, y = gi_codes, all.x = TRUE)
+    
+    # create an extra column for old Fcaility
+    raw_data <- raw_data %>%
+      mutate(Facility_Old = Facility)
 
+    raw_data$Facility[raw_data$Facility_Old == "MSS"] <- "MSH"
+    raw_data$Facility[raw_data$Facility_Old == "STL"] <- "SL"
+    raw_data$spec_group[raw_data$spec_group == "BREAST"] <- "Breast"
+    
     #find case numbers with GI_Code = exclude
     exclude_gi_codes_df <-
       raw_data[
@@ -1638,7 +1644,7 @@ backlog_acc_table_new2 <- analyze_backlog(cyto_backlog_summarized)
 #1. import the historical repo
 hist_repo_ap <- readRDS(file =
   choose.files(default = paste0(user_directory,
-                                "/AP & Cytology Historical Repo/",
+                                "/AP & Cytology Historical Repo",
                                 "/*.*"),
                caption = "Select Pathology and Cytology Historical Repository"))
 #2. append all the summary tables together
@@ -1679,7 +1685,7 @@ saveRDS(hist_repo_ap_updated, file = ap_file_name)
 ```{r Add the current summary to the historical repo for cytology backlog, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
 backlog_repo <- readRDS(file =
   choose.files(default = paste0(user_directory,
-                                "/AP & Cytology Historical Repo/",
+                                "/AP & Cytology Historical Repo",
                                 "/*.*"),
                caption = "Select Cytology Backlog Historical Repository"))
 #make sure that the summarized data is a data frame

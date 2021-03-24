@@ -32,7 +32,6 @@ cyto_prep <- function(epic_data, raw_data) {
 
     raw_data$Facility[raw_data$Facility_Old == "MSS"] <- "MSH"
     raw_data$Facility[raw_data$Facility_Old == "STL"] <- "SL"
-    raw_data$spec_group[raw_data$spec_group == "BREAST"] <- "Breast"
 
     #--------------Extract the Cytology GYN and NON-GYN Data Only------------#
     #Cytology
@@ -55,12 +54,21 @@ patho_prep <- function(raw_data, gi_codes) {
   if (is.null(raw_data) || nrow(raw_data) == 0) {
     raw_data <- NULL
   } else {
+    
     #------------Extract the All Breast and GI specs Data Only--------------#
     #Merge the exclusion/inclusion cloumn into the modified powerpath Dataset
     #for weekdays and not weekdays
-
+    
     raw_data <- merge(x = raw_data, y = gi_codes, all.x = TRUE)
-
+    
+    # create an extra column for old Fcaility
+    raw_data <- raw_data %>%
+      mutate(Facility_Old = Facility)
+    
+    raw_data$Facility[raw_data$Facility_Old == "MSS"] <- "MSH"
+    raw_data$Facility[raw_data$Facility_Old == "STL"] <- "SL"
+    raw_data$spec_group[raw_data$spec_group == "BREAST"] <- "Breast"
+    
     #find case numbers with GI_Code = exclude
     exclude_gi_codes_df <-
       raw_data[
@@ -69,28 +77,28 @@ patho_prep <- function(raw_data, gi_codes) {
           raw_data$spec_group == "GI") &
             (raw_data$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies. ==
                "Exclude")), ]
-
+    
     must_exclude_cnum <- unique(exclude_gi_codes_df$Case_no)
-
+    
     #this dataframe has all the GI specs and biopsies that should be excluded
     #it includes any biopsy that came with another excluded code
     #this DF is only for our reference
     must_exclude_cnum_df <-
       raw_data[which(raw_data$Case_no %in% must_exclude_cnum), ]
-
+    
     sp_data <-
       raw_data[which((((raw_data$spec_group == "GI") &
                          (!(raw_data$Case_no %in% must_exclude_cnum))) |
                         (raw_data$spec_group == "Breast")) &
                        raw_data$spec_sort_order == "A"), ]
-
+    
     sp_data <-
       sp_data[which(
         sp_data$Facility != "NYEE"), ]
   }
-
+  
   return(sp_data)
-
+  
 }
 
 #------------------------------Data Pre-Processing-----------------------------#
@@ -613,6 +621,103 @@ table_merging_volume <-
     }
     return(vol_table_new2)
   }
+
+############Create a function for conditional formatting############
+conditional_formatting_cyto <- function(table_new2) {
+  if (is.null(table_new2)) {
+    table_new3 <- NULL
+    table_new4 <- NULL
+    table_new5 <- NULL
+  } else {
+    table_new2[, 4:19] <- lapply(table_new2[, 4:19], as.numeric)
+
+    table_new2[, 4:11] <- lapply(table_new2[, 4:11], formattable::percent)
+
+    #steps for conditional formatting:
+
+    table_new3 <-
+      melt(
+        table_new2,
+        id = c("Spec_group",
+               "Patient_setting",
+               "no_cases_signed",
+               "MSH.y", "MSQ.y", "BIMC.y", "PACC.y", "KH.y",
+               "R.y", "SL.y", "NYEE.y"))
+
+    table_new3 <- table_new3 %>%
+      mutate(value = ifelse(is.na(value),
+                            cell_spec(value, "html",
+                                      color = "lightgray"),
+                            ifelse(value > 0.9,
+                                   cell_spec(value, "html",
+                                             color = "green"),
+                                   ifelse(value < 0.8,
+                                          cell_spec(value, "html",
+                                                    color = "red"),
+                                          cell_spec(value, "html",
+                                                    color = "orange")))))
+
+    table_new3 <-
+      dcast(table_new3,
+            Spec_group +
+              Patient_setting +
+              no_cases_signed +
+              BIMC.y + MSH.y + MSQ.y + NYEE.y + PACC.y + R.y + SL.y +
+              KH.y ~ variable)
+
+    table_new4 <-
+      melt(
+        table_new3,
+        id = c("Spec_group",
+               "Patient_setting",
+               "no_cases_signed",
+               "MSH.x", "MSQ.x", "BIMC.x", "PACC.x", "KH.x", "R.x", "SL.x",
+               "NYEE.x"))
+
+    table_new4 <-
+      table_new4 %>%
+      mutate(value = ifelse(is.na(value),
+                            cell_spec(value, "html", color = "lightgray"),
+                            cell_spec(value, "html", color = "black")))
+
+    table_new4 <-
+      dcast(table_new4,
+            Spec_group +
+              Patient_setting +
+              no_cases_signed +
+              BIMC.x + MSH.x + MSQ.x + NYEE.x + PACC.x + R.x + SL.x +
+              KH.x ~ variable)
+
+    table_new5 <- merge(x = table_new4, y = tat_targets_ap[1:3],
+                        by.x = c("Spec_group", "Patient_setting"),
+                        by.y = c("spec_group", "Patient.Setting"))
+
+    rows_order <- factor(rownames(table_new5), levels = c(2, 1, 4, 3))
+
+    table_new5 <-
+      table_new5[
+        order(rows_order),
+        c("Spec_group",
+          "Received.to.signed.out.target..Days.",
+          "Patient_setting",
+          "no_cases_signed",
+          "MSH.x", "MSQ.x", "BIMC.x", "PACC.x", "KH.x", "R.x", "SL.x", "NYEE.x",
+          "MSH.y", "MSQ.y", "BIMC.y", "PACC.y", "KH.y", "R.y", "SL.y",
+          "NYEE.y")]
+
+    table_new5 <-
+      table_new5 %>%
+      mutate(Received.to.signed.out.target..Days. =
+               paste("<= ", Received.to.signed.out.target..Days., "days"))
+
+    row.names(table_new5) <- NULL
+
+    table_new5 <- table_new5 %>%
+      mutate(no_cases_signed = coalesce(no_cases_signed, 0))
+
+  }
+  return(table_new5)
+}
 
 conditional_formatting_cyto2 <- function(table_new2_v2) {
   if (is.null(table_new2_v2)) {

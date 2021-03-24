@@ -40,17 +40,14 @@ library(writexl)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-
-today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
-#today <- as.timeDate(as.Date("03/04/2021", format = "%m/%d/%Y"))
+today <- Sys.Date()
 
 #Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-yesterday <- as.timeDate(format(Sys.Date() - 1, "%m/%d/%Y"))
-#yesterday <- as.timeDate(as.Date("03/03/2021", format = "%m/%d/%Y"))
+yesterday <- today  - 1
 
 #Get yesterday's DOW
-yesterday_day <- dayOfWeek(yesterday)
+yesterday_day <- wday(yesterday, label = TRUE, abbr = TRUE)
 
 #Remove Good Friday from MSHS Holidays
 nyse_holidays <- as.Date(holidayNYSE(year = 1990:2100))
@@ -58,7 +55,8 @@ good_friday <- as.Date(GoodFriday())
 mshs_holiday <- nyse_holidays[good_friday != nyse_holidays]
 
 #Determine whether yesterday was a holiday/weekend
-holiday_det <- isHoliday(yesterday, holidays = mshs_holiday)
+#holiday_det <- isHoliday(yesterday, holidays = mshs_holiday)
+holiday_det <- isHoliday(as.timeDate(yesterday), holidays = mshs_holiday)
 
 #Set up a calendar for collect to received TAT calculations for Path & Cyto
 create.calendar("MSHS_working_days", mshs_holiday,
@@ -267,7 +265,7 @@ gi_codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"),
 #centralized
 table_temp_cyto <- data.frame(matrix(ncol = 19, nrow = 4))
 
-colnames(table_temp_cyto) <- c("spec_group", "Patient.Setting",
+colnames(table_temp_cyto) <- c("Spec_group", "Patient_setting",
                                "no_cases_signed",
                                "MSH.x", "BIMC.x", "MSQ.x", "NYEE.x",
                                "PACC.x", "R.x", "SL.x", "KH.x", "BIMC.y",
@@ -281,7 +279,7 @@ table_temp_cyto[2] <- c("IP", "Amb")
 #centralized
 table_temp_cyto_v2 <- data.frame(matrix(ncol = 12, nrow = 4))
 
-colnames(table_temp_cyto_v2) <- c("spec_group", "Patient.Setting",
+colnames(table_temp_cyto_v2) <- c("Spec_group", "Patient_setting",
                                   "no_cases_signed",
                                   "received_to_signed_out_within_target",
                                   "BIMC", "MSH", "MSQ", "NYEE", "PACC",
@@ -293,7 +291,7 @@ table_temp_cyto_v2[2] <- c("IP", "Amb")
 #this table template is for cytology volume
 table_temp_cyto_vol <- data.frame(matrix(ncol = 10, nrow = 4))
 
-colnames(table_temp_cyto_vol) <- c("spec_group", "Patient.Setting",
+colnames(table_temp_cyto_vol) <- c("Spec_group", "Patient_setting",
                                    "BIMC", "MSH", "MSQ", "NYEE", "PACC",
                                    "R", "SL", "KH")
 
@@ -305,7 +303,7 @@ table_temp_cyto_vol[2] <- c("IP", "Amb")
 #this template for patho (sp) is with an assumption that received to result is
 #not centralized
 table_temp_patho <- data.frame(matrix(ncol = 17, nrow = 4))
-colnames(table_temp_patho) <- c("spec_group", "Patient.Setting",
+colnames(table_temp_patho) <- c("Spec_group", "Patient_setting",
                                 "no_cases_signed",
                                 "MSH.x", "BIMC.x", "MSQ.x", "PACC.x",
                                 "R.x", "SL.x", "KH.x", "BIMC.y", "MSH.y",
@@ -316,7 +314,7 @@ table_temp_patho[2] <- c("IP", "Amb")
 
 #this table template is for surgical pathology volume
 table_temp_patho_vol <- data.frame(matrix(ncol = 9, nrow = 4))
-colnames(table_temp_patho_vol) <- c("spec_group", "Patient.Setting",
+colnames(table_temp_patho_vol) <- c("Spec_group", "Patient_setting",
                                     "BIMC", "MSH", "MSQ", "PACC",
                                     "R", "SL", "KH")
 
