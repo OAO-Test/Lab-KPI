@@ -3,7 +3,7 @@
 
 # Custom function for preprocessing raw data from SCC and Sunquest -------
 preprocess_cp <- function(raw_scc, raw_sun)  {
-  
+
   # Preprocess SCC data -------------------------------
   # Remove any duplicates
   raw_scc <- unique(raw_scc)
@@ -19,7 +19,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
            function(x)
              ifelse(!is.na(x) & str_detect(x, "\\*.*\\*"),
                     str_replace(x, "\\*.*\\*", ""), x))
-  
+
   raw_scc[c("ORDERING_DATE",
             "COLLECTION_DATE",
             "RECEIVE_DATE",
@@ -31,32 +31,32 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
            as.POSIXct, tz = "UTC",
            format = "%Y-%m-%d %H:%M:%OS",
            options(digits.sec = 1))
-  
+
   # SCC lookup references ----------------------------------------------
   # Crosswalk in scope labs
   raw_scc <- left_join(raw_scc,
                        scc_test_code,
                        by = c("TEST_ID" = "SCC_TestID"))
-  
+
   # Determine if test is included based on crosswalk results
   raw_scc <- raw_scc %>%
     mutate(TestIncl = !is.na(Test)) %>%
     filter(TestIncl)
-  
+
   # Crosswalk unit type
   raw_scc <- left_join(raw_scc, scc_setting,
                        by = c("CLINIC_TYPE" = "Clinic_Type"))
   # Crosswalk site name
   raw_scc <- left_join(raw_scc, mshs_site,
                        by = c("SITE" = "DataSite"))
-  
+
   # Crosswalk units and identify ICUs
   raw_scc <- raw_scc %>%
     mutate(WardandName = paste(Ward, WARD_NAME))
-  
+
   raw_scc <- left_join(raw_scc, scc_icu[, c("Concatenate", "ICU")],
                        by = c("WardandName" = "Concatenate"))
-  
+
   # Preprocess SCC data and add any necessary columns
   raw_scc <- raw_scc %>%
     mutate(
@@ -159,11 +159,11 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             ReceiveToResult < 0 |
                             is.na(CollectToResult) |
                             is.na(ReceiveToResult), FALSE, TRUE))
-  
+
   # Remove duplicate tests
   raw_scc <- raw_scc %>%
     filter(!DuplTest)
-  
+
   # Select columns
   scc_master <- raw_scc[, c("Ward", "WARD_NAME", "WardandName",
                             "ORDER_ID", "REQUESTING_DOC NAME",
@@ -200,7 +200,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")
-  
+
   # Preprocess Sunquest data --------------------------------
   # Remove any duplicates
   raw_sun <- unique(raw_sun)
@@ -215,7 +215,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                      "ResultDateTime")],
            function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE,
                               str_replace(x, "\\*.*\\*", ""), x))
-  
+
   raw_sun[c("OrderDateTime",
             "CollectDateTime",
             "ReceiveDateTime",
@@ -225,36 +225,34 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                      "ReceiveDateTime",
                      "ResultDateTime")],
            as.POSIXct, tz = "UTC", format = "%m/%d/%Y %H:%M:%S")
-  
+
   # Sunquest lookup references
   # Crosswalk labs included and remove out of scope labs
   raw_sun <- left_join(raw_sun, sun_test_code,
                        by = c("TestCode" = "SUN_TestCode"))
-  
+
   # Determine if test is included based on crosswalk results
   raw_sun <- raw_sun %>%
     mutate(TestIncl = !is.na(Test)) %>%
     filter(TestIncl)
-  
-  
+
   # Crosswalk unit type
   raw_sun <- left_join(raw_sun, sun_setting,
                        by = c("LocType" = "LocType"))
-  
+
   # Crosswalk site name
   raw_sun <- left_join(raw_sun, mshs_site,
                        by = c("HospCode" = "DataSite"))
-  
+
   # Crosswalk units and identify ICUs
   raw_sun <- raw_sun %>%
     mutate(LocandName = paste(LocCode, LocName))
-  
+
   raw_sun <- left_join(raw_sun, sun_icu[, c("Concatenate", "ICU")],
                        by = c("LocandName" = "Concatenate"))
-  
+
   raw_sun[is.na(raw_sun$ICU), "ICU"] <- FALSE
-  
-  
+
   # # Sunquest data formatting-----------------------------
   # Preprocess Sunquest data and add any necessary columns
   raw_sun <- raw_sun %>%
@@ -362,11 +360,11 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             ReceiveToResult < 0 |
                             is.na(CollectToResult) |
                             is.na(ReceiveToResult), FALSE, TRUE))
-  
+
   # Remove duplicate tests
   raw_sun <- raw_sun %>%
     filter(!DuplTest)
-  
+
   # Select columns
   sun_master <- raw_sun[, c("LocCode", "LocName", "LocandName",
                             "HISOrderNumber", "PhysName",
@@ -385,7 +383,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")]
-  
+
   colnames(sun_master) <- c("LocCode", "LocName", "LocConcat",
                             "OrderID", "RequestMD",
                             "MSMRN", "WorkShift",
@@ -403,15 +401,14 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")
-  
-  
+
   scc_sun_master <- rbind(scc_master, sun_master)
-  
+
   # Save output data to list
   scc_sun_list <- list(raw_scc, raw_sun, scc_sun_master)
   #
   return(scc_sun_list)
-  
+
 }
 
 # Custom function to determine correct number of dates -------
@@ -423,12 +420,12 @@ correct_scc_result_dates <- function(data, number_days) {
     summarize(VolLabs = n()) %>%
     arrange(desc(VolLabs)) %>%
     ungroup()
-  
+
   correct_dates <- all_resulted_dates_vol$ResultDate[1:number_days]
-  
+
   new_data <- data %>%
     filter(ResultDate %in% correct_dates)
-  
+
   return(new_data)
 }
 
@@ -637,7 +634,7 @@ summarize_cp_tat <- function(x, lab_division) {
                          lab_dashboard_cast)
   #
   lab_sub_output
-  
+
 }
 
 # Custom function for creating kables for each CP lab division ----------------
@@ -825,20 +822,20 @@ kable_add_on_volume <- function(x) {
     summarize(AddOnVolume = sum(TotalAddOnOrder, na.rm = TRUE),
               .groups = "keep") %>%
     ungroup()
-  
+
   add_on_volume <- left_join(test_site_comb, add_on_volume,
                              by = c("Site" = "Site",
                                     "Test" = "Test"))
-  
+
   add_on_volume <- add_on_volume %>%
     mutate(
       # Set test and site as factors
       Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
       Site = factor(Site, levels = city_sites, ordered = TRUE),
       AddOnVolume = ifelse(is.na(AddOnVolume), 0, AddOnVolume))
-  
+
   add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
-  
+
   # Create kable of add on orders
   add_on_table %>%
     kable(format = "html", escape = FALSE, align = "c",
@@ -866,5 +863,4 @@ kable_add_on_volume <- function(x) {
     #             background = "inherit",
     #             color = "inherit") %>%
     row_spec(row = 0, font_size = 13)
-  
 }

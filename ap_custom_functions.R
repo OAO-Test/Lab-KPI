@@ -166,7 +166,7 @@ pre_processing_pp <- function(raw_data) {
 
     #prepare data for first part accessioned volume analysis
     #1. Find the date that we need to report --> the date of the last weekday
-    acc_date <- as.Date(raw_data_new$signed_out_date[1])
+    raw_data_new$report_date_only <- as.Date(raw_data_new$signed_out_date) + 1
 
     #2. count the accessioned volume that was accessioned on that date
     #from the cyto report
@@ -187,7 +187,9 @@ pre_processing_pp <- function(raw_data) {
                  Received.to.signed.out.target..Days.,
                  Collected.to.signed.out.target..Days.,
                  acc_date_only,
-                 weekdays(acc_date_only)),
+                 weekdays(acc_date_only),
+                 report_date_only,
+                 weekdays(report_date_only)),
         no_cases_signed = n(),
         lab_metric_tat_avg = round(mean(Received_to_signed_out,
                                         na.rm = TRUE), 0),
@@ -205,17 +207,17 @@ pre_processing_pp <- function(raw_data) {
                                               na.rm = TRUE), 0),
         patient_metric_tat_sd = round(sd(Collection_to_signed_out,
                                          na.rm = TRUE), 1),
-        cyto_acc_vol = as.numeric(sum(acc_date == acc_date_only,
+        cyto_acc_vol = as.numeric(sum((report_date_only - 1) == acc_date_only,
                                       na.rm = TRUE)))
 
-    #standardize the name for the current summary to match the historical repo
     colnames(summarized_table) <-
       c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
         "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target",
         "Patient_metric_target", "acc_date_only", "acc_day_only",
-        "No_cases_signed_out", "Lab_metric_avg", "Lab_metric_med",
-        "Lab_metric_std", "Lab_metric_within_target", "Patient_metric_avg",
-        "Patient_metric_med", "Patient_metric_std", "cyto_acc_vol")
+        "report_date_only", "report_day_only", "No_cases_signed_out",
+        "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std",
+        "Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med",
+        "Patient_metric_std", "cyto_acc_vol")
 
     return_tables <- list(summarized_table,
                           raw_data_new)
@@ -348,38 +350,39 @@ pre_processing_backlog <- function(cyto_backlog_raw) {
   #cyto backlog Calculation
   #vlookup the Rev_Center and its corresponding patient setting for the
   #PowerPath Data
-
+  
   cyto_backlog_ps <- merge(x = cyto_backlog_raw, y = patient_setting,
                            all.x = TRUE)
-
+  
   #vlookup targets based on spec_group and patient setting
   cyto_backlog_ps_target <- merge(x = cyto_backlog_ps, y = tat_targets_ap,
                                   all.x = TRUE,
                                   by = c("spec_group", "Patient.Setting"))
-
+  
   #Keep the cyto gyn and cyto non-gyn
   cyto_backlog <-
     cyto_backlog_ps_target[which(
       cyto_backlog_ps_target$spec_group == "CYTO NONGYN" |
         cyto_backlog_ps_target$spec_group == "CYTO GYN"), ]
-
+  
   #Change all Dates into POSIXct format to start the calculations
   cyto_backlog[c("Case_created_date", "Collection_Date", "Received_Date",
                  "signed_out_date")] <-
     lapply(cyto_backlog[c("Case_created_date", "Collection_Date",
                           "Received_Date", "signed_out_date")],
            as.POSIXct, tz = "", format = "%m/%d/%y %I:%M %p")
-
+  
   #Backlog Calculations: Date now - case created date
   #without weekends and holidays, subtract one so we don't include today's date
-
+  
   cyto_backlog$backlog <-
     bizdays(cyto_backlog$Case_created_date, today) - 1
-
+  
   cyto_backlog$acc_date_only <- as.Date(cyto_backlog$Received_Date)
-
+  
   acc_date <- cyto_table_weekday_summarized$Signed_out_date_only[1]
-
+  cyto_backlog$Report_Date <- acc_date + 1
+  
   #summarize the data to be used for analysis and to be stored as historical
   #repo
   summarized_table <-
@@ -391,46 +394,47 @@ pre_processing_backlog <- function(cyto_backlog_raw) {
                Patient.Setting,
                Rev_ctr,
                acc_date_only,
-               weekdays(acc_date_only)),
+               weekdays(acc_date_only),
+               Report_Date),
       cyto_backlog = format(
         round(
           sum(
             backlog > Received.to.signed.out.target..Days.,
             na.rm = TRUE), 0)),
-
+      
       percentile_25th =
         format(
           ceiling(
             quantile(
               backlog[backlog > Received.to.signed.out.target..Days.],
               prob = 0.25, na.rm = TRUE))),
-
+      
       percentile_50th =
         format(
           ceiling(
             quantile(
               backlog[backlog > Received.to.signed.out.target..Days.],
               prob = 0.5, na.rm = TRUE))),
-
+      
       maximum = format(
         ceiling(
           max(
             backlog[backlog > Received.to.signed.out.target..Days.],
             na.rm = TRUE))),
-
+      
       cyto_acc_vol = as.numeric(sum(acc_date == acc_date_only,
                                     na.rm = TRUE)))
-
+  
   summarized_table$maximum[summarized_table$maximum == "-Inf"] <- 0
-
+  
   #standardize the name for the current summary to match the historical repo
   colnames(summarized_table) <-
     c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
-      "acc_date_only", "acc_day_only", "cyto_backlog", "percentile_25th",
-      "percentile_50th", "maximum", "cyto_acc_vol")
-
+      "acc_date_only", "acc_day_only", "Report_Date", "cyto_backlog",
+      "percentile_25th", "percentile_50th", "maximum", "cyto_acc_vol")
+  
   return(summarized_table)
-
+  
 }
 
 ##### This function helps in creating the analysis and tables from the

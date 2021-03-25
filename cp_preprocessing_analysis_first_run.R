@@ -1,4 +1,5 @@
-# Code for preprocessing CP data prior to receipt of Ops & Quality Indicators Form
+# Code for preprocessing CP data prior to receipt of Ops &
+# Quality Indicators Form
 
 # Preprocess raw data using pre-defined custom functions ------------
 scc_sun_wday_list <- preprocess_cp(raw_scc = scc_weekday,
@@ -21,8 +22,6 @@ if (is.null(sq_not_weekday) & is.null(scc_not_weekday)) {
   sun_not_wday <- scc_sun_not_wday_list[[2]]
   scc_sun_not_wday_master <- scc_sun_not_wday_list[[3]]
 }
-
-
 
 # Update preprocessed data to only include correct dates ----------------------
 scc_sun_wday_master <- correct_scc_result_dates(scc_sun_wday_master, 1)
@@ -125,15 +124,14 @@ if (!is.null(scc_sun_not_wday_master)) {
 }
 
 # Open existing repository
-# existing_repo <- read_excel(
-#   choose.files(default = user_path,
-#                caption = "Select SCC and Sunquest Historical Repository"),
-#   sheet = 1, col_names = TRUE)
-existing_repo <- readRDS(file =
-                           choose.files(default = paste0(user_directory,
-                                                         "/SCC Sunquest Historical Repo",
-                                                         "/*.*"),
-                                        caption = "Select SCC and Sunquest Historical Repository"))
+existing_repo <-
+  readRDS(file =
+            choose.files(
+              default =
+                paste0(user_directory,
+                       "/CP Historical Repo",
+                       "/*.*"),
+              caption = "Select SCC and Sunquest Historical Repository"))
 
 # Convert ResultDate from date-time to date
 existing_repo <- existing_repo %>%
@@ -149,18 +147,8 @@ cp_repo <- unique(cp_repo)
 start_date <- format(min(cp_repo$ResultDate), "%m%d%y")
 end_date <- format(max(cp_repo$ResultDate), "%m%d%y")
 
-# Save updated repository
-# write_xlsx(scc_sun_repo, path = paste0(user_directory,
-#                                        "\\SCC Sunquest Historical Repo",
-#                                        "\\Hist Repo Test ", start_date, " to",
-#                                        end_date, " Created ", Sys.Date(),
-#                                        ".xlsx"))
 saveRDS(cp_repo, file = paste0(user_directory,
-                               "/SCC Sunquest Historical Repo",
+                               "/CP Historical Repo",
                                "/Hist Repo ", start_date, " to ",
                                end_date, " Created ",
                                format(Sys.Date(), "%m%d%y"), ".RDS"))
-
-
-
-

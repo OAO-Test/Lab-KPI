@@ -531,7 +531,7 @@ pre_processing_historical <- function(raw_data) {
 
     #prepare data for first part accessioned volume analysis
     #1. Find the date that we need to report --> the date of the last weekday
-    raw_data_new$report_date_only <- as.Date(raw_data_new$signed_out_date)
+    raw_data_new$report_date_only <- as.Date(raw_data_new$signed_out_date) + 1
 
     #2. count the accessioned volume that was accessioned on that date
     #from the cyto report
@@ -572,7 +572,7 @@ pre_processing_historical <- function(raw_data) {
                                               na.rm = TRUE), 0),
         patient_metric_tat_sd = round(sd(Collection_to_signed_out,
                                          na.rm = TRUE), 1),
-        cyto_acc_vol = as.numeric(sum(report_date_only == acc_date_only,
+        cyto_acc_vol = as.numeric(sum((report_date_only - 1) == acc_date_only,
                                       na.rm = TRUE)))
 
     colnames(summarized_table) <-
