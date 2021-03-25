@@ -35,6 +35,53 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 source(here::here("raw_data_import.R"))
 ```
 
+```{r cp_custom_functions file, warning = FALSE, message = FALSE, echo = FALSE}
+# Code for preprocessing, analyzing, and displaying Clinical Pathology KPI -----
+# CP includes Chemistry, Hematology, and Microbiology RRL divisions
+source(here::here("cp_custom_functions.R"))
+```
+
+```{r cp_preprocessing_analysis_first_run file, warning = FALSE, message = FALSE, echo = FALSE}
+# Code for preprocessing CP data prior to receipt of Ops &
+# Quality Indicators Form
+source(here::here("cp_preprocessing_analysis_first_run.R"))
+```
+
+```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = FALSE, message = FALSE, echo = FALSE}
+# Custom function to subset and summarize data for each lab division ----------
+# Chemistry
+chem_sub_output <- summarize_cp_tat(x = cp_wday_summary,
+                                   lab_division = "Chemistry")
+chem_subset <- chem_sub_output[[1]]
+chem_summary <- chem_sub_output[[2]]
+chem_dashboard_melt <- chem_sub_output[[3]]
+chem_dashboard_cast <- chem_sub_output[[4]]
+
+# Hematology
+hem_sub_output <- summarize_cp_tat(x = cp_wday_summary,
+                                   lab_division = "Hematology")
+hem_subset <- hem_sub_output[[1]]
+hem_summary <- hem_sub_output[[2]]
+hem_dashboard_melt <- hem_sub_output[[3]]
+hem_dashboard_cast <- hem_sub_output[[4]]
+
+# Microbiology RRL
+micro_sub_output <- summarize_cp_tat(x = cp_wday_summary,
+                                    lab_division = "Microbiology RRL")
+
+micro_subset <- micro_sub_output[[1]]
+micro_summary <- micro_sub_output[[2]]
+micro_dashboard_melt <- micro_sub_output[[3]]
+micro_dashboard_cast <- micro_sub_output[[4]]
+
+# Microbiology RRL: Manually remove C. diff ambulatory TAT since only volume
+# is monitored for this lab/setting combination
+micro_dashboard_cast <- micro_dashboard_cast %>%
+  filter(!(Test == "C. diff" & DashboardSetting == "Amb"))
+row.names(micro_dashboard_cast) <- seq_len(nrow(micro_dashboard_cast))
+
+```
+
 ```{r ap_custom_functions file, warning = FALSE, message = FALSE, echo = FALSE}
 #######
 # Source Code for preprocessing, analyzing, and displaying Anatomic Pathology
@@ -264,9 +311,154 @@ sp_table_weekday_new3$Spec_group[
 
 ```
 
-<br />
-
 ## **Weekday Efficiency Indicators** {.tabset}
+### Chemistry       
+#### *Chemistry KPI (Labs Resulted on `r wday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <95%,
+<span style = "color:green">Green:</span> >=95%</h5>
+```{r Chemistry dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
+kable_cp_tat(x = chem_dashboard_cast)
+```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+
+
+### Hematology
+#### *Hematology KPI (Labs Resulted on `r wday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <95%,
+<span style = "color:green">Green:</span> >=95%</h5>
+```{r Hematology dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
+kable_cp_tat(x = hem_dashboard_cast)
+```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+
+```{r Microbiology RRL volume and TAT table creation, warning = FALSE, message = FALSE, echo = FALSE}
+#
+# Create volume table for Microbiology RRL that mimics TAT table layout
+micro_volume_melt <- melt(micro_summary,
+                               id.var = c("Test",
+                                          "Site",
+                                          "DashboardPriority",
+                                          "TestAndPriority",
+                                          "DashboardSetting",
+                                          "ReceiveResultTarget",
+                                          "CollectResultTarget"),
+                               measure.vars = "ResultedVolume")
+
+# Ensure all Microbiology RRL test, site, and priority combinations are included
+micro_vol_templ <- tat_dashboard_templ %>%
+  filter(Division == "Microbiology RRL") %>%
+  mutate(Incl = NULL,
+         Division = NULL)
+
+micro_volume_melt <- left_join(micro_vol_templ,
+                               micro_volume_melt,
+                               by = c("Test" = "Test",
+                                      "Site" = "Site",
+                                      "DashboardPriority" = "DashboardPriority",
+                                      "DashboardSetting" = "DashboardSetting"))
+
+# Replace NA with 0 and format site, tests, priority, and settings as factors
+micro_volume_melt <- micro_volume_melt %>%
+  mutate(
+    #
+    # Replace NA with 0
+    value = ifelse(is.na(value), 0, value),
+    #
+    # Set test, site, priority, and setting as factors
+    Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
+    Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+    DashboardPriority = droplevels(factor(DashboardPriority,
+                                          levels = dashboard_priority_order,
+                                          ordered = TRUE)),
+    DashboardSetting = droplevels(factor(DashboardSetting,
+                                         levels = dashboard_pt_setting,
+                                         ordered = TRUE)))
+
+micro_volume_cast <- dcast(micro_volume_melt,
+                           Test + DashboardPriority + TestAndPriority +
+                             DashboardSetting + ReceiveResultTarget +
+                             CollectResultTarget ~
+                             variable + Site,
+                           value.var = "value")
+
+original_length <- ncol(micro_volume_cast)
+
+micro_volume_cast <- micro_volume_cast %>%
+  mutate(
+    #
+    # Replace TAT targets with "Resulted Volume"
+    ReceiveResultTarget = "Resulted Volume",
+    CollectResultTarget = "Resulted Volume",
+    #
+    # Duplicate dashboard setting column
+    DashboardSetting2 = DashboardSetting,
+    #
+    # Duplicate resulted volume columns
+    ResultedVolume_MSH2 = ResultedVolume_MSH,
+    ResultedVolume_MSQ2 = ResultedVolume_MSQ,
+    ResultedVolume_MSBI2 = ResultedVolume_MSBI,
+    ResultedVolume_MSB2 = ResultedVolume_MSB,
+    ResultedVolume_MSW2 = ResultedVolume_MSW,
+    ResultedVolume_MSM2 = ResultedVolume_MSM) %>%
+  select(Test,
+         DashboardPriority,
+         TestAndPriority,
+         ReceiveResultTarget,
+         DashboardSetting,
+         ResultedVolume_MSH,
+         ResultedVolume_MSQ,
+         ResultedVolume_MSBI,
+         ResultedVolume_MSB,
+         ResultedVolume_MSW,
+         ResultedVolume_MSM,
+         CollectResultTarget,
+         DashboardSetting2,
+         ResultedVolume_MSH2,
+         ResultedVolume_MSQ2,
+         ResultedVolume_MSBI2,
+         ResultedVolume_MSB2,
+         ResultedVolume_MSW2,
+         ResultedVolume_MSM2)
+
+# Rename columns to match TAT table for binding
+colnames(micro_volume_cast) <- colnames(micro_dashboard_cast)
+
+micro_volume_cast[, c(original_length:ncol(micro_volume_cast))] <- ""
+
+micro_tat_vol_cast <- rbind(micro_dashboard_cast, micro_volume_cast)
+
+micro_tat_vol_cast <- micro_tat_vol_cast %>%
+  arrange(Test, ReceiveResultTarget)
+
+```
+
+### Microbiology RRL
+#### *Microbiology RRL KPI (Labs Resulted on `r wday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <90%, 
+<span style = "color:orange">Yellow:</span> >=90% & <100%,
+<span style = "color:green">Green:</span> =100%</h5>
+```{r Create Micro RRL TAT and Volume Table, warning = FALSE, message = FALSE, echo = FALSE}
+kable_cp_tat(x = micro_tat_vol_cast)
+```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+
+### Missing Collections & Add Ons
+#### *Missing Collection Times and Add On Order Volume (Labs Resulted on `r wday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> >15%, 
+<span style = "color:orange">Yellow:</span> <=15% & >5%,
+<span style = "color:green">Green:</span> <=5%</h5>
+```{r Missing Collection Times Tables, warning = FALSE, message = FALSE, echo = FALSE}
+# # Labs with missing collection times -----------------------
+# Custom function for percentage of labs with missing collection times
+# Call custom functions for missing collections and add-on order volume --------
+kable_missing_collections(x = cp_wday_summary)
+
+kable_add_on_volume(x = cp_wday_summary)
+
+```
+<h6>*Missing collection time analysis includes analytes represented in Chemistry, Hematology, and Microbiology RRL dashboard TAT analysis from ED, ICU, IP Non-ICU, and ambulatory settings.*</h6>
 
 ### Surgical Pathology
 #### *Surgical Pathology KPI (Specimens Resulted on `r wday_result_date`)*
@@ -295,6 +487,24 @@ table_formatting2(cyto_table_weekday_new3_v2)
 <br />
 
 ## **Weekday 24-Hour Volume Lookback** {.tabset}
+
+### Chemistry
+#### *Chemistry Resulted Lab Volume (Labs Resulted on `r wday_result_date`)*
+```{r Chemistry: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
+chem_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
+                                         lab_division = "Chemistry")
+
+kable_cp_vol(chem_vol_wday_table)
+```
+
+### Hematology
+#### *Hematology Resulted Lab Volume (Labs Resulted on `r wday_result_date`)*
+```{r Hematology: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
+hem_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
+                                         lab_division = "Hematology")
+
+kable_cp_vol(hem_vol_wday_table)
+```
 
 ### Surgical Pathology
 #### *Surgical Pathology Signed Out Cases Volume (As of `r wday_result_date`)*
@@ -332,6 +542,238 @@ backlog_acc_table_new2 %>%
 
 table_formatting_volume(cyto_strat_vol_weekday_new2, cyto_vol_column_names)
 ```
+
+`r if (include_not_wday != TRUE) {"<!--"}`
+
+```{r Conditional Block for Weekends, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+
+# Chemistry
+chem_not_wday_sub_output <- summarize_cp_tat(cp_not_wday_summary,
+                                          lab_division = "Chemistry")
+
+chem_not_wday_subset <- chem_not_wday_sub_output[[1]]
+chem_not_wday_summary <- chem_not_wday_sub_output[[2]]
+chem_not_wday_dashboard_melt <- chem_not_wday_sub_output[[3]]
+chem_not_wday_dashboard_cast <- chem_not_wday_sub_output[[4]]
+
+# Hematology
+hem_not_wday_sub_output <- summarize_cp_tat(cp_not_wday_summary,
+                                        lab_division = "Hematology")
+
+hem_not_wday_subset <- hem_not_wday_sub_output[[1]]
+hem_not_wday_summary <- hem_not_wday_sub_output[[2]]
+hem_not_wday_dashboard_melt <- hem_not_wday_sub_output[[3]]
+hem_not_wday_dashboard_cast <- hem_not_wday_sub_output[[4]]
+
+# Microbiology RRL
+micro_not_wday_sub_output <- summarize_cp_tat(cp_not_wday_summary,
+                                             lab_division = "Microbiology RRL")
+micro_not_wday_subset <- micro_not_wday_sub_output[[1]]
+micro_not_wday_summary <- micro_not_wday_sub_output[[2]]
+micro_not_wday_dashboard_melt <- micro_not_wday_sub_output[[3]]
+micro_not_wday_dashboard_cast <- micro_not_wday_sub_output[[4]]
+
+# Microbiology RRL: Manually remove C. diff ambulatory TAT since only volume
+# is monitored for this lab/setting combination
+micro_not_wday_dashboard_cast <- micro_not_wday_dashboard_cast %>%
+  filter(!(Test == "C. diff" & DashboardSetting == "Amb"))
+row.names(micro_not_wday_dashboard_cast) <-
+  seq_len(nrow(micro_not_wday_dashboard_cast))
+
+```
+
+`r #Begin weekend/holiday dashboard visualizations`
+
+<br />
+
+## **Weekend/Holiday Efficiency Indicators** {.tabset}
+### Chemistry
+#### *Chemistry KPI (Labs Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <95%, 
+<span style = "color:green">Green:</span> >=95%</h5>'
+```{r Chemistry dashboard table for weekends and holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+
+kable_cp_tat(chem_not_wday_dashboard_cast)
+
+
+```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>'
+
+### Hematology
+#### *Hematology KPI (Labs Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <95%, 
+<span style = "color:green">Green:</span> >=95%</h5>
+```{r Hematology dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+
+kable_cp_tat(hem_not_wday_dashboard_cast)
+
+```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+
+```{r Microbiology RRL volume and TAT table creation for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+#
+# Create volume table for Microbiology RRL that mimics TAT table layout
+micro_not_wday_volume_melt <- melt(micro_not_wday_summary,
+                                   id.var = c("Test",
+                                              "Site",
+                                              "DashboardPriority",
+                                              "TestAndPriority",
+                                              "DashboardSetting",
+                                              "ReceiveResultTarget",
+                                              "CollectResultTarget"),
+                                   measure.vars = "ResultedVolume")
+
+# Ensure all Microbiology RRL test, site, and priority combinations are included
+micro_not_wday_vol_templ <- tat_dashboard_templ %>%
+  filter(Division == "Microbiology RRL") %>%
+  mutate(Incl = NULL,
+         Division = NULL)
+
+micro_not_wday_volume_melt <- left_join(micro_vol_templ,
+                               micro_not_wday_volume_melt,
+                               by = c("Test" = "Test",
+                                      "Site" = "Site",
+                                      "DashboardPriority" = "DashboardPriority",
+                                      "DashboardSetting" = "DashboardSetting"))
+
+
+# Replace NA with 0 and format site, tests, priority, and settings as factors
+micro_not_wday_volume_melt <- micro_not_wday_volume_melt %>%
+  mutate(
+    #
+    # Replace NA with 0
+    value = ifelse(is.na(value), 0, value),
+    #
+    # Set test, site, priority, and setting as factors
+    Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
+    Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+    DashboardPriority = droplevels(factor(DashboardPriority,
+                                          levels = dashboard_priority_order,
+                                          ordered = TRUE)),
+    DashboardSetting = droplevels(factor(DashboardSetting,
+                                         levels = dashboard_pt_setting,
+                                         ordered = TRUE)))
+
+micro_not_wday_volume_cast <- dcast(micro_not_wday_volume_melt,
+                           Test + DashboardPriority + TestAndPriority +
+                             DashboardSetting + ReceiveResultTarget +
+                             CollectResultTarget ~
+                             variable + Site,
+                           value.var = "value")
+
+original_length <- ncol(micro_not_wday_volume_cast)
+
+micro_not_wday_volume_cast <- micro_not_wday_volume_cast %>%
+  mutate(
+    #
+    # Replace TAT targets with "Resulted Volume"
+    ReceiveResultTarget = "Resulted Volume",
+    CollectResultTarget = "Resulted Volume",
+    #
+    # Duplicate dashboard setting column
+    DashboardSetting2 = DashboardSetting,
+    #
+    # Duplicate resulted volume columns
+    ResultedVolume_MSH2 = ResultedVolume_MSH,
+    ResultedVolume_MSQ2 = ResultedVolume_MSQ,
+    ResultedVolume_MSBI2 = ResultedVolume_MSBI,
+    ResultedVolume_MSB2 = ResultedVolume_MSB,
+    ResultedVolume_MSW2 = ResultedVolume_MSW,
+    ResultedVolume_MSM2 = ResultedVolume_MSM) %>%
+  select(Test,
+         DashboardPriority,
+         TestAndPriority,
+         ReceiveResultTarget,
+         DashboardSetting,
+         ResultedVolume_MSH,
+         ResultedVolume_MSQ,
+         ResultedVolume_MSBI,
+         ResultedVolume_MSB,
+         ResultedVolume_MSW,
+         ResultedVolume_MSM,
+         CollectResultTarget,
+         DashboardSetting2,
+         ResultedVolume_MSH2,
+         ResultedVolume_MSQ2,
+         ResultedVolume_MSBI2,
+         ResultedVolume_MSB2,
+         ResultedVolume_MSW2,
+         ResultedVolume_MSM2)
+
+# Rename columns to match TAT table for binding
+colnames(micro_not_wday_volume_cast) <- colnames(micro_not_wday_dashboard_cast)
+
+micro_not_wday_volume_cast[
+  , c(original_length:ncol(micro_not_wday_volume_cast))] <- ""
+
+micro_not_wday_tat_vol_cast <- rbind(micro_not_wday_dashboard_cast,
+                                     micro_not_wday_volume_cast)
+
+micro_not_wday_tat_vol_cast <- micro_not_wday_tat_vol_cast %>%
+  arrange(Test, ReceiveResultTarget)
+
+```
+
+### Microbiology RRL
+#### *Microbiology RRL (Labs Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <90%, 
+<span style = "color:orange">Yellow:</span> >=90% & <100%, 
+<span style = "color:green">Green:</span> =100%</h5>
+```{r Microbiology RRL dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+
+kable_cp_tat(micro_not_wday_tat_vol_cast)
+
+```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+
+### Missing Collections & Add Ons
+    
+#### *Missing Collection Times and Add On Order Volume (Labs Resulted on `r wkend_holiday_result_date`)*
+
+<h5> Missing Collection Status Definitions: <span style = "color:red">Red:</span> >15%, 
+<span style = "color:orange">Yellow:</span> <=15% & >5%, 
+<span style = "color:green">Green:</span> <=5%</h5>
+```{r Missing Collection Times Tables for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+
+# Custom function for creating a kable of labs with missing collections --------
+kable_missing_collections(x = cp_not_wday_summary)
+
+# Custom function for creating a kable of add-on order volume
+kable_add_on_volume(x = cp_not_wday_summary)
+
+```
+<h6>*Missing collection time analysis only includes labs represented in dashboard included in TAT analysis*</h6>
+
+`r #Start new tabset for weekend/holiday volume lookback`
+
+<br />
+
+## **Weekend/Holiday Volume Lookback** {.tabset}
+
+### Chemistry
+#### *Chemistry Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
+```{r Chemistry Weekend/Holiday: volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+
+chem_vol_not_wday_table <- summarize_cp_vol(x = cp_not_wday_summary,
+                                         lab_division = "Chemistry")
+
+kable_cp_vol(chem_vol_not_wday_table)
+```
+
+### Hematology
+#### *Hematology Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
+```{r Hematology Weekend/Holiday: volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+
+hem_vol_not_wday_table <- summarize_cp_vol(x = cp_not_wday_summary,
+                                         lab_division = "Hematology")
+
+kable_cp_vol(hem_vol_not_wday_table)
+
+```
+
+`r if (include_not_wday != TRUE) {"-->"}`
 
 ## **Assumptions and Methodology** {.tabset}
 ### Definitions
