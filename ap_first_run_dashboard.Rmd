@@ -363,12 +363,14 @@ The table below summarizes the test codes and IDs used from these daily reports.
 
 ```{r Create and format a table for test codes}
 
-test_codes_kable <- test_code %>%
+test_codes_kable <- full_join(scc_test_code, sun_test_code,
+                              by = c("Test" = "Test",
+                                     "Division" = "Division"))
+
+test_codes_kable <- test_codes_kable %>%
+  select(Division, Test, SCC_TestID, SUN_TestCode) %>%
   mutate(Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE)) %>%
   arrange(Test)
-
-test_codes_kable <-
-  test_codes_kable[, c("Division", "Test", "SCC_TestID", "SUN_TestCode")]
 
 test_codes_kable %>%
   kable(format = "html", escape = FALSE, align = "c",
