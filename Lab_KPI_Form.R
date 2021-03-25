@@ -45,11 +45,13 @@ kpi_form_today <-
   kpi_form_today[which(kpi_form_today$duplicated_id == "FALSE"), ]
 
 #do not run now until test it - waiting for Daya to send the data for today's
-#read historical repo
-historical_repo_form <- read_excel(
-  paste0(user_directory, "/Lab KPI Form/Lab KPI Hsitorical Repo/",
-         "Lab_KPI_Form_Repo", "_", yesterday, ".xlsx"))
-
+#1. read current historical repo
+historical_repo_form <-
+  read_excel(choose.files(
+              default = paste0(user_directory,
+                               "/Lab KPI Form/Lab KPI Historical Repo",
+                               "/*.*"),
+              caption = "Select Cytology Backlog Historical Repository"))
 
 #2. combine the current summary with the historical repo and write them
 #into a xlsx file
@@ -60,7 +62,7 @@ historical_repo_form2 <- rbind(historical_repo_form, kpi_form_today)
 
 historical_repo_form2 <- unique(historical_repo_form2)
 
-xlsx_form <- paste0(user_directory, "/Lab KPI Form/Lab KPI Hsitorical Repo/",
+xlsx_form <- paste0(user_directory, "/Lab KPI Form/Lab KPI Historical Repo/",
                     "Lab_KPI_Form_Repo", "_", today, ".xlsx")
 
 write_xlsx(historical_repo_form2, xlsx_form)

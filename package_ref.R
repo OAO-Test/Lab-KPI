@@ -239,7 +239,6 @@ vol_dashboard_templ <- test_site_prty_setting_vol %>%
   filter(Incl == "Incl")
 
 
-####addmore descriptive notes for pathology
 #-----------Patient Setting Excel File-----------#
 #Using Rev Center to determine patient setting
 patient_setting <- data.frame(read_excel(reference_file,
@@ -339,3 +338,5 @@ sp_vol_column_names <- c("Case Type", "Setting",
 cyto_vol_column_names <- c("Case Type", "Setting",
                            "MSH", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL",
                            "NYEE")
+cyto_spec_group <- c("CYTO GYN", "CYTO NONGYN")
+patho_spec_group <- c("Breast", "GI")
