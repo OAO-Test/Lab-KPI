@@ -49,6 +49,8 @@ library(ggplot2)
 library(gridExtra)
 library(scales)
 library(ggQC)
+library(plotly)
+
 ```
 
 
@@ -78,14 +80,17 @@ ap_user_path <- paste0(user_directory, "/AP & Cytology Historical Repo/*.*")
 
 # Import Clinical Pathology historical repository (Sunquest and SCC)
 scc_sun_hist <-
-  readRDS(file = choose.files(default = cp_user_path,
-                              caption = "Select Historical Repository"))
+  readRDS(
+    file =
+      choose.files(default = cp_user_path,
+                   caption = "Select Clinical Pathology Historical Repository"))
 
 # Import Anatomic Pathology historica repository (PowerPath)
 ap_hist_repo <-
-  readRDS(file =
-    choose.files(default = ap_user_path,
-                 caption = "Select Anatomic Pathology Historical Repository"))
+  readRDS(
+    file =
+      choose.files(default = ap_user_path,
+                   caption = "Select Anatomic Pathology Historical Repository"))
 
 # Determine start date based on lookback period and last date in repository
 scc_sun_hist$ResultDate <- as.Date(scc_sun_hist$ResultDate, format = "%m/%d/%y")
@@ -93,7 +98,7 @@ lookback_period <- 30
 start_date <- max(scc_sun_hist$ResultDate) - (lookback_period - 1)
 
 # Sinai color scheme
-mshs_colors = c("#221f72", "#00AEFF", "#D80B8C", "#7f7f7f")
+mshs_colors <- c("#221f72", "#00AEFF", "#D80B8C", "#7f7f7f")
 
 ```
 
@@ -106,8 +111,8 @@ reference_file <- paste0(user_directory,
 test_code <- read_excel(reference_file, sheet = "TestNames")
 ###this should be replaced by:
 # CP and Micro --------------------------------
-#scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
-#sun_test_code <- read_excel(reference_file, sheet = "SUN_TestCodes")
+scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
+sun_test_code <- read_excel(reference_file, sheet = "SUN_TestCodes")
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 #
@@ -162,8 +167,8 @@ gi_codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"),
 
 ```{r Format historical repository for Clinical Pathology plotting, echo = FALSE, warning = FALSE, message = FALSE}
 cp_dashboard_tat_summary <- scc_sun_hist %>%
-  group_by(Site, ResultDate, Division, Test, 
-           DashboardPriority, DashboardSetting, 
+  group_by(Site, ResultDate, Division, Test,
+           DashboardPriority, DashboardSetting,
            ReceiveResultTarget, CollectResultTarget) %>%
   summarize(ResultedVolume = sum(TotalResulted), 
             ResultedVolumeWithTAT = sum(TotalResultedTAT), 
@@ -173,8 +178,10 @@ cp_dashboard_tat_summary <- scc_sun_hist %>%
          CollectResultDefects = ResultedVolumeWithTAT - CollectResultInTarget,
          ReceiveResultPercent = ReceiveResultInTarget / ResultedVolumeWithTAT,
          CollectResultPercent = CollectResultInTarget / ResultedVolumeWithTAT,
-         SafeThreshold = ifelse(Test == "Rapid Flu" | Test == "C. diff", 1.0, 0.95),
-         NotSafeThreshold = ifelse(Test == "Rapid Flu" | Test == "C. diff", 0.9, 0.8))
+         SafeThreshold = ifelse(Test == "Rapid Flu" |
+                                  Test == "C. diff", 1.0, 0.95),
+         NotSafeThreshold = ifelse(Test == "Rapid Flu" |
+                                     Test == "C. diff", 0.9, 0.8))
 
 cp_dashboard_vol_summary <- scc_sun_hist %>%
   group_by(Site, ResultDate, Test, DashboardPriority) %>%
@@ -416,19 +423,43 @@ cp_stratified_data_for_pcharts <- function(defect_data, test) {
 ```
 
 ```{r Format Anatomic Pathology historical repository for plotting, warning = FALSE, message = FALSE, echo = FALSE}
-#Exclude weekends
+#Exclude weekends - based on the discussion with the leadership since there will
+#be mostly no specimens on weekdays
 ap_hist_repo_wkdy <-
   ap_hist_repo[which(
     ap_hist_repo$Signed_out_day_only != "Sunday" &
       ap_hist_repo$Signed_out_day_only != "Saturday" &
       ap_hist_repo$Patient_setting != "NA"), ]
 
-# Convert characters to factors
-ap_hist_repo_wkdy <- ap_hist_repo_wkdy %>%
-  mutate(Signed_out_date_only = as.Date(Signed_out_date_only)) %>%
-  mutate(Lab_metric_within_target = as.numeric(Lab_metric_within_target)) %>%
-  mutate(Patient_metric_avg = as.numeric(Patient_metric_avg)) %>%
-  mutate(Lab_metric_avg = as.numeric(ap_hist_repo_wkdy$Lab_metric_avg))
+#Makes sure all the dates in the data are in date format for the calculations
+ap_hist_repo_wkdy[c("Signed_out_date_only",
+                    "acc_date_only",
+                    "report_date_only")] <-
+  lapply(ap_hist_repo_wkdy[c("Signed_out_date_only",
+                             "acc_date_only",
+                             "report_date_only")],
+         as.Date)
+
+#Makes sure all the variables in the data are in numeric for the calculations
+ap_hist_repo_wkdy[c("Lab_metric_target",
+                    "Patient_metric_target",
+                    "No_cases_signed_out",
+                    "Lab_metric_avg",
+                    "Lab_metric_med",
+                    "Lab_metric_within_target",
+                    "Patient_metric_avg",
+                    "Patient_metric_med",
+                    "cyto_acc_vol")] <-
+  lapply(ap_hist_repo_wkdy[c("Lab_metric_target",
+                             "Patient_metric_target",
+                             "No_cases_signed_out",
+                             "Lab_metric_avg",
+                             "Lab_metric_med",
+                             "Lab_metric_within_target",
+                             "Patient_metric_avg",
+                             "Patient_metric_med",
+                             "cyto_acc_vol")],
+         as.numeric)
 
 #Calculate the total none defects
 ap_hist_repo_wkdy <- ap_hist_repo_wkdy %>%
@@ -439,7 +470,7 @@ ap_hist_repo_wkdy <- ap_hist_repo_wkdy %>%
 ap_hist_repo_wkdy <- ap_hist_repo_wkdy %>%
   mutate(total_defects = No_cases_signed_out - total_none_defects)
 
-#Standardize Facility name 
+#Standardize Facility name
 ap_hist_repo_wkdy <- ap_hist_repo_wkdy %>%
   mutate(Facility_Old = Facility)
 
@@ -448,57 +479,62 @@ ap_hist_repo_wkdy$Facility[ap_hist_repo_wkdy$Facility == "R"] <- "MSW"
 ap_hist_repo_wkdy$Facility[ap_hist_repo_wkdy$Facility == "SL"] <- "MSSL"
 ap_hist_repo_wkdy$Facility[ap_hist_repo_wkdy$Facility == "KH"] <- "MSB"
 
-#Add an extra column to change the facilities for GYN and CYTO GYN
+#Add an extra column to change the facilities for Cyto GYN and Cyto Non-GYN
 #for receive to result to Centralized Lab
 ap_hist_repo_wkdy <- ap_hist_repo_wkdy %>%
-  mutate(New_Facility_rtr_CYTO = Facility)
+  mutate(new_facility_rtr_cyto = Facility)
 
 ap_hist_repo_wkdy[
   (ap_hist_repo_wkdy$Spec_group == "CYTO GYN" |
-     ap_hist_repo_wkdy$Spec_group == "CYTO NONGYN"), ]$New_Facility_rtr_CYTO <-
+     ap_hist_repo_wkdy$Spec_group == "CYTO NONGYN"), ]$new_facility_rtr_cyto <-
   "Centralized Lab"
 
 ap_site_order <-
   c("MSH", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL", "NYEE")
 ap_site_order_rtr <-
   c("Centralized Lab",
-    "MSH", "MSQ", "MSBI","PACC", "MSB", "MSW", "MSSL", "NYEE")
+    "MSH", "MSQ", "MSBI", "PACC", "MSB", "MSW", "MSSL", "NYEE")
 
 ap_hist_repo_wkdy <- ap_hist_repo_wkdy %>%
-   mutate(Facility = factor(Facility , levels = ap_site_order))
+   mutate(Facility = factor(Facility, levels = ap_site_order))
 
 ap_hist_repo_wkdy <- ap_hist_repo_wkdy %>%
-  mutate(New_Facility_rtr_CYTO = factor(New_Facility_rtr_CYTO,
-                                        levels = ap_site_order_rtr ))
+  mutate(new_facility_rtr_cyto = factor(new_facility_rtr_cyto,
+                                        levels = ap_site_order_rtr))
 
 #determine the 30 business that will be reported
 ap_unique_dates <- unique(ap_hist_repo_wkdy$Signed_out_date_only)
-
+#reverse the order of the dates
 ap_ordered_dates <- ap_unique_dates[rev(order(ap_unique_dates))]
-
+#pick the last 30 week days
 ap_reporting_30_day_period <- ap_ordered_dates[1:30]
-ap_first_day_in_reporting_period <- ap_ordered_dates[30] 
-ap_last_day_in_reporting_period <- ap_ordered_dates[1]
+#get the first day in the reporting period
+ap_first_day <- ap_ordered_dates[30]
+#get the last day in the reporting period
+ap_last_day <- ap_ordered_dates[1]
 
 ap_hist_30_day <-
   ap_hist_repo_wkdy[
     which(
       ap_hist_repo_wkdy$Signed_out_date_only >=
-        ap_first_day_in_reporting_period), ]
+        ap_first_day), ]
 
-#summarized the data to plot it correctly
+#summarized the data to plot it correctly for TAT within target.
+#This table summarizes the historical data for the receive to result (rtr). It
+#makes sure that the facility for cyto gyn and cyto nongyn is centralized while
+#for pathology it is based on the home hospital
 ap_hist_30_day_rtr <-
   summarise(group_by(ap_hist_30_day,
                      Signed_out_date_only,
                      Spec_group,
-                     New_Facility_rtr_CYTO,
+                     new_facility_rtr_cyto,
                      Patient_setting),
             Lab_metric_within_target =
               format(round(mean(as.numeric(Lab_metric_within_target),
                                 na.rm = TRUE), 2)),
             Patient_metric_avg =
               format(round(mean(as.numeric(Patient_metric_avg),
-                                na.rm = TRUE),0)),
+                                na.rm = TRUE), 0)),
             No_cases_signed_out = sum(No_cases_signed_out))
 
 ap_hist_30_day_rtr[c("Lab_metric_within_target",
@@ -508,8 +544,11 @@ ap_hist_30_day_rtr[c("Lab_metric_within_target",
                               "Patient_metric_avg",
                               "No_cases_signed_out")], as.numeric)
 
+#summarized the data to plot it correctly for average collect to result
+#This table summarizes the historical data for the collect to result (ctr). It
+#makes sure that the facility is based on the home hospital
 ap_hist_30_day_ctr <-
-  summarise(group_by(ap_historical_30_day_period,
+  summarise(group_by(ap_hist_30_day,
                      Signed_out_date_only,
                      Spec_group,
                      Facility,
@@ -519,7 +558,7 @@ ap_hist_30_day_ctr <-
                                 na.rm = TRUE), 2)),
             Patient_metric_avg =
               format(round(mean(as.numeric(Patient_metric_avg),
-                                na.rm = TRUE),0)),
+                                na.rm = TRUE), 0)),
             No_cases_signed_out = sum(No_cases_signed_out))
 
 ap_hist_30_day_ctr[c("Lab_metric_within_target",
@@ -529,15 +568,22 @@ ap_hist_30_day_ctr[c("Lab_metric_within_target",
                               "Patient_metric_avg",
                               "No_cases_signed_out")], as.numeric)
 
+#summarized the data to plot it correctly for rtr volume plots.
+#This table summarizes the historical data for the receive to result (rtr). It
+#makes sure that the facility for cyto gyn and cyto nongyn is centralized while
+#for pathology it is based on the home hospital
 ap_hist_30_day_vol <-
-  summarise(group_by(ap_historical_30_day_period,
+  summarise(group_by(ap_hist_30_day,
                      Signed_out_date_only,
                      Spec_group,
-                     New_Facility_rtr_CYTO),
+                     new_facility_rtr_cyto),
             No_cases_signed_out = sum(No_cases_signed_out))
 
+#summarized the data to plot it correctly for ctr volume plots
+#This table summarizes the historical data for the collect to result (ctr). It
+#makes sure that the facility is based on the home hospital
 ap_hist_30_day_vol_ctr <-
-  summarise(group_by(ap_historical_30_day_period,
+  summarise(group_by(ap_hist_30_day,
                      Signed_out_date_only,
                      Spec_group,
                      Facility),
@@ -557,156 +603,154 @@ ap_tat_vol_plot <-
            test_name,
            site_name,
            metric) {
-
     ap_data_tat <-
       ap_hist_30_day_rtr[
         ap_hist_30_day_rtr$Spec_group == test_name &
-          ap_hist_30_day_rtr$New_Facility_rtr_CYTO == site_name, ]
-  
-  ap_data_vol <-
-    ap_hist_30_day_vol[
-      ap_hist_30_day_vol$Spec_group == test_name &
-        ap_hist_30_day_vol$New_Facility_rtr_CYTO == site_name, ]
- 
-  # Create printable metric name based on selected metric
-  metric_name <-
-    ifelse(metric == "Lab_metric_within_target", "Receive to Result",
-           ifelse(metric == "Patient_metric_avg", "Collect to Result", "Error"))
+          ap_hist_30_day_rtr$new_facility_rtr_cyto == site_name, ]
+    ap_data_vol <-
+      ap_hist_30_day_vol[
+        ap_hist_30_day_vol$Spec_group == test_name &
+          ap_hist_30_day_vol$new_facility_rtr_cyto == site_name, ]
+    # Create printable metric name based on selected metric
+    metric_name <-
+      ifelse(metric == "Lab_metric_within_target", "Receive to Result",
+             ifelse(metric == "Patient_metric_avg", "Collect to Result",
+                    "Error"))
 
-  # Create printable test name based on selected test
-  test_name <-
-    ifelse(test_name == "Breast", "All Breast Specimen",
-           ifelse(metric == "GI", "GI Biopsies", test_name))
-  
-ggplot() +
-  # Plot safe, at risk, not safe thresholds
-  geom_rect(aes(xmin = ap_first_day_in_reporting_period - 1,
-                xmax = ap_last_day_in_reporting_period + 1,
-                ymin = -Inf,
-                ymax = 0.8,
-                fill = "Not Safe",
-                alpha = "Not Safe")) +
-  geom_rect(aes(xmin = ap_first_day_in_reporting_period - 1,
-                xmax = ap_last_day_in_reporting_period + 1,
-                ymin = 0.8,
-                ymax = 0.9,
-                fill = "At Risk",
-                alpha = "At Risk")) +
-  geom_rect(aes(xmin = ap_first_day_in_reporting_period - 1,
-                xmax = ap_last_day_in_reporting_period + 1,
-                ymin = 0.9,
-                ymax = Inf,
-                fill = "Safe",
-                alpha = "Safe")) +  
-  geom_rect(aes(xmin = ap_first_day_in_reporting_period - 1,
-                xmax = ap_last_day_in_reporting_period + 1,
-                ymin = 0.9, ymax = Inf,
-                fill = "N/A",
-                alpha = "N/A"), show.legend = FALSE) + 
+    # Create printable test name based on selected test
+    test_name <-
+      ifelse(test_name == "Breast", "All Breast Specimen",
+             ifelse(metric == "GI", "GI Biopsies", test_name))
 
-  # Plot resulted volume on secondary axis
-  geom_point(data = ap_data_vol,
-             aes(x = Signed_out_date_only,
-                 y = No_cases_signed_out / max(No_cases_signed_out),
-                 size = "Spec_group"),
-             shape = 18,
-             color = "#959595") +
-  geom_line(data = ap_data_vol,
-            aes(x = Signed_out_date_only,
-                y = No_cases_signed_out / max(No_cases_signed_out),
-                linetype = "Spec_group"),
-            color = "#959595") +
-
-  # Plot percentage of labs within turnaround time target
-  geom_point(data = ap_data_tat,
-             aes_string(x = "Signed_out_date_only",
-                        y = metric,
-                        shape = "Patient_setting",
-                        color = "Patient_setting"),
-             size = 3) +
-  geom_line(data = ap_data_tat,
-            aes_string(x = "Signed_out_date_only",
-                       y = metric,
-                       shape = "Patient_setting",
-                       color = "Patient_setting"),
-            linetype = "dashed") +
-  
-  # Specify graph labels and themes
-  labs(title = paste0(site_name,
-                      " ",
-                      test_name,
-                      " ",
-                      metric_name,
-                      ":\n", "Percentage of Labs within Target TAT"), 
-       x = "Date",
-       y = "Percentage of Labs",
-       color = "Setting",
-       shape = "Setting",
-       fill = "Status",
-       alpha = "Status",
-       linetype = "Resulted Volume",
-       size = "Resulted Volume") +
-  
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = "bottom",
-        legend.box = "horizontal", 
-        legend.title = element_text(size = 8, face = "bold"),
-        legend.text = element_text(size = 8),
-        axis.text.x = element_text(angle = 30, hjust = 1)) +
- 
-  # Specify fills, shapes, and lines mappings and legends
-  scale_fill_manual(name = "Status",
-                    values = c("Not Safe" = "red",
-                               "At Risk" = "orange",
-                               "Safe" = "green",
-                               "N/A" = "grey"),
-                    breaks = c("Not Safe", "At Risk", "Safe")) +
-  scale_alpha_manual(name = "Status",
-                     values = c("Not Safe" = 0.25,
-                                "At Risk" = 0.25,
-                                "Safe" = 0.25,
-                                "N/A" = 0.5),
-                     breaks = c("Not Safe", "At Risk", "Safe")) +
-  
-  scale_color_manual(name = "Setting",
-                     values = mshs_colors) +
-  scale_size_manual(name = "Resulted Volume",
-                    values = 2,
-                    labels = paste("All Labs, \n All Settings")) + 
-  scale_linetype_manual(name = "Resulted Volume",
-                        values = "dotted",
+      ggplot() +
+      # Plot safe, at risk, not safe thresholds
+      geom_rect(aes(xmin = ap_first_day - 1,
+                    xmax = ap_last_day + 1,
+                    ymin = -Inf,
+                    ymax = 0.8,
+                    fill = "Not Safe",
+                    alpha = "Not Safe")) +
+      geom_rect(aes(xmin = ap_first_day - 1,
+                    xmax = ap_last_day + 1,
+                    ymin = 0.8,
+                    ymax = 0.9,
+                    fill = "At Risk",
+                    alpha = "At Risk")) +
+      geom_rect(aes(xmin = ap_first_day - 1,
+                    xmax = ap_last_day + 1,
+                    ymin = 0.9,
+                    ymax = Inf,
+                    fill = "Safe",
+                    alpha = "Safe")) +
+      geom_rect(aes(xmin = ap_first_day - 1,
+                    xmax = ap_last_day + 1,
+                    ymin = 0.9, ymax = Inf,
+                    fill = "N/A",
+                    alpha = "N/A"), show.legend = FALSE) +
+    
+      # Plot resulted volume on secondary axis
+      geom_point(data = ap_data_vol,
+                 aes(x = Signed_out_date_only,
+                     y = No_cases_signed_out / max(No_cases_signed_out),
+                     size = "Spec_group"),
+                 shape = 18,
+                 color = "#959595") +
+      geom_line(data = ap_data_vol,
+                aes(x = Signed_out_date_only,
+                    y = No_cases_signed_out / max(No_cases_signed_out),
+                    linetype = "Spec_group"),
+                color = "#959595") +
+    
+      # Plot percentage of labs within turnaround time target
+      geom_point(data = ap_data_tat,
+                 aes_string(x = "Signed_out_date_only",
+                            y = metric,
+                            shape = "Patient_setting",
+                            color = "Patient_setting"),
+                 size = 3) +
+      geom_line(data = ap_data_tat,
+                aes_string(x = "Signed_out_date_only",
+                           y = metric,
+                           shape = "Patient_setting",
+                           color = "Patient_setting"),
+                linetype = "dashed") +
+    
+      # Specify graph labels and themes
+      labs(title = paste0(site_name,
+                          " ",
+                          test_name,
+                          " ",
+                          metric_name,
+                          ":\n", "Percentage of Labs within Target TAT"),
+           x = "Date",
+           y = "Percentage of Labs",
+           color = "Setting",
+           shape = "Setting",
+           fill = "Status",
+           alpha = "Status",
+           linetype = "Resulted Volume",
+           size = "Resulted Volume") +
+    
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5),
+            legend.position = "bottom",
+            legend.box = "horizontal",
+            legend.title = element_text(size = 8, face = "bold"),
+            legend.text = element_text(size = 8),
+            axis.text.x = element_text(angle = 30, hjust = 1)) +
+    
+      # Specify fills, shapes, and lines mappings and legends
+      scale_fill_manual(name = "Status",
+                        values = c("Not Safe" = "red",
+                                   "At Risk" = "orange",
+                                   "Safe" = "green",
+                                   "N/A" = "grey"),
+                        breaks = c("Not Safe", "At Risk", "Safe")) +
+      scale_alpha_manual(name = "Status",
+                         values = c("Not Safe" = 0.25,
+                                    "At Risk" = 0.25,
+                                    "Safe" = 0.25,
+                                    "N/A" = 0.5),
+                         breaks = c("Not Safe", "At Risk", "Safe")) +
+    
+      scale_color_manual(name = "Setting",
+                         values = mshs_colors) +
+      scale_size_manual(name = "Resulted Volume",
+                        values = 2,
                         labels = paste("All Labs, \n All Settings")) +
-  
-  # Reorder legends
-  guides(color =
-           guide_legend(order = 1,
-                        nrow = length(unique(ap_data_tat$Patient_setting)),
-                        title.vjust = 1),
-         shape =
-           guide_legend(order = 1,
-                        nrow = length(unique(ap_data_tat$Patient_setting)),
-                        title.vjust = 1),
-         fill = guide_legend(order = 3, nrow = 3, title.vjust = 1),
-         alpha = guide_legend(order = 3, nrow = 3, title.vjust = 1),
-         size = guide_legend(order = 2, title.vjust = 1),
-         linetype = guide_legend(order = 2, title.vjust = 1)) +
-  
-  # Specify axis properties
-  scale_x_date(name = "Date",
-               labels = date_format("%m/%d/%Y"),
-               limits =
-                 c(ap_first_day_in_reporting_period - 1,
-                   ap_last_day_in_reporting_period + 1),
-               date_breaks = "3 days",
-               date_minor_breaks = "1 day",
-               expand = c(0, 0, 0, 0)) +
-  scale_y_continuous(name = "Percentage of Labs",
-                     limits = c(0, 1),
-                     labels = percent,
-                     sec.axis =
-                       sec_axis(~.*max(ap_data_vol$No_cases_signed_out),
-                                name = "Volume of Labs"))
+      scale_linetype_manual(name = "Resulted Volume",
+                            values = "dotted",
+                            labels = paste("All Labs, \n All Settings")) +
+    
+      # Reorder legends
+      guides(color =
+               guide_legend(order = 1,
+                            nrow = length(unique(ap_data_tat$Patient_setting)),
+                            title.vjust = 1),
+             shape =
+               guide_legend(order = 1,
+                            nrow = length(unique(ap_data_tat$Patient_setting)),
+                            title.vjust = 1),
+             fill = guide_legend(order = 3, nrow = 3, title.vjust = 1),
+             alpha = guide_legend(order = 3, nrow = 3, title.vjust = 1),
+             size = guide_legend(order = 2, title.vjust = 1),
+             linetype = guide_legend(order = 2, title.vjust = 1)) +
+    
+      # Specify axis properties
+      scale_x_date(name = "Date",
+                   labels = date_format("%m/%d/%Y"),
+                   limits =
+                     c(ap_first_day - 1,
+                       ap_last_day + 1),
+                   date_breaks = "3 days",
+                   date_minor_breaks = "1 day",
+                   expand = c(0, 0, 0, 0)) +
+      scale_y_continuous(name = "Percentage of Labs",
+                         limits = c(0, 1),
+                         labels = percent,
+                         sec.axis =
+                           sec_axis(~. * max(ap_data_vol$No_cases_signed_out),
+                                    name = "Volume of Labs"))
 }
 
 ```
@@ -714,29 +758,29 @@ ggplot() +
 
 ```{r Anatomic Pathology: Avg TAT for patient metric, warning = FALSE, message = FALSE, echo = FALSE}
 
-#we need to create a percent within target graph for cyto and patho
-#the graph will have the split between IP and AMB
-
+#we need to create a function to help plotting the percent within target graph
+#for cyto and patho. the graph will have the split between IP and AMB
 ap_pat_tat_plot <-
   function(ap_hist_30_day_ctr,
            ap_hist_30_day_vol_ctr,
            test_name,
            site_name, metric) {
-  
+
   ap_data_tat <-
     ap_hist_30_day_ctr[
       ap_hist_30_day_ctr$Spec_group == test_name &
         ap_hist_30_day_ctr$Facility == site_name, ]
-  
+
   ap_data_vol <-
     ap_hist_30_day_vol_ctr[
       ap_hist_30_day_vol_ctr$Spec_group == test_name &
         ap_hist_30_day_vol_ctr$Facility == site_name, ]
-  
+
   # Create printable metric name based on selected metric
   metric_name <-
     ifelse(metric == "Lab_metric_within_target", "Receive to Result",
-           ifelse(metric == "Patient_metric_avg", "Collect to Result", "Error"))
+           ifelse(metric == "Patient_metric_avg", "Collect to Result",
+                  "Error"))
 
   # Create printable test name based on selected test
   test_name <- ifelse(test_name == "Breast", "All Breast Specimen",
@@ -769,7 +813,7 @@ ap_pat_tat_plot <-
                        shape = "Patient_setting",
                        color = "Patient_setting"),
             linetype = "dashed") +
-  
+
   # Specify graph labels and themes
   labs(title =
          paste0(site_name,
@@ -777,18 +821,18 @@ ap_pat_tat_plot <-
                 test_name,
                 " ",
                 metric_name,
-                ":\n","Average TAT (Days)"), 
+                ":\n", "Average TAT (Days)"),
        x = "Date",
        y = "Percentage of Labs",
        color = "Setting",
        shape = "Setting",
        linetype = "Resulted Volume",
        size = "Resulted Volume") +
-  
+
   theme_bw() +
   theme(plot.title = element_text(hjust = 0.5),
         legend.position = "bottom",
-        legend.box = "horizontal", 
+        legend.box = "horizontal",
         legend.title = element_text(size = 8, face = "bold"),
         legend.text = element_text(size = 8),
         axis.text.x = element_text(angle = 30, hjust = 1)) +
@@ -798,7 +842,7 @@ ap_pat_tat_plot <-
                      values = mshs_colors) +
   scale_size_manual(name = "Resulted Volume",
                     values = 2,
-                    labels = paste("All Labs, \n All Settings")) + 
+                    labels = paste("All Labs, \n All Settings")) +
   scale_linetype_manual(name = "Resulted Volume",
                         values = "dotted",
                         labels = paste("All Labs, \n All Settings")) +
@@ -814,22 +858,22 @@ ap_pat_tat_plot <-
                         title.vjust = 1),
          size = guide_legend(order = 2, title.vjust = 1),
          linetype = guide_legend(order = 2, title.vjust = 1)) +
-  
+
   # Specify axis properties
   scale_x_date(name = "Date",
                labels = date_format("%m/%d/%Y"),
                limits =
-                 c(ap_first_day_in_reporting_period - 1,
-                   ap_last_day_in_reporting_period + 1),
+                 c(ap_first_day - 1,
+                   ap_last_day + 1),
                date_breaks = "3 days",
                date_minor_breaks = "1 day",
                expand = c(0, 0, 0, 0)) +
-  
+
   scale_y_continuous(name = "Average TAT (Days)",
                      limits =
                        c(0, max(ap_data_tat$Patient_metric_avg + 1)),
                      sec.axis =
-                       sec_axis(~.*mean(ap_data_vol$No_cases_signed_out),
+                       sec_axis(~. * mean(ap_data_vol$No_cases_signed_out),
                                 name = "Volume of Labs"))
 
 }
@@ -844,107 +888,108 @@ ap_resulted_vol_graph <-
   function(ap_hist_30_day_vol,
            test_name,
            site_name) {
+    ap_data_vol <-
+      ap_hist_30_day_vol[
+        ap_hist_30_day_vol$Spec_group == test_name &
+          ap_hist_30_day_vol$new_facility_rtr_cyto == site_name, ]
+
+    # Create printable test name based on selected test
+    test_name <- ifelse(test_name == "Breast", "All Breast Specimen",
+                        ifelse(test_name == "GI", "GI Biopsies", test_name))
   
-  ap_data_vol <-
-    ap_hist_30_day_vol[
-      ap_hist_30_day_vol$Spec_group == test_name &
-        ap_hist_30_day_vol$New_Facility_rtr_CYTO == site_name, ]
-
-  # Create printable test name based on selected test
-  test_name <- ifelse(test_name == "Breast", "All Breast Specimen",
-                      ifelse(test_name == "GI", "GI Biopsies", test_name))
-
-  ggplot() +
-    geom_point(data = ap_data_vol,
-               aes(x = Signed_out_date_only,
-                   y = No_cases_signed_out,
-                   size = "Spec_group"),
-               shape = 16,
-               color = mshs_colors[1]) +
-    geom_line(data = ap_data_vol,
-              aes(x = Signed_out_date_only,
-                  y = No_cases_signed_out,
-                  linetype = "Spec_group"),
-              color = mshs_colors[1]) +
-    labs(title =
-           paste0(site_name,
-                  " ",
-                  test_name,
-                  " Resulted Lab Volume"),
-         x = "Date",
-         y = "Volume of Labs",
-         color = "Setting",
-         shape = "Setting") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5),
-          legend.position = "bottom",
-          legend.box = "horizontal",
-          legend.title = element_text(size = 8, face = "bold"),
-          legend.text = element_text(size = 8),
-          axis.text.x = element_text(angle = 30, hjust = 1)) +
-    scale_x_date(name = "Date",
-                 labels = date_format("%m/%d/%Y"),
-                 limits =
-                   c(ap_first_day_in_reporting_period - 1,
-                     ap_last_day_in_reporting_period + 1),
-                 date_breaks = "3 days",
-                 date_minor_breaks = "1 day",
-                 expand = c(0, 0, 0, 0)) +
-    scale_size_manual(name = "Resulted Volume",
-                      values = 2,
-                      labels = paste("All Labs, \n All Settings")) + 
-    scale_linetype_manual(name = "Resulted Volume",
-                          values = "dotted",
-                          labels = paste("All Labs, \n All Settings")) +
-    scale_y_continuous(limits =
-                         c(min(ap_data_vol$No_cases_signed_out - 1),
-                           max(ap_data_vol$No_cases_signed_out + 1)))
+    ggplot() +
+      geom_point(data = ap_data_vol,
+                 aes(x = Signed_out_date_only,
+                     y = No_cases_signed_out,
+                     size = "Spec_group"),
+                 shape = 16,
+                 color = mshs_colors[1]) +
+      geom_line(data = ap_data_vol,
+                aes(x = Signed_out_date_only,
+                    y = No_cases_signed_out,
+                    linetype = "Spec_group"),
+                color = mshs_colors[1]) +
+      labs(title =
+             paste0(site_name,
+                    " ",
+                    test_name,
+                    " Resulted Lab Volume"),
+           x = "Date",
+           y = "Volume of Labs",
+           color = "Setting",
+           shape = "Setting") +
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5),
+            legend.position = "bottom",
+            legend.box = "horizontal",
+            legend.title = element_text(size = 8, face = "bold"),
+            legend.text = element_text(size = 8),
+            axis.text.x = element_text(angle = 30, hjust = 1)) +
+      scale_x_date(name = "Date",
+                   labels = date_format("%m/%d/%Y"),
+                   limits =
+                     c(ap_first_day - 1,
+                       ap_last_day + 1),
+                   date_breaks = "3 days",
+                   date_minor_breaks = "1 day",
+                   expand = c(0, 0, 0, 0)) +
+      scale_size_manual(name = "Resulted Volume",
+                        values = 2,
+                        labels = paste("All Labs, \n All Settings")) +
+      scale_linetype_manual(name = "Resulted Volume",
+                            values = "dotted",
+                            labels = paste("All Labs, \n All Settings")) +
+      scale_y_continuous(limits =
+                           c(min(ap_data_vol$No_cases_signed_out - 1),
+                             max(ap_data_vol$No_cases_signed_out + 1)))
 }
 
 ```
 
 ```{r function to go through all the facilities for each test, warning = FALSE, message = FALSE, echo = FALSE}
 
+#This function helps with going through all the facilities at each site for
+#each test and spec group to automate the plotting for the efficiency indicator
+#historical performance.
 ap_strat_data <-
   function(ap_hist_30_day_rtr,
            ap_hist_30_day_ctr,
            ap_hist_30_day_vol,
            test_name) {
+    sites_rtr <-
+      unique(
+        ap_hist_30_day_rtr[ap_hist_30_day_rtr$Spec_group ==
+                             test_name, ]$new_facility_rtr_cyto)
   
-  sites_rtr <-
-    unique(
-      ap_hist_30_day_rtr[ap_hist_30_day_rtr$Spec_group ==
-                           test_name, ]$New_Facility_rtr_CYTO)
+    sites_ctr <-
+      unique(
+        ap_hist_30_day_ctr[ap_hist_30_day_ctr$Spec_group ==
+                             test_name, ]$Facility)
   
-  sites_ctr <-
-    unique(
-      ap_hist_30_day_ctr[ap_hist_30_day_ctr$Spec_group ==
-                           test_name, ]$Facility)
-
-  for (site_rtr in sites_rtr) {
-    print(
-      ap_tat_vol_plot(ap_hist_30_day_rtr = ap_hist_30_day_rtr,
-                      ap_hist_30_day_vol = ap_hist_30_day_vol,
-                      test_name = test_name,
-                      site_name = site_rtr,
-                      metric = "Lab_metric_within_target"))
-  }
+    for (site_rtr in sites_rtr) {
+      print(
+        ap_tat_vol_plot(ap_hist_30_day_rtr = ap_hist_30_day_rtr,
+                        ap_hist_30_day_vol = ap_hist_30_day_vol,
+                        test_name = test_name,
+                        site_name = site_rtr,
+                        metric = "Lab_metric_within_target"))
+      }
   
-  for (site_ctr in sites_ctr) {
-    print(
-      ap_pat_tat_plot(ap_hist_30_day_ctr = ap_hist_30_day_ctr,
-                      ap_hist_30_day_vol_ctr = ap_hist_30_day_vol_ctr,
-                      test_name = test_name,
-                      site_name = site_ctr,
-                      metric = "Patient_metric_avg"))
-  }
-
-  for (site_rtr in sites_rtr) {
-    print(
-      ap_resulted_vol_graph(ap_hist_30_day_vol = ap_hist_30_day_vol,
-                            test_name = test_name,
-                            site_name = site_rtr))
-  }
+    for (site_ctr in sites_ctr) {
+      print(
+        ap_pat_tat_plot(ap_hist_30_day_ctr = ap_hist_30_day_ctr,
+                        ap_hist_30_day_vol_ctr = ap_hist_30_day_vol_ctr,
+                        test_name = test_name,
+                        site_name = site_ctr,
+                        metric = "Patient_metric_avg"))
+      }
+  
+    for (site_rtr in sites_rtr) {
+      print(
+        ap_resulted_vol_graph(ap_hist_30_day_vol = ap_hist_30_day_vol,
+                              test_name = test_name,
+                              site_name = site_rtr))
+    }
 }
 
 
@@ -954,11 +999,13 @@ ap_strat_data <-
 
 ```{r summarize data to calculate defects and defect rates for anatomic pathology, warning = FALSE, message = FALSE, echo = FALSE}
 
+#Here we summarize the data for anatomic pathology in order to calculate the
+#defects and defects rate to be used for p-charts
 ap_hist_30_day_defects <-
-  summarise(group_by(ap_historical_30_day_period,
+  summarise(group_by(ap_hist_30_day,
                      Signed_out_date_only,
                      Spec_group,
-                     New_Facility_rtr_CYTO),
+                     new_facility_rtr_cyto),
             No_cases_signed_out = sum(No_cases_signed_out),
             total_none_defects = sum(total_none_defects),
             total_defects = sum(total_defects),
@@ -967,23 +1014,24 @@ ap_hist_30_day_defects <-
 ```
 
 ```{r function for defective rate p-charts for anatomic pathology, echo = FALSE, warning = FALSE, message = FALSE}
+
+#This function creates plots for the p-chart for the anatomic pathology
 ap_pchart <- function(ap_hist_30_day_defects, test_name, site_name) {
-  
   ap_data_defc <-
     ap_hist_30_day_defects[
       ap_hist_30_day_defects$Spec_group == test_name &
-        ap_hist_30_day_defects$New_Facility_rtr_CYTO == site_name, ]
-  
+        ap_hist_30_day_defects$new_facility_rtr_cyto == site_name, ]
+
   # Create printable test name based on selected test
   test_name <- ifelse(test_name == "Breast", "All Breast Specimen",
                       ifelse(test_name == "GI", "GI Biopsies", test_name))
-   
-  # Find the center line for the p-chart using QC_lines 
+
+  # Find the center line for the p-chart using QC_lines
   center_line <-
     mean(QC_Lines(data = ap_data_defc$defective_rate,
                   n = ap_data_defc$No_cases_signed_out,
                   method = "p")$pBar)
-  
+
   # Create plot and standard settings
   ggplot(data = ap_data_defc,
          aes(x = Signed_out_date_only,
@@ -992,7 +1040,6 @@ ap_pchart <- function(ap_hist_30_day_defects, test_name, site_name) {
   # Create point and connecting lines for defect rate data
   geom_point(color = mshs_colors[1], shape = 16, size = 3) +
   geom_line(color = mshs_colors[1], linetype = "dashed") +
-  
   # Add centerline, upper, and lower control limit lines
   stat_QC(method = "p",
           auto.label = TRUE,
@@ -1020,9 +1067,9 @@ ap_pchart <- function(ap_hist_30_day_defects, test_name, site_name) {
         axis.text.x = element_text(angle = 30, hjust = 1)) +
   # Specify axis properties
   scale_x_date(limits =
-                 c(ap_first_day_in_reporting_period - 1,
+                 c(ap_first_day - 1,
                    max(ap_data_defc$Signed_out_date_only) + 1),
-               breaks = seq(ap_first_day_in_reporting_period,
+               breaks = seq(ap_first_day,
                             max(ap_data_defc$Signed_out_date_only), by = 3),
                date_minor_breaks = "1 day",
                date_labels = "%m/%d/%y",
@@ -1034,21 +1081,22 @@ ap_pchart <- function(ap_hist_30_day_defects, test_name, site_name) {
 
 ```{r function to go through all the facilities for each test for the p-chart, warning = FALSE, message = FALSE, echo = FALSE, results = 'asis'}
 
+#This function helps with going through all the facilities at each site for
+#each test and spec group to automate the plotting for the p-charts.
 ap_strat_data_pchart <- function(ap_hist_30_day_defects, test_name) {
-  
+
   sites <- unique(
     ap_hist_30_day_defects[
-      ap_hist_30_day_defects$Spec_group == test_name, ]$New_Facility_rtr_CYTO)
-    
+      ap_hist_30_day_defects$Spec_group == test_name, ]$new_facility_rtr_cyto)
+
   for (site in sites) {
-    
     ap_avg_resulted_volume <-
       mean(
         ap_hist_30_day_defects[
-          (ap_hist_30_day_defects$New_Facility_rtr_CYTO == site &
+          (ap_hist_30_day_defects$new_facility_rtr_cyto == site &
              ap_hist_30_day_defects$Spec_group ==
              test_name), ]$No_cases_signed_out)
-    
+
     if (ap_avg_resulted_volume >= 50) {
       print(
         ap_pchart(ap_hist_30_day_defects = ap_hist_30_day_defects,
@@ -1061,12 +1109,12 @@ ap_strat_data_pchart <- function(ap_hist_30_day_defects, test_name) {
                               "All Breast Specimen",
                               ifelse(test_name == "GI",
                                      "GI Biopsies", test_name))
-      cat(paste('\n<center><h3><i>',
+      cat(paste("\n<center><h3><i>",
                 site, test_name_new,
                 paste("Labs: Insufficient volume for this analysis (n<50).",
                 "</h3>\n <h4>(Average resulted volume over last 30 days:"),
                 round(ap_avg_resulted_volume, digits = 0), "specimens.)",
-                '</i></h4></center>\n\n<br><br>'))
+                "</i></h4></center>\n\n<br><br>"))
     }
   }
 }
@@ -1079,43 +1127,50 @@ ap_strat_data_pchart <- function(ap_hist_30_day_defects, test_name) {
 
 ### Troponin
 ```{r Troponin historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "Troponin")
+cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter,
+                             test = "Troponin")
 ```
 <h6> *TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory.* </h6>
 
 ### Lactate WB
 ```{r Lactate WB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "Lactate WB")
+cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter,
+                             test = "Lactate WB")
 ```
 <h6> *TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings, including Ambulatory.* </h6>
 
 ### BUN
 ```{r BUN historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "BUN")
+cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter,
+                             test = "BUN")
 ```
 <h6> *TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
 ### HGB
 ```{r HGB historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "HGB")
+cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter,
+                             test = "HGB")
 ```
 <h6> *TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
 ### PT
 ```{r PT historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "PT")
+cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter,
+                             test = "PT")
 ```
 <h6> *TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
 ### Rapid Flu
 ```{r Rapid Flu historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "Rapid Flu")
+cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter,
+                             test = "Rapid Flu")
 ```
 <h6> *TAT percentages include ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
 ### C. diff
 ```{r C. diff historical data, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
-cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter, test = "C. diff")
+cp_stratified_data_for_plots(tat_data = cp_dashboard_tat_filter,
+                             test = "C. diff")
 ```
 <h6> *TAT percentages include ED, ICU, and IP Non-ICU labs with valid turnaround times. Resulted volumes include all resulted labs from all settings.* </h6>
 
@@ -1166,45 +1221,51 @@ ap_strat_data(ap_hist_30_day_rtr,
 ## **Control Charts of Non-Compliant Labs** {.tabset}
 ### Troponin
 ```{r Troponin p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
-cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary, test = "Troponin")
+cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary,
+                               test = "Troponin")
 ```
 <h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 
 ### Lactate WB
 ```{r Lactate WB p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
-cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary, test = "Lactate WB")
+cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary,
+                               test = "Lactate WB")
 ```
 <h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### BUN
 ```{r BUN p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
-cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary, test = "BUN")
+cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary,
+                               test = "BUN")
 ```
 <h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### HGB
 ```{r HGB p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
-cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary, test = "HGB")
+cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary,
+                               test = "HGB")
 ```
 <h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### PT
 ```{r PT p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
-cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary, test = "PT")
+cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary,
+                               test = "PT")
 ```
 <h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### Rapid Flu
 ```{r Rapid Flu p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
-cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary, test = "Rapid Flu")
-# asis_output('<span style = "color: red">test text</span>')
+cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary,
+                               test = "Rapid Flu")
 ```
 <h6> Control charts includes ED, ICU, IP Non-ICU, and Ambulatory labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
 ### C. diff
 ```{r C. diff p-charts, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", eval = TRUE, results = 'asis'}
-cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary, test = "C. diff")
+cp_stratified_data_for_pcharts(defect_data = cp_dashboard_defect_summary,
+                               test = "C. diff")
 ```
 <h6> Control charts includes ED, ICU, and IP Non-ICU labs with valid turnaround times. Percent non-compliant represents fraction of labs outside target turnaround time and is calculated as $\frac{Volume Of Resulted Labs Exceeding Target}{Total Volume Of Resulted Labs}$. Center line represents process mean and is calculated as $\overline{p} =  \frac{\sum_{} np}{n}$. Control limits calculated as $\overline{p} \pm 3\sqrt{\frac{\overline{p}(1-\overline{p})}{n}}$.
 
@@ -1253,12 +1314,9 @@ definition_table <-
 
 definition_table  %>%
   kable(format = "html", escape = FALSE, align = "c",
-        col.names = c("Terminology Used",
-                      "Terminology Definition")) %>%
-  kable_styling(bootstrap_options = "hover",
-                position = "center",
-                font_size = 11,
-                full_width = FALSE) %>%
+        col.names = c("Terminology Used", "Terminology Definition")) %>%
+  kable_styling(bootstrap_options = "hover", position = "center",
+                font_size = 11, full_width = FALSE) %>%
   column_spec(column = c(1, 2), border_right = "thin solid lightgray") %>%
   row_spec(row = 0, font_size = 13, background = "#221f72", color = "white")
 
@@ -1273,28 +1331,23 @@ MSBI, MSB, MSW, MSM: Based on daily Sunquest report titled "KPI_Daily_TAT_Report
 The table below summarizes the test codes and IDs used from these daily reports.
 
 ```{r Create and format a table for test codes}
-test_codes_kable <- test_code %>%
+test_codes_kable <- full_join(scc_test_code, sun_test_code,
+                              by = c("Test" = "Test",
+                                     "Division" = "Division"))
+
+test_codes_kable <- test_codes_kable %>%
+  select(Division, Test, SCC_TestID, SUN_TestCode) %>%
   mutate(Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE)) %>%
   arrange(Test)
 
-test_codes_kable <-
-  test_codes_kable[ , c("Division", "Test", "SCC_TestID", "SUN_TestCode")]
-
 test_codes_kable %>%
   kable(format = "html", escape = FALSE, align = "c",
-        col.names = c("Lab Division",
-                      "Test",
-                      "SCC Test ID",
+        col.names = c("Lab Division", "Test", "SCC Test ID",
                       "Sunquest Test Code")) %>%
-  kable_styling(bootstrap_options = "hover",
-                position = "center",
-                font_size = 11,
-                full_width = FALSE) %>%
-  column_spec(column = c(1, 2, 3, 4),
-              border_right = "thin solid lightgray") %>%
-  row_spec(row = 0, font_size = 13,
-           background = "#221f72",
-           color = "white") %>%
+  kable_styling(bootstrap_options = "hover", position = "center",
+                font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2, 3, 4), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size = 13, background = "#221f72", color = "white") %>%
   collapse_rows()
 
 ```
@@ -1303,30 +1356,23 @@ test_codes_kable %>%
 The table below summarizes target turnaround times as agreed upon by clinical and operational leadership. 
 ```{r Create and format tables for TAT targets }
 tat_targets_kable <- tat_targets %>%
-  mutate(Test = factor(Test,
-                       levels = cp_micro_lab_order,
-                       ordered = TRUE),
-         Priority = factor(Priority,
-                           levels = dashboard_priority_order,
+  mutate(Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE),
+         Priority = factor(Priority, levels = dashboard_priority_order,
                            ordered = TRUE)) %>%
   arrange(Test, Priority)
 
-tat_targets_kable$Concate <- NULL
+tat_targets_kable <- tat_targets_kable %>%
+  mutate(Concate = NULL)
 
 tat_targets_kable %>%
   kable(format = "html", escape = FALSE, align = "c",
-        col.names = c("Test",
-                      "Priority",
-                      "Patient Setting",
+        col.names = c("Test", "Priority", "Patient Setting",
                       "Receive to Result TAT Target (min)",
                       "Collect to Result TAT Target (min)"),
         caption = "Target Turnaround Times") %>%
-  kable_styling(bootstrap_options = "hover",
-                position = "center",
-                font_size = 11,
-                full_width = FALSE) %>%
-  column_spec(column = c(1, 2, 3, 5),
-              border_right = "thin solid lightgray") %>%
+  kable_styling(bootstrap_options = "hover", position = "center",
+                font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2, 3, 5), border_right = "thin solid lightgray") %>%
   row_spec(row = 0, font_size = 13, background = "#221f72", color = "white")
 
 ```
@@ -1368,20 +1414,13 @@ The table below summarizes target turnaround times for Anatomic Pathology as agr
 
 tat_targets_ap  %>%
   kable(format = "html", escape = FALSE, align = "c",
-        col.names = c("Test",
-                      "Patient Setting",
+        col.names = c("Test", "Patient Setting",
                       "Receive to Result TAT Target (days)",
                       "Collect to Result TAT Target (days)")) %>%
-  kable_styling(bootstrap_options = "hover",
-                position = "center",
-                font_size = 11,
-                full_width = FALSE) %>%
-  column_spec(column = c(1, 2, 3, 4),
-              border_right = "thin solid lightgray") %>%
-  row_spec(row = 0,
-           font_size = 13,
-           background = "#221f72",
-           color = "white") %>%
+  kable_styling(bootstrap_options = "hover", position = "center",
+                font_size = 11, full_width = FALSE) %>%
+  column_spec(column = c(1, 2, 3, 4), border_right = "thin solid lightgray") %>%
+  row_spec(row = 0, font_size = 13, background = "#221f72", color = "white") %>%
   collapse_rows(columns = 1)
 
 ```
@@ -1396,22 +1435,17 @@ Only the codes for GI biopsies are included in the analysis.
 
 gi_codes_updated <-
   gi_codes[, c("GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.",
-               "Spec_code")]
+              "Spec_code")]
 
 gi_codes_updated  %>%
   kable(format = "html", escape = FALSE, align = "c",
-        col.names = c("Specimen Code",
-                      "Included vs. Excluded Codes")) %>%
-  kable_styling(bootstrap_options = "hover",
-                position = "center",
-                font_size = 11,
-                full_width = FALSE) %>%
+        col.names = c("Specimen Code", "Included vs. Excluded Codes")) %>%
+  kable_styling(bootstrap_options = "hover", position = "center",
+                font_size = 11, full_width = FALSE) %>%
   column_spec(column = c(1, 2), border_right = "thin solid lightgray") %>%
-  row_spec(row = 0, font_size = 13,
-           background = "#221f72",
+  row_spec(row = 0, font_size = 13, background = "#221f72",
            color = "white") %>%
   collapse_rows(columns = 1)
-
 ```
 
 <h4><b>Additional notes on target turnaround times:</b></h4>
