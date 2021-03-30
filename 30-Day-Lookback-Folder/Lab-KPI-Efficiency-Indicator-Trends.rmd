@@ -305,14 +305,44 @@ cp_tat_percentage_graph <-
 ```{r Custom function for graphing resulted lab volume stratified by order priority for Clinical Pathology, echo = FALSE, warning = FALSE, message = FALSE}
 
 # Function for plotting total resulted lab volume stratified by order priority
-cp_resulted_volume_graph <- function(data, test_name, site_name) {
-  ggplot() +
-    geom_point(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = DashboardPriority, shape = DashboardPriority), size = 3) +
-    geom_line(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name, ], aes(x = ResultDate, y = ResultedVolume, color = DashboardPriority), linetype = "dashed") +
-    labs(title = paste0(site_name, " ", test_name, " Resulted Lab Volume"), x = "Date",  y = "Volume of Labs", color = "Priority", shape = "Priority") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
-    scale_x_date(limits = c(start_date -1, max(data$ResultDate)+1), breaks = seq(start_date, max(data$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+cp_resulted_volume_graph <- 
+  function(data, test_name, site_name) {
+    ggplot() +
+      geom_point(data = data[data$ResultDate >= start_date &
+                               data$Test == test_name &
+                               data$Site == site_name, ],
+                 aes(x = ResultDate,
+                     y = ResultedVolume,
+                     color = DashboardPriority,
+                     shape = DashboardPriority),
+                 size = 3) +
+      geom_line(data = data[data$ResultDate >= start_date &
+                              data$Test == test_name &
+                              data$Site == site_name, ],
+                aes(x = ResultDate,
+                    y = ResultedVolume,
+                    color = DashboardPriority),
+                linetype = "dashed") +
+      labs(title = paste0(site_name,
+                          " ",
+                          test_name,
+                          " Resulted Lab Volume"),
+           x = "Date",
+           y = "Volume of Labs",
+           color = "Priority",
+           shape = "Priority") +
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5),
+            legend.position = "bottom",
+            legend.box = "horizontal",
+            legend.title = element_text(size = 8, face = "bold"),
+            legend.text = element_text(size = 8),
+            axis.text.x = element_text(angle = 30, hjust = 1)) +
+      scale_x_date(limits = c(start_date -1, max(data$ResultDate) + 1),
+                   breaks = seq(start_date, max(data$ResultDate), by = 3),
+                   date_minor_breaks = "1 day",
+                   date_labels = "%m/%d/%y",
+                   expand = c(0, 0, 0, 0)) +
     # scale_y_continuous(sec.axis = sec_axis(~.*1, name = " ", breaks = NULL, label = NULL)) +
     scale_color_manual(name = "Priority", values = mshs_colors)
 }
@@ -320,73 +350,167 @@ cp_resulted_volume_graph <- function(data, test_name, site_name) {
 
 ```{r Custom function for plotting TAT percentages and resulted volume on single graph for Clinical Pathology, echo = FALSE, warning = FALSE, message = FALSE}
 
-cp_tat_and_volume_plot <- function(data_tat, test_name, site_name, lab_priority, metric) {
-  # 
-  # Subset turnaround time and volume data based on test, site, and priority
-  data_tat_plot <- data_tat %>%
-    filter(ResultDate >= start_date & 
-             Test == test_name & 
-             Site == site_name & 
-             DashboardPriority == lab_priority)
-
-  data_vol_plot <- cp_dashboard_vol_summary %>%
-    filter(ResultDate >= start_date & 
-             Test == test_name & 
-             Site == site_name & 
-             DashboardPriority == lab_priority)
-  # 
-  # Create printable metric name based on selected metric
-  metric_name <- ifelse(metric == "ReceiveResultPercent", "Receive to Result", ifelse(metric == "CollectResultPercent", "Collect to Result", "Error"))
-  #
-  # Determine scale factor for secondary axis based on maximum resulted volume
-  base10 <- floor(log10(max(data_vol_plot$ResultedVolume)))
-  scale <- ceiling(max(data_vol_plot$ResultedVolume)/(10^(base10-1)))*10^(base10-1)
-  #
-  # Create plot and standard settings
-  ggplot() +
-    # Plot safe, at risk, not safe thresholds
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
-                  ymin = -Inf, ymax = min(data_tat_plot$NotSafeThreshold), 
-                  fill = "Not Safe", alpha = "Not Safe")) +
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
-                  ymin = min(data_tat_plot$NotSafeThreshold), ymax = min(data_tat_plot$SafeThreshold), 
-                  fill = "At Risk", alpha = "At Risk"), show.legend = FALSE) +
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
-                  ymin = min(data_tat_plot$SafeThreshold), ymax = 1, 
-                  fill = "Safe", alpha = "Safe"), show.legend = FALSE) + 
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data_tat_plot$ResultDate) + 1, 
-                  ymin = 1, ymax = Inf, fill = "N/A", 
-                  alpha = "N/A"), show.legend = FALSE) +
-    # Plot percentage of labs within turnaround time target
-    geom_point(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "DashboardSetting", shape = "DashboardSetting"), size = 3) +
-    geom_line(data = data_tat_plot, aes_string(x = "ResultDate", y = metric, color = "DashboardSetting"), linetype = "dashed") +
-    # Plot resulted volume on secondary axis
-    geom_point(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/scale, size = "Volume"), color = "#959595", shape = 18) +
-    geom_line(data = data_vol_plot, aes(x = ResultDate, y = ResultedVolume/scale, linetype = "Volume"), color = "#959595") +
-    # Specify graph labels and themes
-    labs(title = paste0(site_name, " ", test_name, " ", metric_name, ":\n", "Percentage of ", lab_priority, " Labs within Target TAT"), 
-         x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting", fill = "Status", alpha = "Status", linetype = "Resulted Volume", size = "Resulted Volume") +
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
-          legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
-          axis.text.x = element_text(angle = 30, hjust = 1)) +
-    # Specify fills, shapes, and lines mappings and legends
-    scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green", "N/A" = "grey"), 
-                      breaks=c("Not Safe","At Risk","Safe")) +
-    scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.25, "At Risk" = 0.25, "Safe" = 0.25, "N/A" = 0.5), 
-                       breaks=c("Not Safe","At Risk","Safe")) +
-    scale_color_manual(name = "Setting", values = mshs_colors) +
-    scale_size_manual(name = "Resulted Volume", values = 2, labels = paste(lab_priority, "Labs, \n All Settings")) + 
-    scale_linetype_manual(name = "Resulted Volume", values = "dotted", labels = paste(lab_priority, "Labs, \n All Settings")) +
-    # Reorder legends
-    guides(color = guide_legend(order = 1, nrow = length(unique(data_tat_plot$DashboardSetting)), title.vjust = 1), shape = guide_legend(order = 1, nrow = length(unique(data_tat_plot$DashboardSetting)), title.vjust = 1), fill = guide_legend(order = 3, nrow = 3, title.vjust = 1), alpha = guide_legend(order = 3, nrow = 3, title.vjust = 1), 
-           size = guide_legend(order = 2, title.vjust = 1), linetype = guide_legend(order = 2, title.vjust = 1)) +
-    # Specify axis properties
-    scale_x_date(limits = c(start_date -1, max(data_tat_plot$ResultDate)+1), 
-                 breaks = seq(start_date, max(data_tat_plot$ResultDate), by = 3), date_minor_breaks = "1 day", 
-                 date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
-    scale_y_continuous(limits = c(0, 1), breaks = seq(from = 0, to = 1, length.out = 5), expand = c(0, 0, 0.05, 0), labels = percent_format(accuracy = 1), 
-                       sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
+cp_tat_and_volume_plot <- 
+  function(data_tat, test_name, site_name, lab_priority, metric) {
+    # 
+    # Subset turnaround time and volume data based on test, site, and priority
+    data_tat_plot <- data_tat %>%
+      filter(ResultDate >= start_date &
+               Test == test_name &
+               Site == site_name &
+               DashboardPriority == lab_priority)
+    
+    data_vol_plot <- cp_dashboard_vol_summary %>%
+      filter(ResultDate >= start_date &
+               Test == test_name &
+               Site == site_name &
+               DashboardPriority == lab_priority)
+    # 
+    # Create printable metric name based on selected metric
+    metric_name <- ifelse(metric == "ReceiveResultPercent",
+                          "Receive to Result",
+                          ifelse(metric == "CollectResultPercent",
+                                 "Collect to Result", "Error"))
+    #
+    # Determine scale factor for secondary axis based on maximum resulted volume
+    base10 <- floor(log10(max(data_vol_plot$ResultedVolume)))
+    scale <- ceiling(max(data_vol_plot$ResultedVolume) / (10^(base10-1))) * 10^(base10-1)
+    #
+    # Create plot and standard settings
+    ggplot() +
+      # Plot safe, at risk, not safe thresholds
+      geom_rect(aes(xmin = start_date - 1,
+                    xmax = max(data_tat_plot$ResultDate) + 1,
+                    ymin = -Inf,
+                    ymax = min(data_tat_plot$NotSafeThreshold),
+                    fill = "Not Safe",
+                    alpha = "Not Safe")) +
+      geom_rect(aes(xmin = start_date - 1,
+                    xmax = max(data_tat_plot$ResultDate) + 1,
+                    ymin = min(data_tat_plot$NotSafeThreshold),
+                    ymax = min(data_tat_plot$SafeThreshold),
+                    fill = "At Risk",
+                    alpha = "At Risk"),
+                show.legend = FALSE) +
+      geom_rect(aes(xmin = start_date - 1,
+                    xmax = max(data_tat_plot$ResultDate) + 1,
+                    ymin = min(data_tat_plot$SafeThreshold),
+                    ymax = 1,
+                    fill = "Safe",
+                    alpha = "Safe"),
+                show.legend = FALSE) +
+      geom_rect(aes(xmin = start_date - 1,
+                    xmax = max(data_tat_plot$ResultDate) + 1,
+                    ymin = 1,
+                    ymax = Inf,
+                    fill = "N/A",
+                    alpha = "N/A"),
+                show.legend = FALSE) +
+      # Plot percentage of labs within turnaround time target
+      geom_point(data = data_tat_plot,
+                 aes_string(x = "ResultDate",
+                            y = metric,
+                            color = "DashboardSetting",
+                            shape = "DashboardSetting"),
+                 size = 3) +
+      geom_line(data = data_tat_plot,
+                aes_string(x = "ResultDate",
+                           y = metric,
+                           color = "DashboardSetting"),
+                linetype = "dashed") +
+      # Plot resulted volume on secondary axis
+      geom_point(data = data_vol_plot,
+                 aes(x = ResultDate,
+                     y = ResultedVolume / scale,
+                     size = "Volume"),
+                 color = "#959595",
+                 shape = 18) +
+      geom_line(data = data_vol_plot,
+                aes(x = ResultDate,
+                    y = ResultedVolume / scale,
+                    linetype = "Volume"),
+                color = "#959595") +
+      # Specify graph labels and themes
+      labs(title = paste0(site_name,
+                          " ",
+                          test_name,
+                          " ",
+                          metric_name,
+                          ":\n",
+                          "Percentage of ",
+                          lab_priority,
+                          " Labs within Target TAT"),
+           x = "Date",
+           y = "Percentage of Labs",
+           color = "Setting",
+           shape = "Setting",
+           fill = "Status",
+           alpha = "Status",
+           linetype = "Resulted Volume",
+           size = "Resulted Volume") +
+      theme_bw() +
+      theme(plot.title = element_text(hjust = 0.5),
+            legend.position = "bottom",
+            legend.box = "horizontal",
+            legend.title = element_text(size = 8, face = "bold"),
+            legend.text = element_text(size = 8),
+            axis.text.x = element_text(angle = 30, hjust = 1)) +
+      # Specify fills, shapes, and lines mappings and legends
+      scale_fill_manual(name = "Status",
+                        values = c("Not Safe" = "red",
+                                   "At Risk" = "orange",
+                                   "Safe" = "green",
+                                   "N/A" = "grey"),
+                        breaks=c("Not Safe","At Risk","Safe")) +
+      scale_alpha_manual(name = "Status",
+                         values = c("Not Safe" = 0.25,
+                                    "At Risk" = 0.25,
+                                    "Safe" = 0.25,
+                                    "N/A" = 0.5),
+                         breaks = c("Not Safe", "At Risk", "Safe")) +
+      scale_color_manual(name = "Setting", values = mshs_colors) +
+      scale_size_manual(name = "Resulted Volume",
+                        values = 2,
+                        labels = paste(lab_priority,
+                                       "Labs, \n All Settings")) +
+      scale_linetype_manual(name = "Resulted Volume",
+                            values = "dotted",
+                            labels = paste(lab_priority,
+                                           "Labs, \n All Settings")) +
+      # Reorder legends
+      guides(color =
+               guide_legend(
+                 order = 1,
+                 nrow = length(unique(data_tat_plot$DashboardSetting)),
+                 title.vjust = 1),
+             shape =
+               guide_legend(
+                 order = 1,
+                 nrow = length(unique(data_tat_plot$DashboardSetting)),
+                 title.vjust = 1),
+             fill = 
+               guide_legend(
+                 order = 3,
+                 nrow = 3,
+                 title.vjust = 1),
+             alpha = 
+               guide_legend(
+                 order = 3,
+                 nrow = 3,
+                 title.vjust = 1),
+             size = guide_legend(order = 2, title.vjust = 1),
+             linetype = guide_legend(order = 2, title.vjust = 1)) +
+      # Specify axis properties
+      scale_x_date(limits = c(start_date -1, max(data_tat_plot$ResultDate)+1),
+                   breaks = seq(start_date, max(data_tat_plot$ResultDate),
+                                by = 3),
+                   date_minor_breaks = "1 day",
+                   date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
+      scale_y_continuous(limits = c(0, 1),
+                         breaks = seq(from = 0, to = 1, length.out = 5),
+                         expand = c(0, 0, 0.05, 0),
+                         labels = percent_format(accuracy = 1),
+                         sec.axis = sec_axis(~.*scale, name = "Volume of Labs"))
 }
 ```
 
@@ -405,10 +529,20 @@ cp_stratified_data_for_plots <- function(tat_data, test) {
         filter(DashboardPriority == priority)
       # print(tat_percentage_graph(data = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "ReceiveResultPercent"))
       # print(tat_percentage_graph(data = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "CollectResultPercent"))
-      print(cp_tat_and_volume_plot(data_tat = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "ReceiveResultPercent"))
-      print(cp_tat_and_volume_plot(data_tat = priority_df, test_name = test, site_name = site, lab_priority = priority, metric = "CollectResultPercent"))
+      print(cp_tat_and_volume_plot(data_tat = priority_df,
+                                   test_name = test,
+                                   site_name = site,
+                                   lab_priority = priority,
+                                   metric = "ReceiveResultPercent"))
+      print(cp_tat_and_volume_plot(data_tat = priority_df,
+                                   test_name = test,
+                                   site_name = site,
+                                   lab_priority = priority,
+                                   metric = "CollectResultPercent"))
       }
-    print(cp_resulted_volume_graph(data = cp_dashboard_vol_summary, test_name = test, site_name = site))
+    print(cp_resulted_volume_graph(data = cp_dashboard_vol_summary,
+                                   test_name = test,
+                                   site_name = site))
   }
 }
 ```
@@ -418,46 +552,77 @@ cp_stratified_data_for_plots <- function(tat_data, test) {
 # Summarize data based on site and priority
 cp_dashboard_defect_summary <- cp_dashboard_tat_filter %>%
   group_by(Site, ResultDate, Division, Test, DashboardPriority) %>%
-  summarize(ResultedVolume = sum(ResultedVolume), 
+  summarize(ResultedVolume = sum(ResultedVolume),
             ResultedVolumeWithTAT = sum(ResultedVolumeWithTAT),
-            ReceiveResultInTarget = sum(ReceiveResultInTarget), 
+            ReceiveResultInTarget = sum(ReceiveResultInTarget),
             CollectResultInTarget = sum(CollectResultInTarget),
-            ReceiveResultDefects = ResultedVolumeWithTAT - ReceiveResultInTarget, 
-            ReceiveResultDefectRate = ReceiveResultDefects / ResultedVolumeWithTAT)
+            ReceiveResultDefects =
+              ResultedVolumeWithTAT - ReceiveResultInTarget,
+            ReceiveResultDefectRate =
+              ReceiveResultDefects / ResultedVolumeWithTAT)
 
-cp_dashboard_defect_summary <- cp_dashboard_defect_summary[!is.na(cp_dashboard_defect_summary$ReceiveResultDefectRate), ]
+cp_dashboard_defect_summary <- cp_dashboard_defect_summary %>%
+  filter(!is.na(ReceiveResultDefectRate))
+
+# cp_dashboard_defect_summary <- cp_dashboard_defect_summary[!is.na(cp_dashboard_defect_summary$ReceiveResultDefectRate), ]
 ```
 
 ```{r Custom function for p-charts for Clinical Pathology, echo = FALSE, warning = FALSE, message = FALSE}
 
-cp_receive_result_pchart <- function(data_defect, test_name, site_name, lab_priority) {
-  # 
-  # Subset turnaround time and volume data based on test, site, and priority
-  data_defect_plot <- data_defect %>%
-    filter(ResultDate >= start_date & 
-             Test == test_name & 
-             Site == site_name & 
-             DashboardPriority == lab_priority)
-  # Calculate center line
-  center_line <- mean(QC_Lines(data = data_defect_plot$ReceiveResultDefectRate, n = data_defect_plot$ResultedVolumeWithTAT, method = "p")$pBar)
-  # 
-  # Create plot and standard settings
-  ggplot(data = data_defect_plot, aes(x = ResultDate, y = ReceiveResultDefectRate, n = ResultedVolumeWithTAT)) +
-  # Create point and connecting lines for defect rate data
-  geom_point(color = mshs_colors[1], shape = 16, size = 3) +
-  geom_line(color = mshs_colors[1], linetype = "dashed") +
-  # Add centerline, upper, and lower control limit lines
-  stat_QC(method = "p", auto.label = T, color.qc_center = "black") +
-  geom_label(x = max(data_defect_plot$ResultDate)+1, y = center_line, vjust = 1.2, hjust = 1, label = paste("CL:", percent(center_line, accuracy = 0.1))) +
-  # Specify graph labels and themes
-  labs(title = paste(site_name, test_name, lab_priority, "Labs:\n", "Control Chart of Non-Compliant Receive to Result TAT"), x = "Date",  y = "Percent Non-Compliant") +
-  theme_bw() +
-  theme(plot.title = element_text(hjust = 0.5), legend.position = "bottom", legend.box = "horizontal", 
-          legend.title = element_text(size = 8, face = "bold"), legend.text = element_text(size = 8),
+cp_receive_result_pchart <-
+  function(data_defect, test_name, site_name, lab_priority) {
+    #
+    # Subset turnaround time and volume data based on test, site, and priority
+    data_defect_plot <- data_defect %>%
+      filter(ResultDate >= start_date &
+               Test == test_name &
+               Site == site_name &
+               DashboardPriority == lab_priority)
+    # Calculate center line
+    center_line <- 
+      mean(QC_Lines(data = data_defect_plot$ReceiveResultDefectRate,
+                    n = data_defect_plot$ResultedVolumeWithTAT,
+                    method = "p")$pBar)
+    #
+    # Create plot and standard settings
+  ggplot(data = data_defect_plot,
+         aes(x = ResultDate,
+             y = ReceiveResultDefectRate,
+             n = ResultedVolumeWithTAT)) +
+    # Create point and connecting lines for defect rate data
+    geom_point(color = mshs_colors[1], shape = 16, size = 3) +
+    geom_line(color = mshs_colors[1], linetype = "dashed") +
+    # Add centerline, upper, and lower control limit lines
+    stat_QC(method = "p", auto.label = T, color.qc_center = "black") +
+    geom_label(x = max(data_defect_plot$ResultDate)+1,
+               y = center_line,
+               vjust = 1.2,
+               hjust = 1,
+               label = paste("CL:", percent(center_line, accuracy = 0.1))) +
+    # Specify graph labels and themes
+    labs(title = paste(site_name,
+                       test_name,
+                       lab_priority,
+                       "Labs:\n",
+                       "Control Chart of Non-Compliant Receive to Result TAT"),
+         x = "Date",
+         y = "Percent Non-Compliant") +
+    theme_bw() +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "bottom",
+          legend.box = "horizontal", 
+          legend.title = element_text(size = 8, face = "bold"),
+          legend.text = element_text(size = 8),
           axis.text.x = element_text(angle = 30, hjust = 1)) +
-  # Specify axis properties
-  scale_x_date(limits = c(start_date -1, max(data_defect_plot$ResultDate)+1), breaks = seq(start_date, max(data_defect_plot$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
-  scale_y_continuous(labels = percent_format(accuracy = 1))
+    # Specify axis properties
+    scale_x_date(limits = c(start_date - 1,
+                            max(data_defect_plot$ResultDate) + 1),
+                 breaks = seq(start_date, max(data_defect_plot$ResultDate),
+                              by = 3),
+                 date_minor_breaks = "1 day",
+                 date_labels = "%m/%d/%y",
+                 expand = c(0, 0, 0, 0)) +
+    scale_y_continuous(labels = percent_format(accuracy = 1))
 }
 
 
@@ -482,12 +647,24 @@ cp_stratified_data_for_pcharts <- function(defect_data, test) {
       priority_df <- site_df %>%
         filter(DashboardPriority == priority)
       # Determine average resulted volume over last 30 days to see if p-chart is valid
-      avg_resulted_volume <- mean(priority_df$ResultedVolumeWithTAT[priority_df$ResultDate >= start_date])
+      avg_resulted_volume <- 
+        mean(priority_df$ResultedVolumeWithTAT[
+          priority_df$ResultDate >= start_date])
       # print(avg_resulted_volume)
       if (avg_resulted_volume >= 50) {
-        print(cp_receive_result_pchart(data_defect = priority_df, test_name = test, site_name = site, lab_priority = priority))
+        print(cp_receive_result_pchart(data_defect = priority_df,
+                                       test_name = test,
+                                       site_name = site,
+                                       lab_priority = priority))
       } else {
-        cat(paste('\n<center><h3><i>', site, test, priority, "Labs: Insufficient volume for this analysis (n<50).</h3> \n <h4>(Average resulted volume over last 30 days:", round(avg_resulted_volume, digits = 0), "specimens.)", '</i></h4></center>\n\n<br><br>'))
+        cat(paste('\n<center><h3><i>',
+                  site,
+                  test,
+                  priority,
+                  "Labs: Insufficient volume for this analysis (n<50).</h3> \n <h4>(Average resulted volume over last 30 days:",
+                  round(avg_resulted_volume, digits = 0),
+                  "specimens.)",
+                  '</i></h4></center>\n\n<br><br>'))
       }
     }
   }
