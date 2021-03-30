@@ -28,7 +28,7 @@ output:
 #install.packages("scales")
 #install.packages("gridExtra")
 #install.packages("ggQC")
-
+#install.packages("plotly") 
 
 #-------------------------------Required packages------------------------------#
 
@@ -79,7 +79,7 @@ cp_user_path <- paste0(user_directory, "/CP Historical Repo/*.*")
 ap_user_path <- paste0(user_directory, "/AP & Cytology Historical Repo/*.*")
 
 # Import Clinical Pathology historical repository (Sunquest and SCC)
-scc_sun_hist <-
+cp_hist <-
   readRDS(
     file =
       choose.files(default = cp_user_path,
@@ -93,9 +93,9 @@ ap_hist_repo <-
                    caption = "Select Anatomic Pathology Historical Repository"))
 
 # Determine start date based on lookback period and last date in repository
-scc_sun_hist$ResultDate <- as.Date(scc_sun_hist$ResultDate, format = "%m/%d/%y")
+cp_hist$ResultDate <- as.Date(cp_hist$ResultDate, format = "%m/%d/%y")
 lookback_period <- 30
-start_date <- max(scc_sun_hist$ResultDate) - (lookback_period - 1)
+start_date <- max(cp_hist$ResultDate) - (lookback_period - 1)
 
 # Sinai color scheme
 mshs_colors <- c("#221f72", "#00AEFF", "#D80B8C", "#7f7f7f")
@@ -108,8 +108,6 @@ reference_file <- paste0(user_directory,
                          "/Code Reference/",
                          "Analysis Reference 2021-03-22.xlsx")
 
-test_code <- read_excel(reference_file, sheet = "TestNames")
-###this should be replaced by:
 # CP and Micro --------------------------------
 scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
 sun_test_code <- read_excel(reference_file, sheet = "SUN_TestCodes")
@@ -166,7 +164,7 @@ gi_codes <- data.frame(read_excel(reference_file, sheet = "GI_Codes"),
 ```
 
 ```{r Format historical repository for Clinical Pathology plotting, echo = FALSE, warning = FALSE, message = FALSE}
-cp_dashboard_tat_summary <- scc_sun_hist %>%
+cp_dashboard_tat_summary <- cp_hist %>%
   group_by(Site, ResultDate, Division, Test,
            DashboardPriority, DashboardSetting,
            ReceiveResultTarget, CollectResultTarget) %>%
@@ -183,7 +181,7 @@ cp_dashboard_tat_summary <- scc_sun_hist %>%
          NotSafeThreshold = ifelse(Test == "Rapid Flu" |
                                      Test == "C. diff", 0.9, 0.8))
 
-cp_dashboard_vol_summary <- scc_sun_hist %>%
+cp_dashboard_vol_summary <- cp_hist %>%
   group_by(Site, ResultDate, Test, DashboardPriority) %>%
   summarize(ResultedVolume = sum(TotalResulted))
 
@@ -192,39 +190,114 @@ cp_dashboard_vol_summary <- scc_sun_hist %>%
 ```{r Filter unused TAT combinations for Clinical Pathology, echo = FALSE, warning = FALSE, message = FALSE}
 # Manually remove patient settings or combinations not represented in efficiency indicator dashboards
 cp_dashboard_tat_filter <- cp_dashboard_tat_summary %>%
-  filter(!(DashboardPriority == "Other" | DashboardSetting == "Other" | 
-             ((Test == "Troponin" | Test == "Lactate WB") & DashboardSetting == "Amb") |
+  filter(!(DashboardPriority == "Other" |
+             DashboardSetting == "Other" | 
+             ((Test == "Troponin" | Test == "Lactate WB") &
+                DashboardSetting == "Amb") |
              (Test == "C. diff" & DashboardSetting == "Amb")))
 
-# Convert characters to factors
-cp_dashboard_tat_filter$Site <- factor(cp_dashboard_tat_filter$Site, levels = site_order)
-cp_dashboard_tat_filter$Test <- factor(cp_dashboard_tat_filter$Test, levels = cp_micro_lab_order)
-cp_dashboard_tat_filter$DashboardPriority <- factor(cp_dashboard_tat_filter$DashboardPriority, levels = dashboard_priority_order)
-cp_dashboard_tat_filter$DashboardSetting <- factor(cp_dashboard_tat_filter$DashboardSetting, levels = dashboard_pt_setting)
-
-# Sort data frame
+# Convert characters to factors and arrange
 cp_dashboard_tat_filter <- cp_dashboard_tat_filter %>%
+  mutate(Site = factor(Site,
+                       levels = site_order,
+                       ordered = TRUE),
+         Test = factor(Test,
+                       levels = cp_micro_lab_order,
+                       ordered = TRUE),
+         DashboardPriority = factor(DashboardPriority,
+                                    levels = dashboard_priority_order,
+                                    ordered = TRUE),
+         DashboardSetting = factor(DashboardSetting,
+                                   levels = dashboard_pt_setting,
+                                   ordered = TRUE)) %>%
   arrange(Test, Site, DashboardPriority, DashboardSetting, ResultDate)
+
 
 ```
 
 ```{r Custom function for graphing TAT percentage for Clinical Pathology, echo = FALSE, warning = FALSE, message = FALSE}
-cp_tat_percentage_graph <- function(data, test_name, site_name, lab_priority, metric) {
-  metric_name <- ifelse(metric == "ReceiveResultPercent", "Receive to Result TAT", ifelse(metric == "CollectResultPercent", "Collect to Result TAT", "Error"))
-  # df <- data[data$ResultDate >= start_date & data$Test == test & data$Site == site & data$DashboardPriority == lab_priority, ]
+cp_tat_percentage_graph <- 
+  function(data, test_name, site_name, lab_priority, metric) {
+    # Determine metric for visualization
+    metric_name <- ifelse(metric == "ReceiveResultPercent",
+                          "Receive to Result TAT",
+                          ifelse(metric == "CollectResultPercent",
+                                 "Collect to Result TAT", "Error"))
   # 
   ggplot() +
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data$ResultDate) + 1, ymin = -Inf, ymax = min(data$NotSafeThreshold), fill = "Not Safe", alpha = "Not Safe")) +
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data$ResultDate) + 1, ymin = min(data$NotSafeThreshold), ymax = min(data$SafeThreshold), fill = "At Risk", alpha = "At Risk")) +
-    geom_rect(aes(xmin = start_date - 1, xmax = max(data$ResultDate) + 1, ymin = min(data$SafeThreshold), ymax = Inf, fill = "Safe", alpha = "Safe")) +
-    geom_point(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name & data$DashboardPriority == lab_priority, ], aes_string(x = "ResultDate", y = metric, color = "DashboardSetting", shape = "DashboardSetting"), size = 3) +
-    geom_line(data = data[data$ResultDate >= start_date & data$Test == test_name & data$Site == site_name & data$DashboardPriority == lab_priority, ], aes_string(x = "ResultDate", y = metric, color = "DashboardSetting"), linetype = "dashed") +
-    labs(title = paste0(test_name, " ", metric_name, ":\n", site_name, " Percentage of ", lab_priority, " Labs within Target"), x = "Date",  y = "Percentage of Labs", color = "Setting", shape = "Setting") +
+    # Create bounds for "not safe" performance
+    geom_rect(aes(xmin = start_date - 1,
+                  xmax = max(data$ResultDate) + 1,
+                  ymin = -Inf,
+                  ymax = min(data$NotSafeThreshold),
+                  fill = "Not Safe",
+                  alpha = "Not Safe")) +
+    # Create bounds for "at risk" performance
+    geom_rect(aes(xmin = start_date - 1,
+                  xmax = max(data$ResultDate) + 1,
+                  ymin = min(data$NotSafeThreshold),
+                  ymax = min(data$SafeThreshold),
+                  fill = "At Risk",
+                  alpha = "At Risk")) +
+    # Create bounds for "safe" performance
+    geom_rect(aes(xmin = start_date - 1,
+                  xmax = max(data$ResultDate) + 1,
+                  ymin = min(data$SafeThreshold),
+                  ymax = Inf,
+                  fill = "Safe",
+                  alpha = "Safe")) +
+    # Plot data for the  last 30 days
+    geom_point(data = data[data$ResultDate >= start_date &
+                             data$Test == test_name &
+                             data$Site == site_name &
+                             data$DashboardPriority == lab_priority, ],
+               aes_string(x = "ResultDate",
+                          y = metric,
+                          color = "DashboardSetting",
+                          shape = "DashboardSetting"),
+               size = 3) +
+    geom_line(data = data[data$ResultDate >= start_date &
+                            data$Test == test_name &
+                            data$Site == site_name &
+                            data$DashboardPriority == lab_priority, ],
+              aes_string(x = "ResultDate",
+                         y = metric,
+                         color = "DashboardSetting"),
+              linetype = "dashed") +
+    labs(title = paste0(test_name,
+                        " ",
+                        metric_name,
+                        ":\n",
+                        site_name,
+                        " Percentage of ",
+                        lab_priority,
+                        " Labs within Target"),
+         x = "Date",
+         y = "Percentage of Labs",
+         color = "Setting",
+         shape = "Setting") +
     theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5), legend.position = "right", legend.box = "vertical", legend.title = element_text(size = 10), legend.text = element_text(size = 8),axis.text.x = element_text(angle = 30, hjust = 1)) +
-    scale_x_date(limits = c(start_date -1, max(data$ResultDate)+1), breaks = seq(start_date, max(data$ResultDate), by = 3), date_minor_breaks = "1 day", date_labels = "%m/%d/%y", expand = c(0, 0, 0, 0)) +
-    scale_fill_manual(name = "Status", values = c("Not Safe" = "red", "At Risk" = "orange", "Safe" = "green"), breaks=c("Not Safe","At Risk","Safe")) +
-    scale_alpha_manual(name = "Status", values = c("Not Safe" = 0.15, "At Risk" = 0.15, "Safe" = 0.15), breaks=c("Not Safe","At Risk","Safe")) +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "right",
+          legend.box = "vertical",
+          legend.title = element_text(size = 10),
+          legend.text = element_text(size = 8),
+          axis.text.x = element_text(angle = 30, hjust = 1)) +
+    scale_x_date(limits = c(start_date - 1, max(data$ResultDate) + 1),
+                 breaks = seq(start_date, max(data$ResultDate), by = 3),
+                 date_minor_breaks = "1 day",
+                 date_labels = "%m/%d/%y",
+                 expand = c(0, 0, 0, 0)) +
+    scale_fill_manual(name = "Status",
+                      values = c("Not Safe" = "red",
+                                 "At Risk" = "orange",
+                                 "Safe" = "green"),
+                      breaks=c("Not Safe", "At Risk", "Safe")) +
+    scale_alpha_manual(name = "Status",
+                       values = c("Not Safe" = 0.15,
+                                  "At Risk" = 0.15,
+                                  "Safe" = 0.15),
+                       breaks=c("Not Safe", "At Risk", "Safe")) +
     scale_color_manual(name = "Setting", values = mshs_colors)
 }
 ```
