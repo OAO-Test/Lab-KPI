@@ -8,7 +8,7 @@ toc_float: true
 ---
   
   
-  ```{r include = FALSE}
+```{r include = FALSE}
 #Install packages only the first time you run the code
 #install.packages("timeDate")
 #install.packages("lubridate")
@@ -22,7 +22,7 @@ toc_float: true
 #install.packages("rmarkdown")
 #install.packages("stringr")
 #install.packages("writexl")
-#-------------------------------Required packages-------------------------------#
+#-------------------------------Required packages------------------------------#
 #Required packages: run these everytime you run the code
 library(timeDate)
 library(readxl)
@@ -42,8 +42,8 @@ library(writexl)
 <h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red">
   
   
-  ```{r global_options, echo=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
 ```
 
 ```{r Determine date, warning = FALSE, message = FALSE, echo = FALSE}
@@ -51,9 +51,9 @@ knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-Today <- as.timeDate(format(Sys.Date(),"%m/%d/%Y"))
+today <- as.timeDate(format(Sys.Date(), "%m/%d/%Y"))
 #Today <- as.timeDate(as.Date("07/29/2020", format = "%m/%d/%Y"))
-#Determine if yesterday was a holiday/weekend 
+#Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
 Yesterday <- as.timeDate(format(Sys.Date()-1,"%m/%d/%Y"))
 #Yesterday <- as.timeDate(as.Date("07/28/2020", format = "%m/%d/%Y"))
@@ -1308,13 +1308,13 @@ Table_Formatting_Volume <- function (Volume_Table, column_names){
 
 <br />
   
-  ## **Weekday Efficiency Indicators** {.tabset}
-  ### Chemistry       
-  #### *Chemistry KPI (Labs Resulted on `r wday_result_date`)*
-  <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+## **Weekday Efficiency Indicators** {.tabset}
+### Chemistry       
+#### *Chemistry KPI (Labs Resulted on `r wday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <95%,
 <span style = "color:green">Green:</span> >=95%</h5>
-  ```{r Chemistry dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Chemistry dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
 chem_hem_micro_kable(chem_table)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
@@ -1325,12 +1325,12 @@ chem_hem_micro_kable(chem_table)
   <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <95%,
 <span style = "color:green">Green:</span> >=95%</h5>
-  ```{r Hematology dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Hematology dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
 chem_hem_micro_kable(hem_table)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
   
-  ```{r Microbiology RRL volume and TAT table creation, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Microbiology RRL volume and TAT table creation, warning = FALSE, message = FALSE, echo = FALSE}
 # chem_hem_micro_kable(micro_table)
 micro_volume_dashboard1 <- melt(micro_summary, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = "ResultedVolume")
 # Create a table with micro volume with similar formatting to TAT tables to later combine with TAT
@@ -1353,7 +1353,7 @@ micro_tat_vol_table <- micro_tat_vol_comb[ , 3:ncol(micro_tat_vol_comb)]
 <h5>Status Definitions: <span style = "color:red">Red:</span> <90%, 
 <span style = "color:orange">Yellow:</span> >=90% & <100%,
 <span style = "color:green">Green:</span> =100%</h5>
-  ```{r Create Micro RRL TAT and Volume Table, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Create Micro RRL TAT and Volume Table, warning = FALSE, message = FALSE, echo = FALSE}
 chem_hem_micro_kable(micro_tat_vol_table)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
@@ -1363,7 +1363,7 @@ chem_hem_micro_kable(micro_tat_vol_table)
   <h5>Status Definitions: <span style = "color:red">Red:</span> >15%, 
 <span style = "color:orange">Yellow:</span> <=15% & >5%,
 <span style = "color:green">Green:</span> <=5%</h5>
-  ```{r Missing Collection Times Tables, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Missing Collection Times Tables, warning = FALSE, message = FALSE, echo = FALSE}
 # # Determine percentage of labs with missing collection times -------------------------------
 missing_collect <- scc_sun_wday_master[scc_sun_wday_master$TATInclude == TRUE, ] %>%
   group_by(Site, .drop = FALSE) %>%
@@ -1406,19 +1406,19 @@ add_on_table %>%
   <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
-  ```{r Surgical Pathology Efficiency Indicator Weekday, echo=FALSE, warning=FALSE, message=FALSE}
+```{r Surgical Pathology Efficiency Indicator Weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting(Surgical_Pathology_Table_Weekday_New3, pathology_standardized_column_names)
 ```
 <h6>*TAT analysis includes all breast specimens and GI biopsies and excludes those with missing timestamps, negative TAT, and not from above settings.*</h6>
   
   
-  ### Cytology
-  
-  #### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
-  <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+### Cytology
+
+#### *Cytology KPI (Specimens Resulted on `r wday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
-  ```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
+```{r Cytology Efficiency Indicators Weekday, echo=FALSE, warning=FALSE, message=FALSE}
 Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 #added this line to delete the cyto gyn from the table until we get correct data
 #rownames(Cytology_Table_Weekday_New3_V3) <- NULL
@@ -1428,7 +1428,7 @@ Table_Formatting_V2(Cytology_Table_Weekday_New3_V2)
 <h6>*TAT analysis includes excludes specimens with missing timestamps, negative TAT, and not from above settings.*</h6>
   
   
-  ```{r Lab KPI Form for Qualitative Indicators, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+```{r Lab KPI Form for Qualitative Indicators, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
 #read the excel sheet that is generated from office form responses
 KPI_Form <- data.frame(read_excel(choose.files(default = paste0(user_directory, "/Lab KPI Form/*.*"), caption = "Select the KPI form generated today"), 1), stringsAsFactors = FALSE)
 #Determine the dates within the KPI excel sheet and report only the latest date
@@ -1572,13 +1572,13 @@ Never_Events_Only <- Formatted_Never_Event[,c(1:5)]
 ```
 
 <br />
-  
-  ## **Operational and Quality Indicators** {.tabset}
-  ### Operational Indicators
-  
-  #### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r wday_result_date`)*
-  
-  ```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+
+## **Operational and Quality Indicators** {.tabset}
+### Operational Indicators
+
+#### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r wday_result_date`)*
+
+```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
 Formatted_Clinical_Labs_Melt_New3%>%
   select(everything()) %>%
   kable(escape = F, align = "c", col.names = c("Facility","Lab Corp Consumable", "Vendor Services", "Enviroment", "Equipment", "IT", "Service Change", "Acute Volume Increase", "Staffing")) %>%
@@ -1637,9 +1637,9 @@ Good_Catch %>%
 
 <br />
   
-  ## **Weekday 24-Hour Volume Lookback** {.tabset}
-  
-  ```{r Custom function for 24 hour volume lookbacks for Chemistry and Hematology, echo = FALSE, warning = FALSE, message = FALSE}
+## **Weekday 24-Hour Volume Lookback** {.tabset}
+
+```{r Custom function for 24 hour volume lookbacks for Chemistry and Hematology, echo = FALSE, warning = FALSE, message = FALSE}
 lab_volume_summarize <- function(x, LabDivision) {
   # Subset data for relevant division
   lab_vol_df <- x[x$Division == LabDivision, ]
@@ -1775,11 +1775,11 @@ micro_table_not_wday <- micro_dashboard2_not_wday[ , 3:ncol(micro_dashboard2_not
 `r #Begin weekend/holiday dashboard visualizations`
 
 <br />
-  
-  ## **Weekend/Holiday Efficiency Indicators** {.tabset}
-  ### Chemistry
-  #### *Chemistry KPI (Labs Resulted on `r wkend_holiday_result_date`)*
-  <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+
+## **Weekend/Holiday Efficiency Indicators** {.tabset}
+### Chemistry
+#### *Chemistry KPI (Labs Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <95%, 
 <span style = "color:green">Green:</span> >=95%</h5>'
 ```{r Chemistry dashboard table for weekends and holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
@@ -1795,7 +1795,7 @@ chem_hem_micro_kable(chem_table_not_wday)
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <95%, 
 <span style = "color:green">Green:</span> >=95%</h5>
-  ```{r Hematology dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Hematology dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 # asis_output('<h3> Hematology </h3>')
 # asis_output(paste('<h4> *Hematology KPI (Labs Resulted on', wkend_holiday_result_date, ')*</h4>'))
 # asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, <span style = "color:orange">Yellow:</span> >=80% & <95%, <span style = "color:green">Green:</span> >=95%</h5>')
@@ -1803,8 +1803,8 @@ chem_hem_micro_kable(hem_table_not_wday)
 # asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
-  
-  ```{r Microbiology RRL volume and TAT table creation for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+
+```{r Microbiology RRL volume and TAT table creation for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 micro_volume_dashboard1_not_wday <- melt(micro_summary_not_wday, id.var = c("Test", "Site", "DashboardPriority", "TestAndPriority", "DashboardSetting", "ReceiveResultTarget", "CollectResultTarget"), measure.vars = "ResultedVolume")
 # Create a table with micro volume with similar formatting to TAT tables to later combine with TAT
 micro_volume_dashboard2_not_wday <- dcast(micro_volume_dashboard1_not_wday, Test + DashboardPriority + TestAndPriority + DashboardSetting +ReceiveResultTarget + CollectResultTarget ~ variable + Site, value.var = "value") 
@@ -1826,7 +1826,7 @@ micro_tat_vol_table_not_wday <- micro_tat_vol_comb_not_wday[ , 3:ncol(micro_tat_
 <h5>Status Definitions: <span style = "color:red">Red:</span> <90%, 
 <span style = "color:orange">Yellow:</span> >=90% & <100%, 
 <span style = "color:green">Green:</span> =100%</h5>
-  ```{r Microbiology RRL dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Microbiology RRL dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 # asis_output('<h3> Microbiology RRL  </h3>')
 # asis_output(paste('<h4> *Microbiology RRL KPI (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
 # asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> <90%, <span style = "color:orange">Yellow:</span> >=90% & <100%, <span style = "color:green">Green:</span> =100%</h5>')
@@ -1834,15 +1834,15 @@ chem_hem_micro_kable(micro_tat_vol_table_not_wday)
 # asis_output('<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>')
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
-  
-  ### Missing Collections & Add Ons
-  
-  #### *Missing Collection Times and Add On Order Volume (Labs Resulted on `r wkend_holiday_result_date`)*
-  
-  <h5> Missing Collection Status Definitions: <span style = "color:red">Red:</span> >15%, 
+
+### Missing Collections & Add Ons
+
+#### *Missing Collection Times and Add On Order Volume (Labs Resulted on `r wkend_holiday_result_date`)*
+
+<h5> Missing Collection Status Definitions: <span style = "color:red">Red:</span> >15%, 
 <span style = "color:orange">Yellow:</span> <=15% & >5%, 
 <span style = "color:green">Green:</span> <=5%</h5>
-  ```{r Missing Collection Times Tables for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Missing Collection Times Tables for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 # asis_output('<h3> Missing Collections & Add On Orders </h3>')
 # asis_output(paste('<h4>*Missing Collection Times and Add On Order Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
 # asis_output('<h5>Status Definitions: <span style = "color:red">Red:</span> >15%, <span style = "color:orange">Yellow:</span> <=15% & >5%, <span style = "color:green">Green:</span> <=5%</h5>')
@@ -1894,7 +1894,7 @@ add_on_table_not_wday %>%
   
   ### Chemistry
   #### *Chemistry Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
-  ```{r Chemistry Weekend/Holiday: volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+```{r Chemistry Weekend/Holiday: volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 # asis_output('<h3> Chemistry </h3>')
 # asis_output(paste('<h4> *Chemistry Resulted Lab Volume (Labs Resulted on ', wkend_holiday_result_date, ')*</h4>'))
 chem_vol_not_wday_output <- lab_volume_summarize(scc_sun_not_wday_master, LabDivision = "Chemistry")
