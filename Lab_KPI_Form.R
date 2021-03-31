@@ -16,8 +16,6 @@ kpi_form <- kpi_form %>%
 
 kpi_form <- kpi_form %>%
   mutate(Completion_Hour = format(Completion.time, format = "%H:%M:%S"))
-
-
 kpi_form_today  <-
   kpi_form[which(kpi_form$Completion_Date == as.Date(today) |
                    (kpi_form$Completion_Date == as.Date(yesterday) &
@@ -47,11 +45,11 @@ kpi_form_today <-
 #do not run now until test it - waiting for Daya to send the data for today's
 #1. read current historical repo
 historical_repo_form <-
-  read_excel(choose.files(
-              default = paste0(user_directory,
-                               "/Lab KPI Form/Lab KPI Historical Repo",
-                               "/*.*"),
-              caption = "Select Cytology Backlog Historical Repository"))
+  readRDS(file = choose.files(
+    default = paste0(user_directory,
+                     "/Lab KPI Form/Lab KPI Historical Repo",
+                     "/*.*"),
+                     caption = "Select Cytology Backlog Historical Repository"))
 
 #2. combine the current summary with the historical repo and write them
 #into a xlsx file
@@ -59,16 +57,14 @@ historical_repo_form2 <- rbind(historical_repo_form, kpi_form_today)
 
 #3. to ensure that the selected rows are the unique ones only without
 #any dupilacation
-
 historical_repo_form2 <- unique(historical_repo_form2)
 
-xlsx_form <- paste0(user_directory, "/Lab KPI Form/Lab KPI Historical Repo/",
-                    "Lab_KPI_Form_Repo", "_", today, ".xlsx")
+rds_name <- paste0(user_directory, "/Lab KPI Form/Lab KPI Historical Repo/",
+                    "Lab_KPI_Form_Repo", "_", today, ".RDS")
 
-write_xlsx(historical_repo_form2, xlsx_form)
+saveRDS(historical_repo_form2, file = rds_name)
 
 #split the data into 3 datasets
-
 # the first dataset representes the following: CP/AP/CPA/4LABS
 clinical_labs_ops_ind <-
   kpi_form_today[
