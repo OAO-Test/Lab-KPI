@@ -52,13 +52,13 @@ if (initial_run == TRUE) {
   file_list_scc <- list.files(
     path = paste0(user_directory,
                   "\\SCC CP Reports"),
-    pattern = "^(Doc){1}.+(2020)\\-[0-9]{2}-[0-9]{2}.xlsx")
+    pattern = "^(Doc){1}.+(202)[0-9]{1}\\-[0-9]{2}-[0-9]{2}.xlsx")
   
   # Pattern for daily Sunquest reports
   sun_daily_pattern = c(paste0("^(KPI_Daily_TAT_Report ){1}",
-                               "(2020)\\-[0-9]{2}-[0-9]{2}.xls"),
+                               "(202)[0-9]{1}\\-[0-9]{2}-[0-9]{2}.xls"),
                         paste0("^(KPI_Daily_TAT_Report_Updated ){1}",
-                               "(2020)\\-[0-9]{2}-[0-9]{2}.xls"))
+                               "(202)[0-9]{1}\\-[0-9]{2}-[0-9]{2}.xls"))
 
   file_list_sun_daily <- list.files(
     path = paste0(user_directory, "\\SUN CP Reports"),
@@ -105,13 +105,6 @@ if (initial_run == TRUE) {
                                                "text", "text", "text", "text",
                                                "text"))))
 } else {
-  # # Import existing historical repository as Excel file
-  # existing_repo <- read_excel(
-  #   choose.files(default = paste0(user_directory,
-  #                                 "/CP Historical Repo/*.*"),
-  #                caption = "Select Historical Repository"),
-  #   sheet = 1, col_names = TRUE)
-  #
   # Import existing historical repository as a RDS file
   existing_repo <- readRDS(
     choose.files(default = paste0(user_directory,
@@ -427,7 +420,7 @@ preprocess_scc <- function(raw_scc)  {
 
 
 # Custom function for preprocessing Sunquest data -----------------
-preprocess_sun <- function(raw_sun) {
+preprocess_daily_sun <- function(raw_sun) {
   
   # Preprocess Sunquest data --------------------------------
   # Remove any duplicates
@@ -638,6 +631,218 @@ preprocess_sun <- function(raw_sun) {
   
 }
 
+# Custom function for preprocessing Sunquest data -----------------
+preprocess_monthly_sun <- function(raw_sun) {
+  
+  # Preprocess Sunquest data --------------------------------
+  # Remove any duplicates
+  raw_sun <- unique(raw_sun)
+  # # Correct and format any timestamps that were not imported correctly
+  # raw_sun[c("OrderDateTime",
+  #           "CollectDateTime",
+  #           "ReceiveDateTime",
+  #           "ResultDateTime")] <-
+  #   lapply(raw_sun[c("OrderDateTime",
+  #                    "CollectDateTime",
+  #                    "ReceiveDateTime",
+  #                    "ResultDateTime")],
+  #          function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE,
+  #                             str_replace(x, "\\*.*\\*", ""), x))
+  # 
+  # raw_sun[c("OrderDateTime",
+  #           "CollectDateTime",
+  #           "ReceiveDateTime",
+  #           "ResultDateTime")] <-
+  #   lapply(raw_sun[c("OrderDateTime",
+  #                    "CollectDateTime",
+  #                    "ReceiveDateTime",
+  #                    "ResultDateTime")],
+  #          as.POSIXct, tz = "UTC", format = "%m/%d/%Y %H:%M:%S")
+  
+  # Sunquest lookup references
+  # Crosswalk labs included and remove out of scope labs
+  raw_sun <- left_join(raw_sun, sun_test_code,
+                       by = c("TestCode" = "SUN_TestCode"))
+  
+  # Determine if test is included based on crosswalk results
+  raw_sun <- raw_sun %>%
+    mutate(TestIncl = !is.na(Test)) %>%
+    filter(TestIncl)
+  
+  
+  # Crosswalk unit type
+  raw_sun <- left_join(raw_sun, sun_setting,
+                       by = c("LocType" = "LocType"))
+  
+  # Crosswalk site name
+  raw_sun <- left_join(raw_sun, mshs_site,
+                       by = c("HospCode" = "DataSite"))
+  
+  # Crosswalk units and identify ICUs
+  raw_sun <- raw_sun %>%
+    mutate(LocandName = paste(LocCode, LocName))
+  
+  raw_sun <- left_join(raw_sun, sun_icu[, c("Concatenate", "ICU")],
+                       by = c("LocandName" = "Concatenate"))
+  
+  raw_sun[is.na(raw_sun$ICU), "ICU"] <- FALSE
+  
+  
+  # # Sunquest data formatting-----------------------------
+  # Preprocess Sunquest data and add any necessary columns
+  raw_sun <- raw_sun %>%
+    mutate(
+      # Determine if unit is an ICU based on crosswalk results
+      ICU = ifelse(is.na(ICU), FALSE, ICU),
+      # Create a column for resulted date
+      ResultedDate = as.Date(ResultDateTime, format = "%m/%d/%Y"),
+      # Create master setting column to identify ICU and IP Non-ICU units
+      MasterSetting = ifelse(SettingRollUp == "IP" & ICU, "ICU",
+                             ifelse(SettingRollUp == "IP" & !ICU,
+                                    "IP Non-ICU", SettingRollUp)),
+      # Create dashboard setting column to roll up master settings based on
+      # desired dashboard grouping(ie, group ED and ICU together)
+      DashboardSetting = ifelse(MasterSetting %in% c("ED", "ICU"), "ED & ICU",
+                                MasterSetting),
+      #
+      # Create column with adjusted priority based on operational assumption
+      # that all ED and ICU labs are treated as stat
+      AdjPriority = ifelse(MasterSetting %in% c("ED", "ICU") |
+                             SpecimenPriority %in% "S", "Stat", "Routine"),
+      #
+      # Create dashboard priority column
+      DashboardPriority = ifelse(
+        tat_targets$Priority[match(Test, tat_targets$Test)] == "All", "All",
+        AdjPriority),
+      #
+      # Calculate turnaround times
+      CollectToReceive =
+        as.numeric(ReceiveDateTime - CollectDateTime, units = "mins"),
+      ReceiveToResult =
+        as.numeric(ResultDateTime - ReceiveDateTime, units = "mins"),
+      CollectToResult =
+        as.numeric(ResultDateTime - CollectDateTime, units = "mins"),
+      #
+      # Determine if order was an add on or original order based on time between
+      # order and receive times
+      AddOnMaster = ifelse(as.numeric(OrderDateTime - ReceiveDateTime,
+                                      units = "mins") > 5, "AddOn", "Original"),
+      #
+      # Determine if collection time is missing
+      MissingCollect = CollectDateTime == OrderDateTime,
+      #
+      # Determine TAT target based on test, priority, and patient setting
+      # Create column concatenating test and priority to determine TAT targets
+      Concate1 = paste(Test, DashboardPriority),
+      # Create column concatenating test, priority, and setting to determine
+      # TAT targets
+      Concate2 = paste(Test, DashboardPriority, MasterSetting),
+      # Determine Receive to Result TAT target using this logic:
+      # 1. Try to match test, priority, and setting (applicable for labs with
+      # different TAT targets based on patient setting and order priority)
+      # 2. Try to match test and priority (applicable for labs with different
+      # TAT targets based on order priority)
+      # 3. Try to match test - this is for tests with (applicable for labs with
+      # TAT targets that are independent of patient setting or priority)
+      #
+      # Determine Receive to Result TAT target based on above logic/scenarios
+      ReceiveResultTarget =
+        # Match on scenario 1
+        ifelse(!is.na(match(Concate2, tat_targets$Concate)),
+               tat_targets$ReceiveToResultTarget[
+                 match(Concate2, tat_targets$Concate)],
+               # Match on scenario 2
+               ifelse(!is.na(match(Concate1, tat_targets$Concate)),
+                      tat_targets$ReceiveToResultTarget[
+                        match(Concate1, tat_targets$Concate)],
+                      # Match on scenario 3
+                      tat_targets$ReceiveToResultTarget[
+                        match(Test, tat_targets$Concate)])),
+      #
+      # Determine Collect to Result TAT target based on above logic/scenarios
+      CollectResultTarget =
+        # Match on scenario 1
+        ifelse(!is.na(match(Concate2, tat_targets$Concate)),
+               tat_targets$CollectToResultTarget[
+                 match(Concate2, tat_targets$Concate)],
+               # Match on scenario 2
+               ifelse(!is.na(match(Concate1, tat_targets$Concate)),
+                      tat_targets$CollectToResultTarget[
+                        match(Concate1, tat_targets$Concate)],
+                      # Match on scenario 3
+                      tat_targets$CollectToResultTarget[
+                        match(Test, tat_targets$Concate)])),
+      #
+      # Determine if Receive to Result and Collect to Result TAT meet targets
+      ReceiveResultInTarget = ReceiveToResult <= ReceiveResultTarget,
+      CollectResultInTarget = CollectToResult <= CollectResultTarget,
+      #
+      # Create column with patient name, order ID, test, collect, receive, and
+      # result date and determine if there is a duplicate; order time excluded
+      Concate3 = paste(PtNumber, HISOrderNumber, TSTName,
+                       CollectDateTime, ReceiveDateTime, ResultDateTime),
+      DuplTest = duplicated(Concate3),
+      #
+      # Determine whether or not to include this particular lab in TAT analysis
+      # Exclusion criteria:
+      # 1. Add on orders
+      # 2. Orders from "Other" settings
+      # 3. Orders with collect or receive times after result time, collect 
+      # time after receive time
+      # 4. Orders with missing collect, receive, or result timestamps
+      TATInclude = ifelse(AddOnMaster == "AddOn" |
+                            MasterSetting == "Other" |
+                            CollectToReceive < 0 |
+                            CollectToResult < 0 |
+                            ReceiveToResult < 0 |
+                            is.na(CollectToResult) |
+                            is.na(ReceiveToResult), FALSE, TRUE))
+  
+  # Remove duplicate tests
+  raw_sun <- raw_sun %>%
+    filter(!DuplTest)
+  
+  # Select columns
+  sun_master <- raw_sun[, c("LocCode", "LocName", "LocandName",
+                            "HISOrderNumber", "PhysName",
+                            "PtNumber", "SHIFT",
+                            "TSTName", "Test", "Division", "SpecimenPriority",
+                            "Site", "ICU", "LocType",
+                            "Setting", "SettingRollUp",
+                            "MasterSetting", "DashboardSetting",
+                            "AdjPriority", "DashboardPriority",
+                            "OrderDateTime", "CollectDateTime",
+                            "ReceiveDateTime", "ResultDateTime",
+                            "ResultedDate",
+                            "CollecttoReceive", "ReceivetoResult",
+                            "CollecttoResult",
+                            "AddOnMaster", "MissingCollect",
+                            "ReceiveResultTarget", "CollectResultTarget",
+                            "ReceiveResultInTarget", "CollectResultInTarget",
+                            "TATInclude")]
+  
+  colnames(sun_master) <- c("LocCode", "LocName", "LocConcat",
+                            "OrderID", "RequestMD",
+                            "MSMRN", "WorkShift",
+                            "TestName", "Test", "Division", "OrderPriority",
+                            "Site", "ICU", "LocType",
+                            "Setting", "SettingRollUp",
+                            "MasterSetting", "DashboardSetting",
+                            "AdjPriority", "DashboardPriority",
+                            "OrderTime", "CollectTime",
+                            "ReceiveTime", "ResultTime",
+                            "ResultDate",
+                            "CollectToReceiveTAT", "ReceiveToResultTAT",
+                            "CollectToResultTAT",
+                            "AddOnMaster", "MissingCollect",
+                            "ReceiveResultTarget", "CollectResultTarget",
+                            "ReceiveResultInTarget", "CollectResultInTarget",
+                            "TATInclude")
+  
+  sun_monthly_list <- list(raw_sun, sun_master)
+  
+}
+
 # Custom function to determine resulted lab date from preprocessed data -------
 # SCC data often has a few labs with incorrect result date
 correct_result_dates <- function(data, number_days) {
@@ -680,7 +885,7 @@ if (!is.null(scc_raw_data_list)) {
 if (!is.null(sun_daily_raw_data_list)) {
   # Preprocess Sunquest daily raw data using custom function
   sun_daily_preprocessed <- lapply(sun_daily_raw_data_list,
-                                   preprocess_sun)
+                                   preprocess_daily_sun)
   # Select the second element of the list of lists
   sun_preprocessed_data <- lapply(sun_daily_preprocessed, function(x) x[[2]])
   
@@ -695,7 +900,7 @@ if (!is.null(sun_daily_raw_data_list)) {
 if (!is.null(sun_monthly_list)) {
   # Preprocess Sunquest monthly raw data using custom function
   sun_monthly_preprocessed <- lapply(sun_monthly_list,
-                                     preprocess_sun_monthly)
+                                     preprocess_monthly_sun)
   # Select the second element of the list of lists
   sun_monthly_preprocessed_data <- lapply(sun_monthly_preprocessed,
                                           function(x) x[[2]])
