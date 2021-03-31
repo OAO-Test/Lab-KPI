@@ -781,11 +781,15 @@ kable_missing_collections <- function(x) {
       # Format site as factors
       Site = factor(Site, levels = city_sites, ordered = TRUE))
   #
+  # Create template to ensure all sites are included
+  missing_collect <- left_join(data.frame("Site" = city_sites),
+                               missing_collect,
+                               by = c("Site" = "Site"))
+  #
   # Cast missing collections into table format
   missing_collect_table <- dcast(missing_collect,
                                  "Percentage of Specimens" ~ Site,
                                  value.var = "Percent")
-  #
   # Create kable with summarized data
   missing_collect_table %>%
     kable(format = "html", escape = FALSE, align = "c",
