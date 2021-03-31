@@ -252,7 +252,9 @@ if (initial_run == TRUE) {
     readRDS(file =
               choose.files(default =
                              paste0(user_directory,
-                                    "/AP & Cytology Historical Repo/*.*"),
+                                    "/AP & Cytology Historical Repo",
+                                    "Backlog Repo",
+                                    "/*.*"),
                            caption = "Select Backlog Repository"))
   #
   # Find last date of resulted lab data in historical repository
@@ -597,11 +599,11 @@ hist_data_summarized_new <- rbind(existing_powerpath_repo, hist_data_summarized)
 hist_data_summarized_new <- unique(hist_data_summarized_new)
 
 #main historical repo
-file_name <-
-  paste0(user_directory, "/AP & Cytology Historical Repo/",
-         "Historical_Repo_Surgical_Pathology", "_", today, ".RDS")
+ap_repo_file_name <-
+  paste0(user_directory, "/AP & Cytology Historical Repo",
+         "/Historical_Repo_Surgical_Pathology", "_", today, ".RDS")
 
-saveRDS(hist_data_summarized_new, file = file_name)
+saveRDS(hist_data_summarized_new, file = ap_repo_file_name)
 
 #------------------------backlog Data Pre-Processing-------------------------#
 #############################################################################
@@ -702,8 +704,8 @@ backlog_data_summarized_new <-
 backlog_data_summarized_new <- unique(backlog_data_summarized_new)
 
 #main historical repo
-file_name_ <-
-  paste0(user_directory, "/AP & Cytology Historical Repo/",
-         "Backlog_Repo", "_", today, ".RDS")
+backlog_repo_file_name <-
+  paste0(user_directory, "/AP & Cytology Historical Repo", "/Backlog Repo",
+         "/Backlog_Repo", "_", today, ".RDS")
 
-saveRDS(backlog_data_summarized_new, file = file_name_)
+saveRDS(backlog_data_summarized_new, file = backlog_repo_file_name)
