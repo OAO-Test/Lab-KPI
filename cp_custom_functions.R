@@ -155,6 +155,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # 4. Orders with missing collect, receive, or result timestamps
       TATInclude = ifelse(AddOnMaster == "AddOn" |
                             MasterSetting == "Other" |
+                            CollectToReceive < 0 |
                             CollectToResult < 0 |
                             ReceiveToResult < 0 |
                             is.na(CollectToResult) |
@@ -356,6 +357,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # 4. Orders with missing collect, receive, or result timestamps
       TATInclude = ifelse(AddOnMaster == "AddOn" |
                             MasterSetting == "Other" |
+                            CollectToReceive < 0 |
                             CollectToResult < 0 |
                             ReceiveToResult < 0 |
                             is.na(CollectToResult) |

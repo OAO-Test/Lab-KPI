@@ -39,7 +39,8 @@ if (scenario == 1) {
 
 
 # Determine resulted date for weekday labs
-wday_result_date <- format(unique(scc_sun_wday_master$ResultDate),
+wday_result_date_as_date <- unique(scc_sun_wday_master$ResultDate)
+wday_result_date <- format(wday_result_date_as_date,
                            format = "%a %m/%d/%y")
 
 
@@ -53,8 +54,10 @@ if (!is.null(scc_sun_not_wday_master)) {
            "-",
            format(not_wday_result_date[length(not_wday_result_date)],
                   format = "%a %m/%d/%y")))
+  date_range <- c(wday_result_date_as_date, not_wday_result_date)
 } else {
   wkend_holiday_result_date <- NULL
+  date_range <- c(wday_result_date_as_date)
 }
 
 #
@@ -135,7 +138,8 @@ existing_repo <-
 
 # Convert ResultDate from date-time to date
 existing_repo <- existing_repo %>%
-  mutate(ResultDate  = date(ResultDate))
+  mutate(ResultDate  = date(ResultDate)) %>%
+  filter(!(ResultDate %in% date_range))
 
 # Bind new data with existing repository
 cp_repo <- rbind(existing_repo, cp_all_days)
