@@ -253,7 +253,7 @@ if (initial_run == TRUE) {
               choose.files(default =
                              paste0(user_directory,
                                     "/AP & Cytology Historical Repo",
-                                    "Backlog Repo",
+                                    "/Backlog Repo",
                                     "/*.*"),
                            caption = "Select Backlog Repository"))
   #

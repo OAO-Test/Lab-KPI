@@ -14,7 +14,7 @@ output:
 # Source code for importing the needed packages, constants, reference files, and
 # data templates for the lab KPI dashboard pre-processing -----
 #######
-source(here::here("package_ref.R"))
+source(here::here("Lab KPI Daily Dashboard/Package_Ref.R"))
 ```
 
 ```{r global_options, echo = FALSE}
@@ -32,19 +32,20 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 # 4. Epic data for anatomic pathology especially cytology
 # 5. Backlog data for anatomic pathology especially cytology-----
 #######
-source(here::here("raw_data_import.R"))
+source(here::here("Lab KPI Daily Dashboard/Raw_Data_Import.R"))
 ```
 
 ```{r cp_custom_functions file, warning = FALSE, message = FALSE, echo = FALSE}
 # Code for preprocessing, analyzing, and displaying Clinical Pathology KPI -----
 # CP includes Chemistry, Hematology, and Microbiology RRL divisions
-source(here::here("cp_custom_functions.R"))
+source(here::here("Lab KPI Daily Dashboard/CP_Custom_Functions.R"))
 ```
 
 ```{r cp_preprocessing_analysis_first_run file, warning = FALSE, message = FALSE, echo = FALSE}
 # Code for preprocessing CP data prior to receipt of Ops &
 # Quality Indicators Form
-source(here::here("cp_preprocessing_analysis_first_run.R"))
+source(here::here(paste0("Lab KPI Daily Dashboard",
+                         "/CP_PreProcessing_Analysis_First_Run.R")))
 ```
 
 ```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = FALSE, message = FALSE, echo = FALSE}
@@ -88,7 +89,7 @@ row.names(micro_dashboard_cast) <- seq_len(nrow(micro_dashboard_cast))
 # Anatomic Pathology (AP) includes Cytology and Surgical Pathology divisions
 #######
 #import source code
-source(here::here("ap_custom_functions.R"))
+source(here::here("Lab KPI Daily Dashboard/AP_Custom_Functions.R"))
 ```
 
 ```{r Calling the Custom functions for preprocessing raw Powerpath and Epic data, warning = FALSE, message = FALSE, echo = FALSE}
@@ -205,11 +206,14 @@ saveRDS(hist_repo_ap_updated, file = ap_file_name)
 ```
 
 ```{r Add the current summary to the historical repo for cytology backlog, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
-backlog_repo <- readRDS(file =
-  choose.files(default = paste0(user_directory,
-                                "/AP & Cytology Historical Repo",
-                                "/*.*"),
-               caption = "Select Cytology Backlog Historical Repository"))
+backlog_repo <-
+  readRDS(file =
+            choose.files(default =
+                           paste0(user_directory,
+                                  "/AP & Cytology Historical Repo",
+                                  "/Backlog Repo",
+                                  "/*.*"),
+                           caption = "Select Backlog Repository"))
 #make sure that the summarized data is a data frame
 cyto_backlog_df <- as.data.frame(cyto_backlog_summarized)
 
@@ -231,8 +235,9 @@ backlog_repo_updated <- rbind(backlog_repo, cyto_backlog_df)
 
 backlog_repo_updated <- unique(backlog_repo_updated)
 
-backlog_file_name <- paste0(user_directory, "/AP & Cytology Historical Repo/",
-                       "Backlog_Repo", "_", today, ".RDS")
+backlog_file_name <-
+    paste0(user_directory, "/AP & Cytology Historical Repo", "/Backlog Repo",
+         "/Backlog_Repo", "_", today, ".RDS")
 
 saveRDS(backlog_repo_updated, file = backlog_file_name)
 
