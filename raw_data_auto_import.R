@@ -1,62 +1,15 @@
-# Code to test automatically identifying reports based on dates
-# Eliminates need for user to select files individually
+#######
+# Code for importing the raw data needed to carry-on the first run
+# for the lab KPI daily dashboard with different logic based on the DOW.
+# Imported data includes:
+# 1. SCC data for clinical pathology
+# 2. SunQuest data for clinical pathology
+# 3. PowerPath data for anatomic pathology
+# 4. Epic data for anatomic pathology especially cytology
+# 5. Backlog data for anatomic pathology especially cytology-----
+#######
 
-#Required packages: run these every time you run the code
-library(timeDate)
-library(readxl)
-library(bizdays)
-library(dplyr)
-library(lubridate)
-library(reshape2)
-library(knitr)
-# library(gdtools)
-library(kableExtra)
-library(formattable)
-library(rmarkdown)
-library(stringr)
-library(writexl)
-
-
-#Clear existing history
-rm(list = ls())
-#-------------------------------holiday/weekend-------------------------------#
-# Get today and yesterday's date
-# today <- Sys.Date()
-today <- as.Date("3/15/21", format = "%m/%d/%y")
-
-#Determine if yesterday was a holiday/weekend
-#get yesterday's DOW
-yesterday <- today  - 1
-
-#Get yesterday's DOW
-yesterday_day <- wday(yesterday, label = TRUE, abbr = TRUE)
-
-#Remove Good Friday from MSHS Holidays
-nyse_holidays <- as.Date(holidayNYSE(year = 1990:2100))
-good_friday <- as.Date(GoodFriday())
-mshs_holiday <- nyse_holidays[good_friday != nyse_holidays]
-
-#Determine whether yesterday was a holiday/weekend
-#holiday_det <- isHoliday(yesterday, holidays = mshs_holiday)
-holiday_det <- isHoliday(as.timeDate(yesterday), holidays = mshs_holiday)
-
-#Set up a calendar for collect to received TAT calculations for Path & Cyto
-create.calendar("MSHS_working_days", mshs_holiday,
-                weekdays = c("saturday", "sunday"))
-bizdays.options$set(default.calendar = "MSHS_working_days")
-
-
-# Select file/folder path for easier file selection and navigation
-if ("Presidents" %in% list.files("J://")) {
-  user_directory <- paste0("J:/Presidents/HSPI-PM/",
-                           "Operations Analytics and Optimization/Projects/",
-                           "Service Lines/Lab Kpi/Data")
-} else {
-  user_directory <- paste0("J:/deans/Presidents/HSPI-PM/",
-                           "Operations Analytics and Optimization/Projects/",
-                           "Service Lines/Lab Kpi/Data")
-}
-
+#------------------------------Read Excel sheets------------------------------#
 
 # Determine dates of most recent weekday and weekend/holiday if applicable
 if (((holiday_det) & (yesterday_day == "Mon")) |
