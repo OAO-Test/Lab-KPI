@@ -12,7 +12,7 @@
 #install.packages("stringr")
 #install.packages("writexl")
 
-#-------------------------------Required packages-------------------------------#
+#-------------------------------Required packages-----------------------------#
 
 #Required packages: run these everytime you run the code
 library(timeDate)
@@ -41,7 +41,7 @@ if ("Presidents" %in% list.files("J://")) {
                            "Service Lines/Lab Kpi/Data")
 }
 
-# Import data for two scenarios - first time compiling repo and updating repo ----------
+# Import data for two scenarios - first time compiling repo and updating repo
 initial_run <- FALSE
 
 if (initial_run == TRUE) {
@@ -49,22 +49,22 @@ if (initial_run == TRUE) {
   file_list_scc <- list.files(
     path = paste0(user_directory,
                   "\\SCC CP Reports"),
-    pattern = "^(Doc){1}.+(202)[0-9]{1}\\-[0-9]{2}\\-[0-9]{2}.xlsx")
-  
+    pattern = "^(Doc) {1}.+(2020)\\-[0-9]{2}\\-[0-9]{2}.xlsx")
+
   # Pattern for daily Sunquest reports
-  sun_daily_pattern = c(paste0("^(KPI_Daily_TAT_Report ){1}",
-                               "(202)[0-9]{1}\\-[0-9]{2}-[0-9]{2}.xls"),
-                        paste0("^(KPI_Daily_TAT_Report_Updated ){1}",
-                               "(202)[0-9]{1}\\-[0-9]{2}-[0-9]{2}.xls"))
-  
+  sun_daily_pattern <- c(paste0("^(KPI_Daily_TAT_Report ) {1}",
+                               "(2020)\\-[0-9]{2}-[0-9]{2}.xls"),
+                        paste0("^(KPI_Daily_TAT_Report_Updated ) {1}",
+                               "(2020)\\-[0-9]{2}-[0-9]{2}.xls"))
+
   file_list_sun_daily <- list.files(
     path = paste0(user_directory, "\\SUN CP Reports"),
     pattern = paste0(sun_daily_pattern, collapse = "|"))
   #
   file_list_sun_monthly <- list.files(
     path = paste0(user_directory, "\\SUN CP Reports"),
-    pattern = "^(KPI_TAT Report_){1}[A-z]+\\s(2020.xlsx)")
-  
+    pattern = "^(KPI_TAT Report_) {1}[A-z]+\\s(2020.xlsx)")
+
   # Read in data reports from possible date range
   scc_raw_data_list <- lapply(file_list_scc,
                      function(x)
@@ -121,7 +121,8 @@ if (initial_run == TRUE) {
                                    caption = "Select Troponin Data Repository"))
   troponin_repo
   #
-  # Find last date of resulted lab data in historical repo for SCC and Sunquest sites
+  # Find last date of resulted lab data in historical repo for
+  #SCC and Sunquest sites
   last_dates <- data.frame(
     "SCCSites" = as.Date(
       max(existing_repo[
@@ -143,16 +144,16 @@ if (initial_run == TRUE) {
   # Find list of SCC data reports within date range
   file_list_scc <- list.files(
     path = paste0(user_directory, "\\SCC CP Reports"),
-    pattern = paste0("^(Doc){1}.+",
+    pattern = paste0("^(Doc) {1}.+",
                      scc_date_range,
                      ".xlsx",
                      collapse = "|"))
   # Pattern for daily Sunquest reports
-  sun_daily_file_pattern = c(
-    paste0("^(KPI_Daily_TAT_Report ){1}",
+  sun_daily_file_pattern <- c(
+    paste0("^(KPI_Daily_TAT_Report ) {1}",
            sun_date_range,
            ".xls", collapse = "|"),
-    paste0("^(KPI_Daily_TAT_Report_Updated ){1}",
+    paste0("^(KPI_Daily_TAT_Report_Updated ) {1}",
            sun_date_range,
            ".xls",
            collapse = "|"))
@@ -176,7 +177,7 @@ if (initial_run == TRUE) {
                     "text", "text", "text", "text", "text",
                     "text", "text", "text", "text", "text",
                     "text", "text", "text", "text", "text", "text"))))
-  
+
   # Create empty list for Sunquest monthly report
   sun_monthly_list <- NULL
 }
@@ -238,7 +239,7 @@ preprocess_scc <- function(raw_scc)  {
            function(x)
              ifelse(!is.na(x) & str_detect(x, "\\*.*\\*"),
                     str_replace(x, "\\*.*\\*", ""), x))
-  
+
   raw_scc[c("ORDERING_DATE",
             "COLLECTION_DATE",
             "RECEIVE_DATE",
@@ -250,32 +251,32 @@ preprocess_scc <- function(raw_scc)  {
            as.POSIXct, tz = "UTC",
            format = "%Y-%m-%d %H:%M:%OS",
            options(digits.sec = 1))
-  
+
   # SCC lookup references ----------------------------------------------
   # Crosswalk in scope labs
   raw_scc <- left_join(raw_scc,
                        scc_test_code,
                        by = c("TEST_ID" = "SCC_TestID"))
-  
+
   # Determine if test is included based on crosswalk results
   raw_scc <- raw_scc %>%
     mutate(TestIncl = !is.na(Test)) %>%
     filter(TestIncl)
-  
+
   # Crosswalk unit type
   raw_scc <- left_join(raw_scc, scc_setting,
                        by = c("CLINIC_TYPE" = "Clinic_Type"))
   # Crosswalk site name
   raw_scc <- left_join(raw_scc, mshs_site,
                        by = c("SITE" = "DataSite"))
-  
+
   # Crosswalk units and identify ICUs
   raw_scc <- raw_scc %>%
     mutate(WardandName = paste(Ward, WARD_NAME))
-  
+
   raw_scc <- left_join(raw_scc, scc_icu[, c("Concatenate", "ICU")],
                        by = c("WardandName" = "Concatenate"))
-  
+
   # Preprocess SCC data and add any necessary columns
   raw_scc <- raw_scc %>%
     mutate(
@@ -380,11 +381,11 @@ preprocess_scc <- function(raw_scc)  {
                             ReceiveToResult < 0 |
                             is.na(CollectToResult) |
                             is.na(ReceiveToResult), FALSE, TRUE))
-  
+
   # Remove duplicate tests
   raw_scc <- raw_scc %>%
     filter(!DuplTest)
-  
+
   # Select columns
   scc_master <- raw_scc[, c("Ward", "WARD_NAME", "WardandName",
                             "ORDER_ID", "REQUESTING_DOC NAME",
@@ -421,15 +422,14 @@ preprocess_scc <- function(raw_scc)  {
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")
-  
-  
+
   scc_daily_list <- list(raw_scc, scc_master)
-  
+
 }
 
 # Custom function for preprocessing Sunquest data -----------------
 preprocess_daily_sun <- function(raw_sun) {
-  
+
   # Preprocess Sunquest data --------------------------------
   # Remove any duplicates
   raw_sun <- unique(raw_sun)
@@ -444,7 +444,7 @@ preprocess_daily_sun <- function(raw_sun) {
                      "ResultDateTime")],
            function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE,
                               str_replace(x, "\\*.*\\*", ""), x))
-  
+
   raw_sun[c("OrderDateTime",
             "CollectDateTime",
             "ReceiveDateTime",
@@ -454,36 +454,34 @@ preprocess_daily_sun <- function(raw_sun) {
                      "ReceiveDateTime",
                      "ResultDateTime")],
            as.POSIXct, tz = "UTC", format = "%m/%d/%Y %H:%M:%S")
-  
+
   # Sunquest lookup references
   # Crosswalk labs included and remove out of scope labs
   raw_sun <- left_join(raw_sun, sun_test_code,
                        by = c("TestCode" = "SUN_TestCode"))
-  
+
   # Determine if test is included based on crosswalk results
   raw_sun <- raw_sun %>%
     mutate(TestIncl = !is.na(Test)) %>%
     filter(TestIncl)
-  
-  
+
   # Crosswalk unit type
   raw_sun <- left_join(raw_sun, sun_setting,
                        by = c("LocType" = "LocType"))
-  
+
   # Crosswalk site name
   raw_sun <- left_join(raw_sun, mshs_site,
                        by = c("HospCode" = "DataSite"))
-  
+
   # Crosswalk units and identify ICUs
   raw_sun <- raw_sun %>%
     mutate(LocandName = paste(LocCode, LocName))
-  
+
   raw_sun <- left_join(raw_sun, sun_icu[, c("Concatenate", "ICU")],
                        by = c("LocandName" = "Concatenate"))
-  
+
   raw_sun[is.na(raw_sun$ICU), "ICU"] <- FALSE
-  
-  
+
   # # Sunquest data formatting-----------------------------
   # Preprocess Sunquest data and add any necessary columns
   raw_sun <- raw_sun %>%
@@ -583,7 +581,7 @@ preprocess_daily_sun <- function(raw_sun) {
       # Exclusion criteria:
       # 1. Add on orders
       # 2. Orders from "Other" settings
-      # 3. Orders with collect or receive times after result time, collect 
+      # 3. Orders with collect or receive times after result time, collect
       # time after receive time
       # 4. Orders with missing collect, receive, or result timestamps
       TATInclude = ifelse(AddOnMaster == "AddOn" |
@@ -593,11 +591,11 @@ preprocess_daily_sun <- function(raw_sun) {
                             ReceiveToResult < 0 |
                             is.na(CollectToResult) |
                             is.na(ReceiveToResult), FALSE, TRUE))
-  
+
   # Remove duplicate tests
   raw_sun <- raw_sun %>%
     filter(!DuplTest)
-  
+
   # Select columns
   sun_master <- raw_sun[, c("LocCode", "LocName", "LocandName",
                             "HISOrderNumber", "PhysName",
@@ -616,7 +614,7 @@ preprocess_daily_sun <- function(raw_sun) {
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")]
-  
+
   colnames(sun_master) <- c("LocCode", "LocName", "LocConcat",
                             "OrderID", "RequestMD",
                             "MSMRN", "WorkShift",
@@ -634,14 +632,14 @@ preprocess_daily_sun <- function(raw_sun) {
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")
-  
+
   sun_daily_list <- list(raw_sun, sun_master)
-  
+
 }
 
 # Custom function for preprocessing Sunquest data -----------------
 preprocess_monthly_sun <- function(raw_sun) {
-  
+
   # Preprocess Sunquest data --------------------------------
   # Remove any duplicates
   raw_sun <- unique(raw_sun)
@@ -656,7 +654,7 @@ preprocess_monthly_sun <- function(raw_sun) {
   #                    "ResultDateTime")],
   #          function(x) ifelse(!is.na(x) & str_detect(x, "\\*.*\\*")  == TRUE,
   #                             str_replace(x, "\\*.*\\*", ""), x))
-  # 
+  #
   # raw_sun[c("OrderDateTime",
   #           "CollectDateTime",
   #           "ReceiveDateTime",
@@ -666,36 +664,34 @@ preprocess_monthly_sun <- function(raw_sun) {
   #                    "ReceiveDateTime",
   #                    "ResultDateTime")],
   #          as.POSIXct, tz = "UTC", format = "%m/%d/%Y %H:%M:%S")
-  
+
   # Sunquest lookup references
   # Crosswalk labs included and remove out of scope labs
   raw_sun <- left_join(raw_sun, sun_test_code,
                        by = c("TestCode" = "SUN_TestCode"))
-  
+
   # Determine if test is included based on crosswalk results
   raw_sun <- raw_sun %>%
     mutate(TestIncl = !is.na(Test)) %>%
     filter(TestIncl)
-  
-  
+
   # Crosswalk unit type
   raw_sun <- left_join(raw_sun, sun_setting,
                        by = c("LocType" = "LocType"))
-  
+
   # Crosswalk site name
   raw_sun <- left_join(raw_sun, mshs_site,
                        by = c("HospCode" = "DataSite"))
-  
+
   # Crosswalk units and identify ICUs
   raw_sun <- raw_sun %>%
     mutate(LocandName = paste(LocCode, LocName))
-  
+
   raw_sun <- left_join(raw_sun, sun_icu[, c("Concatenate", "ICU")],
                        by = c("LocandName" = "Concatenate"))
-  
+
   raw_sun[is.na(raw_sun$ICU), "ICU"] <- FALSE
-  
-  
+
   # # Sunquest data formatting-----------------------------
   # Preprocess Sunquest data and add any necessary columns
   raw_sun <- raw_sun %>%
@@ -795,7 +791,7 @@ preprocess_monthly_sun <- function(raw_sun) {
       # Exclusion criteria:
       # 1. Add on orders
       # 2. Orders from "Other" settings
-      # 3. Orders with collect or receive times after result time, collect 
+      # 3. Orders with collect or receive times after result time, collect
       # time after receive time
       # 4. Orders with missing collect, receive, or result timestamps
       TATInclude = ifelse(AddOnMaster == "AddOn" |
@@ -805,11 +801,11 @@ preprocess_monthly_sun <- function(raw_sun) {
                             ReceiveToResult < 0 |
                             is.na(CollectToResult) |
                             is.na(ReceiveToResult), FALSE, TRUE))
-  
+
   # Remove duplicate tests
   raw_sun <- raw_sun %>%
     filter(!DuplTest)
-  
+
   # Select columns
   sun_master <- raw_sun[, c("LocCode", "LocName", "LocandName",
                             "HISOrderNumber", "PhysName",
@@ -828,7 +824,7 @@ preprocess_monthly_sun <- function(raw_sun) {
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")]
-  
+
   colnames(sun_master) <- c("LocCode", "LocName", "LocConcat",
                             "OrderID", "RequestMD",
                             "MSMRN", "WorkShift",
@@ -846,9 +842,9 @@ preprocess_monthly_sun <- function(raw_sun) {
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")
-  
+
   sun_monthly_list <- list(raw_sun, sun_master)
-  
+
 }
 
 # Custom function to determine resulted lab date from preprocessed data -------
@@ -859,10 +855,10 @@ correct_result_dates <- function(data, number_days) {
     summarize(VolLabs = n()) %>%
     arrange(desc(VolLabs)) %>%
     ungroup()
-  
-  
+
+
   correct_dates <- all_resulted_dates_vol$ResultDate[1:number_days]
-  
+
   new_data <- data %>%
     filter(ResultDate %in% correct_dates)
   return(new_data)
@@ -876,16 +872,16 @@ if (!is.null(scc_raw_data_list)) {
                                    preprocess_scc)
   # Select the second element of the list of lists
   scc_preprocessed_data <- lapply(scc_daily_preprocessed, function(x) x[[2]])
-  
+
   # Remove any labs with incorrect dates then bind daily reports
   #into one data frame
   scc_preprocessed_data <-
     lapply(scc_preprocessed_data,
            function(x) correct_result_dates(x, number_days = 1))
-  
+
   # Bind all data together
   scc_daily_bind <- bind_rows(scc_preprocessed_data)
-  
+
 } else {
   scc_daily_bind <- NULL
 }
@@ -898,10 +894,10 @@ if (!is.null(sun_daily_raw_data_list)) {
                                    preprocess_daily_sun)
   # Select the second element of the list of lists
   sun_preprocessed_data <- lapply(sun_daily_preprocessed, function(x) x[[2]])
-  
+
   # Bind daily reports into one data frame
   sun_daily_bind <- bind_rows(sun_preprocessed_data)
-  
+
 } else {
   sun_daily_bind <- NULL
 }
@@ -914,7 +910,7 @@ if (!is.null(sun_monthly_list)) {
   # Select the second element of the list of lists
   sun_monthly_preprocessed_data <- lapply(sun_monthly_preprocessed,
                                           function(x) x[[2]])
-  
+
   # Bind monthly reports into one data frame
   sun_monthly_bind <- bind_rows(sun_monthly_preprocessed_data)
 } else {
