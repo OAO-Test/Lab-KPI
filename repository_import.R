@@ -9,7 +9,8 @@
 
 # Determine dates of most recent weekday and weekend/holiday if applicable
 if (((holiday_det) & (yesterday_day == "Mon")) |
-    ((yesterday_day == "Sun") & (isHoliday(as.timeDate(yesterday - 2))))) {
+    ((yesterday_day == "Sun") & (isHoliday(as.timeDate(yesterday - 2),
+                                           holidays = mshs_holiday)))) {
   # Scenario 1: Mon Holiday or Friday Holiday
   # Save scenario
   scenario <- 1

@@ -46,7 +46,8 @@ epic_weekday <- read_excel(
 # each file from the relevant folder.
 
 if (((holiday_det) & (yesterday_day == "Mon")) |
-    ((yesterday_day == "Sun") & (isHoliday(as.timeDate(yesterday) - (86400 * 2))))) {
+    ((yesterday_day == "Sun") & (isHoliday(as.timeDate(yesterday) - (86400 * 2),
+                                           holidays = mshs_holiday)))) {
   # Scenario 1: Mon Holiday or Friday Holiday (Need to select 4 files)
   # Save scenario
   scenario <- 1
