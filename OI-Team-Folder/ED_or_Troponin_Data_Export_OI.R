@@ -42,7 +42,7 @@ if ("Presidents" %in% list.files("J://")) {
 }
 
 # Import data for two scenarios - first time compiling repo and updating repo ----------
-initial_run <- TRUE
+initial_run <- FALSE
 
 if (initial_run == TRUE) {
   # Find list of data reports from 2020
@@ -101,12 +101,25 @@ if (initial_run == TRUE) {
                                                "text", "text", "text", "text",
                                                "text", "text", "text", "text",
                                                "text"))))
+  ed_repo <- NULL
+  troponin_repo <- NULL
 } else {
   # Import existing historical repository as a RDS file
   existing_repo <- readRDS(
     choose.files(default = paste0(user_directory,
                                   "/OI Data Pull/*.*"),
                  caption = "Select Raw Data Repository"))
+  ed_repo <- read.csv(choose.files(default = paste0(user_directory,
+                                                    "/OI Data Pull",
+                                                    "/ED_Repo",
+                                                    "/*.*"),
+                                   caption = "Select ED Data Repository"))
+  troponin_repo <- read.csv(choose.files(default = paste0(user_directory,
+                                                    "/OI Data Pull",
+                                                    "/Troponin_Repo",
+                                                    "/*.*"),
+                                   caption = "Select Troponin Data Repository"))
+  troponin_repo
   #
   # Find last date of resulted lab data in historical repo for SCC and Sunquest sites
   last_dates <- data.frame(
@@ -910,14 +923,31 @@ if (!is.null(sun_monthly_list)) {
 
 # Bind together all SCC and Sunquest data --------------------------------------
 bind_all_data <- rbind(sun_daily_bind, sun_monthly_bind, scc_daily_bind)
-file_path <- paste0(user_directory, "/OI Data Pull")
+file_path <- paste0(user_directory, "/OI Data Pull/")
+
+# Export repository to file
+start_date <- format(min(bind_all_data$ResultDate), "%m-%d-%y")
+end_date <- format(max(bind_all_data$ResultDate), "%m-%d-%y")
 
 saveRDS(bind_all_data,
         file =
-          paste0(file_path, "CP Raw Data", ".RDS"))
+          paste0(file_path,
+                 "CP Raw Data",
+                 start_date, " to ", end_date,
+                 " Created ", Sys.Date(), ".RDS"))
 
 ed_data_only <- bind_all_data[which(bind_all_data$MasterSetting == "ED"), ]
 troponin_data_only <- bind_all_data[which(bind_all_data$Test == "Troponin"), ]
 
-write.csv(ed_data_only, paste0(file_path, "ED_Labs_Data.csv"))
-write.csv(troponin_data_only, paste0(file_path, "Troponin_Labs_Data.csv"))
+ed_data_new <- rbind(ed_repo, ed_data_only)
+troponin_data_new <- rbind(troponin_repo, troponin_data_only)
+
+write.csv(ed_data_new,
+          paste0(file_path, "ED_Repo/ED_Labs_Data",
+                 start_date, " to ", end_date,
+                 " Created ", Sys.Date(), ".csv"))
+
+write.csv(troponin_data_new,
+          paste0(file_path, "Troponin_Repo/Troponin_Labs_Data",
+                 start_date, " to ", end_date,
+                 " Created ", Sys.Date(), ".csv"))
