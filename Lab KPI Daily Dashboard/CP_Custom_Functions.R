@@ -782,7 +782,9 @@ kable_missing_collections <- function(x) {
       Site = factor(Site, levels = city_sites, ordered = TRUE))
   #
   # Create template to ensure all sites are included
-  missing_collect <- left_join(data.frame("Site" = city_sites),
+  missing_collect <- left_join(data.frame("Site" = factor(city_sites,
+                                                          levels = city_sites,
+                                                          ordered = TRUE)),
                                missing_collect,
                                by = c("Site" = "Site"))
   #
