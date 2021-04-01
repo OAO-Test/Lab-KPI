@@ -139,7 +139,7 @@ cyto_backlog_file <- list.files(
 cyto_backlog_raw <- read_excel(path =
                                      paste0(user_directory,
                                             "/Cytology Backlog Reports/",
-                                            cytology_file),
+                                            cyto_backlog_file),
                                    skip = 1, 1)
 
 cyto_backlog_raw <- data.frame(cyto_backlog_raw[-nrow(cyto_backlog_raw), ],
