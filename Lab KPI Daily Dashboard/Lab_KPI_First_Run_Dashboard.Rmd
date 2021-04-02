@@ -33,7 +33,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 # 5. Backlog data for anatomic pathology especially cytology-----
 #######
 
-source(here::here("Lab KPI Daily Dashboard/raw_data_auto_import.R"))
+source(here::here("Lab KPI Daily Dashboard/Raw_Data_Auto_Import.R"))
 ```
 
 ```{r cp_custom_functions file, warning = FALSE, message = FALSE, echo = FALSE}
