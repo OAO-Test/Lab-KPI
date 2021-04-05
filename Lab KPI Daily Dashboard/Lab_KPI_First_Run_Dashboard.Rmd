@@ -153,8 +153,21 @@ hist_repo_ap_updated <- rbind(hist_repo_ap, current_summary)
 
 hist_repo_ap_updated <- unique(hist_repo_ap_updated)
 
+ap_start_date <-
+  format(min(hist_repo_ap_updated$Signed_out_date_only), "%m-%d-%y")
+ap_end_date <-
+  format(max(hist_repo_ap_updated$Signed_out_date_only), "%m-%d-%y")
+
+ap_repo_file_name <- paste0(user_directory,
+                       "/AP & Cytology Historical Repo/",
+                       "Historical_Repo_Surgical_Pathology", "_",
+                       ap_start_date, " to ", ap_end_date,
+                       " Created ", Sys.Date(), ".RDS")
+
+saveRDS(hist_repo_ap_updated, file = ap_repo_file_name)
+
 #5. subset ap repo correctly to make sure only cases signed out yesterday are
-#included --> exclude anything signed out today at 12am from
+#included --> exclude anything signed out today at 12am
 # Subset AP data for most recent weekday
 ap_wday_summary <- hist_repo_ap_updated %>%
   filter((report_date_only - 1) %in% wkday_date)
@@ -166,12 +179,7 @@ cyto_table_weekday_summarized <- ap_wday_summary %>%
 # Subset most recent weekday AP data to get patho
 sp_table_weekday_summarized <- ap_wday_summary %>%
   filter(Spec_group %in% patho_spec_group)
-#today's analysis
-ap_file_name <- paste0(user_directory, "/AP & Cytology Historical Repo/",
-                       "Historical_Repo_Surgical_Pathology", "_",
-                       today, ".RDS")
 
-saveRDS(hist_repo_ap_updated, file = ap_file_name)
 ```
 
 ```{r Calling the Custom functions for creating AP analysis tables, warning = FALSE, message = FALSE, echo = FALSE}

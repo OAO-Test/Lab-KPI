@@ -599,9 +599,16 @@ hist_data_summarized_new <- rbind(existing_powerpath_repo, hist_data_summarized)
 hist_data_summarized_new <- unique(hist_data_summarized_new)
 
 #main historical repo
-ap_repo_file_name <-
-  paste0(user_directory, "/AP & Cytology Historical Repo",
-         "/Historical_Repo_Surgical_Pathology", "_", today, ".RDS")
+ap_start_date <-
+  format(min(hist_data_summarized_new$Signed_out_date_only), "%m-%d-%y")
+ap_end_date <-
+  format(max(hist_data_summarized_new$Signed_out_date_only), "%m-%d-%y")
+
+ap_repo_file_name <- paste0(user_directory,
+                            "/AP & Cytology Historical Repo/",
+                            "Historical_Repo_Surgical_Pathology", "_",
+                            ap_start_date, " to ", ap_end_date,
+                            " Created ", Sys.Date(), ".RDS")
 
 saveRDS(hist_data_summarized_new, file = ap_repo_file_name)
 
