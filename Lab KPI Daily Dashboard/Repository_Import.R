@@ -71,6 +71,7 @@ backlog_repo <-
               default =
                 paste0(user_directory,
                        "/AP & Cytology Historical Repo",
+                       "/Backlog Repo",
                        "/*.*"),
               caption = "Select Cytology Backlog Historical Repository"))
 
