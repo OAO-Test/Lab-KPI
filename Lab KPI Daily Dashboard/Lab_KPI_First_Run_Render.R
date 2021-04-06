@@ -13,7 +13,7 @@ if ("Presidents" %in% list.files("J://")) {
 }
 
 # Render markdown file with dashboard code and save with today's date
-rmarkdown::render("Lab KPI Daily Dashboard/lab_kpi_first_run_dashboard.Rmd", 
+rmarkdown::render("Lab KPI Daily Dashboard/Lab_KPI_First_Run_Dashboard.Rmd", 
                   output_file = paste0(
                     substr(user_directory, 1,
                            str_locate(user_directory, "/Data")[1] - 1),
