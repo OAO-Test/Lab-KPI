@@ -779,12 +779,16 @@ ap_hist_30_day_rtr <-
                      Spec_group,
                      new_facility_rtr_cyto,
                      Patient_setting),
+            
             Lab_metric_within_target =
-              format(round(mean(as.numeric(Lab_metric_within_target),
-                                na.rm = TRUE), 2)),
+              format(round(sum(
+                (Lab_metric_within_target * No_cases_signed_out) /
+                  sum(No_cases_signed_out), na.rm = TRUE), 2)),
+
             Patient_metric_avg =
-              format(round(mean(as.numeric(Patient_metric_avg),
-                                na.rm = TRUE), 0)),
+              format(round(sum((Patient_metric_avg * No_cases_signed_out) /
+                                 sum(No_cases_signed_out), na.rm = TRUE), 0)),
+            
             No_cases_signed_out = sum(No_cases_signed_out))
 
 ap_hist_30_day_rtr[c("Lab_metric_within_target",
@@ -803,12 +807,14 @@ ap_hist_30_day_ctr <-
                      Spec_group,
                      Facility,
                      Patient_setting),
-            Lab_metric_within_target =
-              format(round(mean(as.numeric(Lab_metric_within_target),
-                                na.rm = TRUE), 2)),
+             Lab_metric_within_target =
+              format(round(sum(
+                (Lab_metric_within_target * No_cases_signed_out) /
+                  sum(No_cases_signed_out), na.rm = TRUE), 2)),
+
             Patient_metric_avg =
-              format(round(mean(as.numeric(Patient_metric_avg),
-                                na.rm = TRUE), 0)),
+              format(round(sum((Patient_metric_avg * No_cases_signed_out) /
+                                 sum(No_cases_signed_out), na.rm = TRUE), 0)),
             No_cases_signed_out = sum(No_cases_signed_out))
 
 ap_hist_30_day_ctr[c("Lab_metric_within_target",
@@ -1446,8 +1452,7 @@ ap_strat_data(ap_hist_30_day_rtr,
 
 
 ### Cyto Gyn Specimens
-<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
-```{r Cyto Gyn Specimens historical data, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
+```{r Cyto Gyn Specimens historical data, eval = TRUE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center"}
 
 ap_strat_data(ap_hist_30_day_rtr,
               ap_hist_30_day_ctr,
@@ -1534,8 +1539,7 @@ ap_strat_data_pchart(ap_hist_30_day_defects, "GI")
 ```
 
 ### Cyto Gyn Specimens
-<h4><span style = "color:red">Cyto Gyn Pending - Resolution of Data Issues</h4></span style = "color:red">
-```{r Cyto Gyn Specimens  pchart, eval = FALSE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", results='asis'}
+```{r Cyto Gyn Specimens  pchart, eval = TRUE, echo = FALSE, warning = FALSE, message = FALSE, fig.height = 5, fig.width = 8, fig.align="center", results='asis'}
 
 ap_strat_data_pchart(ap_hist_30_day_defects, "CYTO GYN")
 
