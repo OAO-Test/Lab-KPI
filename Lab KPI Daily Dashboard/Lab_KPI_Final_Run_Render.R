@@ -1,3 +1,6 @@
+# This code renders the final run markdown for the daily dashboard after the
+# Lab KPI form has been completed
+
 # Clear environment
 rm(list = ls())
 
@@ -16,7 +19,7 @@ if ("Presidents" %in% list.files("J://")) {
 rmarkdown::render("Lab KPI Daily Dashboard/Lab_KPI_Final_Run_Dashboard.Rmd", 
                   output_file = paste0(
                     substr(user_directory, 1,
-                           str_locate(user_directory, "/Data")[1] - 1),
+                           nchar(user_directory) - nchar("/Data")),
                     "/Dashboard Drafts",
                     "/Lab KPI Dashboard Final ",
                     format(Sys.Date(), "%m-%d-%y")))
