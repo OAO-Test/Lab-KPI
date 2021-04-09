@@ -973,7 +973,7 @@ end_date <- format(max(cp_repo$ResultDate), "%m%d%y")
 saveRDS(cp_repo,
            file =
              paste0(user_directory,
-                    "\\CP Historical Repo\\Hist Repo ",
+                    "\\CP Historical Repo\\CP Repo ",
                     start_date, " to ", end_date,
                     " Created ", Sys.Date(), ".RDS"))
 

@@ -160,7 +160,7 @@ ap_end_date <-
 
 ap_repo_file_name <- paste0(user_directory,
                        "/AP & Cytology Historical Repo/",
-                       "Historical_Repo_Surgical_Pathology", "_",
+                       "AP Repo", "_",
                        ap_start_date, " to ", ap_end_date,
                        " Created ", Sys.Date(), ".RDS")
 
