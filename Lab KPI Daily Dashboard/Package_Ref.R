@@ -17,7 +17,7 @@
 # install.packages("rmarkdown")
 # install.packages("stringr")
 # install.packages("writexl")
-
+# install.packages("gsubfn")
 #-------------------------------Required packages------------------------------#
 
 #Required packages: run these every time you run the code
@@ -34,6 +34,7 @@ library(formattable)
 library(rmarkdown)
 library(stringr)
 library(writexl)
+library(gsubfn)
 
 
 #Clear existing history

@@ -16,31 +16,30 @@ kpi_form <- kpi_form %>%
 
 kpi_form <- kpi_form %>%
   mutate(Completion_Hour = format(Completion.time, format = "%H:%M:%S"))
+
+#Rename the columns of the kpi form data
+colnames(kpi_form) <- c("ID", "Start_time", "Completion_time", "Email",
+                        "Name", "Facility", "LabCorp", "Vendor_Services",
+                        "Environment", "Equipment", "IT","Service_Changes",
+                        "Volume", "Staffing", "Comments", "NEVER_EVENTS",
+                        "NEVER_EVENTS_COMMENTS", "Good_Catch", "LIS_Staffing",
+                        "LIS_Unplanned_Service", "LIS_Preplanned_Downtime",
+                        "Completion_Date", "Completion_Hour")
+
+#keep only unique rows with the latest timestamp
+#order data by facility and time by descending order
+kpi_form <- kpi_form[with(kpi_form, order(Facility, -ID)), ]
+#add a column to include the dupliacted values
+kpi_form$duplicated_id <- duplicated(kpi_form[, c("Facility",
+                                                  "Completion_Date")])
+#only keep the unique ids
+kpi_form <-
+  kpi_form[which(kpi_form$duplicated_id == "FALSE"), ]
+
 kpi_form_today  <-
   kpi_form[which(kpi_form$Completion_Date == as.Date(today) |
                    (kpi_form$Completion_Date == as.Date(yesterday) &
                       kpi_form$Completion_Hour >= "17:00:00")), ]
-
-#Rename the columns of the kpi form data
-colnames(kpi_form_today) <- c("ID", "Start_time", "Completion_time", "Email",
-                              "Name", "Facility", "LabCorp", "Vendor_Services",
-                              "Environment", "Equipment", "IT",
-                              "Service_Changes", "Volume", "Staffing",
-                              "Comments", "NEVER_EVENTS",
-                              "NEVER_EVENTS_COMMENTS", "Good_Catch",
-                              "LIS_Staffing",
-                              "LIS_Unplanned_Service",
-                              "LIS_Preplanned_Downtime",
-                              "Completion_Date", "Completion_Hour")
-
-#keep only unique rows with the latest timestamp
-#order data by facility and time by descending order
-kpi_form_today <- kpi_form_today[with(kpi_form_today, order(Facility, -ID)), ]
-#add a column to include the dupliacted values
-kpi_form_today$duplicated_id <- duplicated(kpi_form_today$Facility)
-#only keep the unique ids
-kpi_form_today <-
-  kpi_form_today[which(kpi_form_today$duplicated_id == "FALSE"), ]
 
 #do not run now until test it - waiting for Daya to send the data for today's
 #1. read current historical repo
