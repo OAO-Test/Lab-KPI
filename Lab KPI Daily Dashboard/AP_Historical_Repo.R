@@ -247,7 +247,7 @@ if (initial_run == TRUE) {
               choose.files(default =
                              paste0(user_directory,
                                     "/AP & Cytology Historical Repo/*.*"),
-                           caption = "Select Historical Repository"))
+                           caption = "Select AP Historical Repository"))
   existing_backlog_repo <-
     readRDS(file =
               choose.files(default =

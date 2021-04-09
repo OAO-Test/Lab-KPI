@@ -109,7 +109,7 @@ if (initial_run == TRUE) {
   existing_repo <- readRDS(
     choose.files(default = paste0(user_directory,
                                   "/CP Historical Repo/*.*"),
-                 caption = "Select Historical Repository"))
+                 caption = "Select CP Historical Repository"))
   #
   # Find last date of resulted lab data in historical rpe for SCC and Sunquest sites
   last_dates <- data.frame(
