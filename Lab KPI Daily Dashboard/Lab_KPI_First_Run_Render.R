@@ -1,3 +1,5 @@
+# This code renders the first run markdown for the daily dashboard
+
 # Clear environment
 rm(list = ls())
 
@@ -15,8 +17,7 @@ if ("Presidents" %in% list.files("J://")) {
 # Render markdown file with dashboard code and save with today's date
 rmarkdown::render("Lab KPI Daily Dashboard/Lab_KPI_First_Run_Dashboard.Rmd", 
                   output_file = paste0(
-                    substr(user_directory, 1,
-                           str_locate(user_directory, "/Data")[1] - 1),
+                    substr(user_directory, 1, nchar(user_directory) - 5),
                     "/Dashboard Drafts",
                     "/Lab KPI Dashboard Pre KPI Form ",
                     format(Sys.Date(), "%m-%d-%y")))

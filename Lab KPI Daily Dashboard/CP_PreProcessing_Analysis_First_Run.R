@@ -155,4 +155,4 @@ saveRDS(cp_repo, file = paste0(user_directory,
                                "/CP Historical Repo",
                                "/Hist Repo ", start_date, " to ",
                                end_date, " Created ",
-                               format(Sys.Date(), "%m%d%y"), ".RDS"))
+                               format(Sys.Date(), "%Y-%m-%d"), ".RDS"))
