@@ -48,7 +48,7 @@ historical_repo_form <-
     default = paste0(user_directory,
                      "/Lab KPI Form/Lab KPI Historical Repo",
                      "/*.*"),
-                     caption = "Select Cytology Backlog Historical Repository"))
+                     caption = "Select Lab KPI Form Historical Repository"))
 
 #2. combine the current summary with the historical repo and write them
 #into a xlsx file
