@@ -960,8 +960,8 @@ if (initial_run == TRUE) {
 cp_repo <- unique(cp_repo)
 
 # Export repository to file
-start_date <- format(min(cp_repo$ResultDate), "%m-%d-%y")
-end_date <- format(max(cp_repo$ResultDate), "%m-%d-%y")
+start_date <- format(min(cp_repo$ResultDate), "%m%d%y")
+end_date <- format(max(cp_repo$ResultDate), "%m%d%y")
 # 
 # write_xlsx(cp_repo,
 #            path =
