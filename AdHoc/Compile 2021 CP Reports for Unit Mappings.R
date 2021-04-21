@@ -103,7 +103,9 @@ ip_units <- all_sites_units %>%
   filter(Setting %in% c("I", "Inpatient"))
 
 mssn_units <- all_sites_units %>%
-  filter(Site == "MSSN")
+  filter(Site == "SNCH")
 
 write_xlsx(ip_units, path = paste0(user_directory,
-                                   "/AdHoc/2021 Inpatient Units 2021-04-19.xlsx"))
+                                   "/AdHoc/2021 Inpatient Units ",
+                                   Sys.Date(),
+                                   ".xlsx"))
