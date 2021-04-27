@@ -203,7 +203,7 @@ cp_micro_lab_order <- c("Troponin",
                         "Rapid Flu",
                         "C. diff")
 
-site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
+site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN", "RTC")
 city_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
 
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
@@ -270,6 +270,11 @@ preprocess_scc <- function(raw_scc)  {
   # Preprocess SCC data and add any necessary columns
   raw_scc <- raw_scc %>%
     mutate(
+      # Subset HGB and BUN tests completed at RTC as a separate site since they
+      # are processed at RTC
+      Site = ifelse(Test %in% c("HGB", "BUN") &
+                      str_detect(WARD_NAME, "Ruttenberg Treatment Center"),
+                    "RTC", Site),
       # Determine if unit is an ICU based on crosswalk results
       ICU = ifelse(is.na(ICU), FALSE, ICU),
       # Create a column for resulted date
