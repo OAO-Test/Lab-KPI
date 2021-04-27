@@ -443,7 +443,7 @@ summarize_cp_tat <- function(x, lab_division) {
   # meets inclusion criteria, and site location
   lab_div_df <- x %>%
     filter(Division == lab_division &
-             Site %in% city_sites)
+             Site %in% site_order)
   #
   # Summarize data based on test, site, priority, setting, and TAT targets.
   lab_summary <- lab_div_df %>%
@@ -483,7 +483,7 @@ summarize_cp_tat <- function(x, lab_division) {
       #
       # Set test, site, priority, and setting as factors
       Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
-      Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+      Site = droplevels(factor(Site, levels = site_order, ordered = TRUE)),
       DashboardPriority = droplevels(factor(DashboardPriority,
                                             levels = dashboard_priority_order,
                                             ordered = TRUE)),
@@ -629,10 +629,12 @@ summarize_cp_tat <- function(x, lab_division) {
            ReceiveResultPercent_MSH, ReceiveResultPercent_MSQ,
            ReceiveResultPercent_MSBI, ReceiveResultPercent_MSB,
            ReceiveResultPercent_MSW, ReceiveResultPercent_MSM,
+           ReceiveResultPercent_MSSN, ReceiveResultPercent_RTC,
            CollectResultTarget, DashboardSetting2,
            CollectResultPercent_MSH, CollectResultPercent_MSQ,
            CollectResultPercent_MSBI, CollectResultPercent_MSB,
-           CollectResultPercent_MSW, CollectResultPercent_MSM)
+           CollectResultPercent_MSW, CollectResultPercent_MSM,
+           CollectResultPercent_MSSN, CollectResultPercent_RTC)
   #
   # Save outputs in a list
   lab_sub_output <- list(lab_div_df,
