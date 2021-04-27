@@ -63,7 +63,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # Subset HGB and BUN tests completed at RTC as a separate site since they
       # are processed at RTC
       Site = ifelse(Test %in% c("HGB", "BUN") &
-                      str_detect(WARD_NAME, "Ruttenberg Treatement Center"),
+                      str_detect(WARD_NAME, "Ruttenberg Treatment Center"),
                     "RTC", Site),
       # Determine if unit is an ICU based on crosswalk results
       ICU = ifelse(is.na(ICU), FALSE, ICU),

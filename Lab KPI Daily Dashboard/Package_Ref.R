@@ -119,7 +119,7 @@ cp_micro_lab_order <- c("Troponin",
                         "Rapid Flu",
                         "C. diff")
 
-site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
+site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN", "RTC")
 city_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
 
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
@@ -139,9 +139,9 @@ test_name_division <- unique(cp_test_divisions[, c("Division", "Test")])
 test_names <- cp_test_divisions$Test
 
 # Create data frame of test and site combinations
-rep_test_site <- sort(rep(test_names, length(city_sites)))
+rep_test_site <- sort(rep(test_names, length(site_order)))
 
-rep_sites <- rep(city_sites, length(test_names))
+rep_sites <- rep(site_order, length(test_names))
 
 test_site_comb <- data.frame("Test" = rep_test_site,
                              "Site" = rep_sites,
@@ -216,7 +216,11 @@ tat_dashboard_templ <- test_site_prty_setting_tat %>%
         # Remove priority stratification for rapid flu and c. diff since all
         # are treated as stat
         (Test %in% c("Rapid Flu", "C. diff") &
-           !(DashboardPriority %in% c("All"))), "Excl", "Incl")) %>%
+           !(DashboardPriority %in% c("All"))) |
+        # Remove any labs other than BUN and HGB from RTC since those are the
+        # only labs processed there
+        (Site %in% c("RTC") & (!(Test %in% c("BUN", "HGB")) |
+           !(DashboardSetting %in% c("Amb")))), "Excl", "Incl")) %>%
   filter(Incl == "Incl")
 
 vol_dashboard_templ <- test_site_prty_setting_vol %>%
@@ -235,7 +239,12 @@ vol_dashboard_templ <- test_site_prty_setting_vol %>%
         (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All")) |
         # Remove Microbiology RRL since resulted volume is included already in
         # TAT tables
-        (Division %in% c("Microbiology RRL")), "Excl", "Incl")) %>%
+        (Division %in% c("Microbiology RRL")) |
+        # Remove any labs other than BUN and HGB from RTC since those are the
+        # only labs processed there. Also remove non-amb setting
+        (Site %in% c("RTC") & (!(Test %in% c("BUN", "HGB")) |
+                                 !(PtSetting %in% c("Amb")))),
+      "Excl", "Incl")) %>%
   filter(Incl == "Incl")
 
 
