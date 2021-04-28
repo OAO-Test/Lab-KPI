@@ -659,17 +659,17 @@ kable_cp_tat <- function(x) {
   if (any(str_detect(colnames(data), "_RTC"))) {
     kable_col_names <- c("Test & Priority",
                          "Target", "Setting",
-                         "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN",
+                         "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN",
                          "RTC",
                          "Target", "Setting",
-                         "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN",
+                         "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN",
                          "RTC")
   } else {
       kable_col_names <- c("Test & Priority",
                            "Target", "Setting",
-                           "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN",
+                           "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN",
                            "Target", "Setting",
-                           "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN")
+                           "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
       }
 
   num_col <- length(kable_col_names)
@@ -758,11 +758,11 @@ summarize_cp_vol <- function(x, lab_division) {
 kable_cp_vol <- function(x) {
   if (any(str_detect(colnames(x), "RTC"))) {
     kable_cp_vol_cols <- c("Test & Priority", "Setting",
-                         "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN",
+                         "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN",
                          "RTC")
   } else {
     kable_cp_vol_cols <- c("Test & Priority", "Setting",
-                         "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN")
+                         "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
   }
   
   
