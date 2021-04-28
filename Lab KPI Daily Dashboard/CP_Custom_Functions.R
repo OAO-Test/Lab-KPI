@@ -609,7 +609,7 @@ summarize_cp_tat <- function(x, lab_division) {
                              measure.vars = c("ReceiveResultPercent",
                                               "CollectResultPercent"))
   #
-  # Case dataframe into wide format for use in tables later
+  # Cast dataframe into wide format for use in tables later
   lab_dashboard_cast <- dcast(lab_dashboard_melt,
                               Test +
                                 DashboardPriority +
@@ -622,19 +622,22 @@ summarize_cp_tat <- function(x, lab_division) {
                               value.var = "value")
   #
   # Rearrange columns based on desired dashboard aesthetics
+  col_order <- c("Test", "DashboardPriority", "TestAndPriority",
+                 "ReceiveResultTarget", "DashboardSetting",
+                 "ReceiveResultPercent_MSH", "ReceiveResultPercent_MSQ",
+                 "ReceiveResultPercent_MSBI", "ReceiveResultPercent_MSB",
+                 "ReceiveResultPercent_MSW", "ReceiveResultPercent_MSM",
+                 "ReceiveResultPercent_MSSN", "ReceiveResultPercent_RTC",
+                 "CollectResultTarget", "DashboardSetting2",
+                 "CollectResultPercent_MSH", "CollectResultPercent_MSQ",
+                 "CollectResultPercent_MSBI", "CollectResultPercent_MSB",
+                 "CollectResultPercent_MSW", "CollectResultPercent_MSM",
+                 "CollectResultPercent_MSSN", "CollectResultPercent_RTC")
+  
   lab_dashboard_cast <- lab_dashboard_cast %>%
     mutate(DashboardSetting2 = DashboardSetting) %>%
-    select(Test, DashboardPriority, TestAndPriority,
-           ReceiveResultTarget, DashboardSetting,
-           ReceiveResultPercent_MSH, ReceiveResultPercent_MSQ,
-           ReceiveResultPercent_MSBI, ReceiveResultPercent_MSB,
-           ReceiveResultPercent_MSW, ReceiveResultPercent_MSM,
-           ReceiveResultPercent_MSSN, ReceiveResultPercent_RTC,
-           CollectResultTarget, DashboardSetting2,
-           CollectResultPercent_MSH, CollectResultPercent_MSQ,
-           CollectResultPercent_MSBI, CollectResultPercent_MSB,
-           CollectResultPercent_MSW, CollectResultPercent_MSM,
-           CollectResultPercent_MSSN, CollectResultPercent_RTC)
+    select(intersect(col_order, names(.)))
+
   #
   # Save outputs in a list
   lab_sub_output <- list(lab_div_df,
