@@ -397,7 +397,7 @@ micro_volume_melt <- micro_volume_melt %>%
     #
     # Set test, site, priority, and setting as factors
     Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
-    Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+    Site = droplevels(factor(Site, levels = site_order, ordered = TRUE)),
     DashboardPriority = droplevels(factor(DashboardPriority,
                                           levels = dashboard_priority_order,
                                           ordered = TRUE)),
@@ -430,7 +430,8 @@ micro_volume_cast <- micro_volume_cast %>%
     ResultedVolume_MSBI2 = ResultedVolume_MSBI,
     ResultedVolume_MSB2 = ResultedVolume_MSB,
     ResultedVolume_MSW2 = ResultedVolume_MSW,
-    ResultedVolume_MSM2 = ResultedVolume_MSM) %>%
+    ResultedVolume_MSM2 = ResultedVolume_MSM,
+    ResultedVolume_MSSN2 = ResultedVolume_MSSN) %>%
   select(Test,
          DashboardPriority,
          TestAndPriority,
@@ -442,6 +443,7 @@ micro_volume_cast <- micro_volume_cast %>%
          ResultedVolume_MSB,
          ResultedVolume_MSW,
          ResultedVolume_MSM,
+         ResultedVolume_MSSN,
          CollectResultTarget,
          DashboardSetting2,
          ResultedVolume_MSH2,
@@ -449,7 +451,8 @@ micro_volume_cast <- micro_volume_cast %>%
          ResultedVolume_MSBI2,
          ResultedVolume_MSB2,
          ResultedVolume_MSW2,
-         ResultedVolume_MSM2)
+         ResultedVolume_MSM2,
+         ResultedVolume_MSSN2)
 
 # Rename columns to match TAT table for binding
 colnames(micro_volume_cast) <- colnames(micro_dashboard_cast)

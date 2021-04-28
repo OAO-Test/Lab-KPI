@@ -453,13 +453,14 @@ summarize_cp_tat <- function(x, lab_division) {
              DashboardSetting,
              ReceiveResultTarget,
              CollectResultTarget) %>%
-    summarize(ResultedVolume = sum(TotalResultedTAT),
+    summarize(ResultedVolume = sum(TotalResulted),
+              ResultedVolumeTAT = sum(TotalResultedTAT),
               ReceiveResultInTarget = sum(TotalReceiveResultInTarget),
               CollectResultInTarget = sum(TotalCollectResultInTarget),
               ReceiveResultPercent = round(
-                ReceiveResultInTarget / ResultedVolume, digits = 3),
+                ReceiveResultInTarget / ResultedVolumeTAT, digits = 3),
               CollectResultPercent = round(
-                CollectResultInTarget / ResultedVolume, digits = 3),
+                CollectResultInTarget / ResultedVolumeTAT, digits = 3),
               .groups = "keep") %>%
     ungroup()
   #
@@ -654,32 +655,46 @@ kable_cp_tat <- function(x) {
   #
   # Select columns 3 and on
   data <- x[, c(3:ncol(x))]
+  
+  if (any(str_detect(colnames(data), "_RTC"))) {
+    kable_col_names <- c("Test & Priority",
+                         "Target", "Setting",
+                         "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN",
+                         "RTC",
+                         "Target", "Setting",
+                         "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN",
+                         "RTC")
+  } else {
+      kable_col_names <- c("Test & Priority",
+                           "Target", "Setting",
+                           "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN",
+                           "Target", "Setting",
+                           "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN")
+      }
+
+  num_col <- length(kable_col_names)
   #
   # Format kable
   kable(data, format = "html", escape = FALSE, align = "c",
-        col.names = c("Test & Priority",
-                      "Target", "Setting",
-                      "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM",
-                      "Target", "Setting",
-                      "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
+        col.names = kable_col_names) %>%
     kable_styling(bootstrap_options = "hover", position = "center",
                   font_size = 11) %>%
-    column_spec(column = c(1, 9, 17),
+    column_spec(column = c(1, (num_col - 1) / 2 + 1, num_col),
                 border_right = "thin solid lightgray") %>%
     add_header_above(c(" " = 1,
                        "Receive to Result Within Target" =
-                         (ncol(data) - 1) / 2,
+                         (num_col - 1) / 2,
                        "Collect to Result Within Target" =
-                         (ncol(data) - 1) / 2),
+                         (num_col - 1) / 2),
                      background = c("white", "#00AEEF", "#221f72"),
                      color = "white", line = FALSE, font_size = 13) %>%
-    column_spec(column = 2:9, background = "#E6F8FF", color = "black") %>%
-    column_spec(column = 10:17, background = "#EBEBF9", color = "black") %>%
+    column_spec(column = 2:((num_col - 1) / 2 + 1), background = "#E6F8FF", color = "black") %>%
+    column_spec(column = ((num_col - 1) / 2 + 2):num_col, background = "#EBEBF9", color = "black") %>%
     #column_spec(column = 2:17, background = "inherit", color = "inherit") %>%
     column_spec(column = 1, width_min = "125px") %>%
     column_spec(column = c(3, 11), width_min = "100px") %>%
     row_spec(row = 0, font_size = 13) %>%
-    collapse_rows(columns = c(1, 2, 10))
+    collapse_rows(columns = c(1, 2, ((num_col - 1) / 2 + 2)))
 }
 
 # Custom function for summarizing resulted lab volume from prior day(s) --------
@@ -687,7 +702,7 @@ summarize_cp_vol <- function(x, lab_division) {
   # Subset data to be included based on lab division and site location
   lab_div_vol_df <- x %>%
     filter(Division == lab_division &
-             Site %in% city_sites) %>%
+             Site %in% site_order) %>%
     group_by(Site,
              Test,
              DashboardPriority,
@@ -711,7 +726,7 @@ summarize_cp_vol <- function(x, lab_division) {
     mutate(
       # Set test, site, priority, and setting as factors
       Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
-      Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+      Site = droplevels(factor(Site, levels = site_order, ordered = TRUE)),
       DashboardPriority = droplevels(factor(DashboardPriority,
                                             levels = dashboard_priority_order,
                                             ordered = TRUE)),
@@ -741,20 +756,30 @@ summarize_cp_vol <- function(x, lab_division) {
 
 # Custom function for creating a kable of lab volume from prior day(s)----------
 kable_cp_vol <- function(x) {
+  if (any(str_detect(colnames(x), "RTC"))) {
+    kable_cp_vol_cols <- c("Test & Priority", "Setting",
+                         "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN",
+                         "RTC")
+  } else {
+    kable_cp_vol_cols <- c("Test & Priority", "Setting",
+                         "MSH", "MSQ", "MSBI", "MSB", "MSQ", "MSM", "MSSN")
+  }
+  
+  
   kable(x, format = "html", escape = FALSE, align = "c",
-        col.names = c("Test & Priority", "Setting",
-                      "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
+        col.names = kable_cp_vol_cols) %>%
     kable_styling(bootstrap_options = "hover",
                   position = "center",
                   font_size = 11) %>%
-    column_spec(column = c(1, 8), border_right = "thin solid lightgray") %>%
+    column_spec(column = c(1, length(kable_cp_vol_cols)),
+                border_right = "thin solid lightgray") %>%
     add_header_above(c(" " = 1,
                        "Resulted Lab Volume" = (ncol(x) - 1)),
                      background = c("white", "#00AEEF"),
                      color = "white",
                      line = FALSE,
                      font_size = 13) %>%
-    column_spec(column = 2:8, background = "#E6F8FF", color = "black") %>%
+    column_spec(column = 2:length(kable_cp_vol_cols), background = "#E6F8FF", color = "black") %>%
     # column_spec(column = 2:8,
     #             background = "inherit",
     #             color = "inherit") %>%
@@ -772,11 +797,11 @@ kable_cp_vol <- function(x) {
 kable_missing_collections <- function(x) {
   # Filter data for city sites and summarize
   missing_collect <- x %>%
-    filter(Site %in% city_sites) %>%
+    filter(Site %in% site_order) %>%
     group_by(Site) %>%
-    summarize(ResultedVolume = sum(TotalResultedTAT),
+    summarize(ResultedVolumeTAT = sum(TotalResultedTAT),
               MissingCollection = sum(TotalMissingCollections, na.rm = TRUE),
-              Percent = percent(MissingCollection / ResultedVolume,
+              Percent = percent(MissingCollection / ResultedVolumeTAT,
                                 digits = 0),
               .groups = "keep") %>%
     ungroup() %>%
@@ -789,11 +814,11 @@ kable_missing_collections <- function(x) {
                        ifelse(Percent <= 0.05, "green",
                               ifelse(Percent <= 0.15, "orange", "red")))),
       # Format site as factors
-      Site = factor(Site, levels = city_sites, ordered = TRUE))
+      Site = factor(Site, levels = site_order, ordered = TRUE))
   #
   # Create template to ensure all sites are included
-  missing_collect <- left_join(data.frame("Site" = factor(city_sites,
-                                                          levels = city_sites,
+  missing_collect <- left_join(data.frame("Site" = factor(site_order,
+                                                          levels = site_order,
                                                           ordered = TRUE)),
                                missing_collect,
                                by = c("Site" = "Site"))
@@ -805,7 +830,9 @@ kable_missing_collections <- function(x) {
   # Create kable with summarized data
   missing_collect_table %>%
     kable(format = "html", escape = FALSE, align = "c",
-          col.names = c("Site", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")) %>%
+          col.names = c("Site",
+                        "MSH", "MSQ", "MSBI", "MSB", "MSW",
+                        "MSM", "MSSN", "RTC")) %>%
     kable_styling(
       bootstrap = "hover",
       position = "float_left",
@@ -835,7 +862,7 @@ kable_missing_collections <- function(x) {
 kable_add_on_volume <- function(x) {
   # Filter data for city sites and summarize
   add_on_volume <- x %>%
-    filter(Site %in% city_sites) %>%
+    filter(Site %in% site_order) %>%
     group_by(Test, Site) %>%
     summarize(AddOnVolume = sum(TotalAddOnOrder, na.rm = TRUE),
               .groups = "keep") %>%
@@ -849,7 +876,7 @@ kable_add_on_volume <- function(x) {
     mutate(
       # Set test and site as factors
       Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
-      Site = factor(Site, levels = city_sites, ordered = TRUE),
+      Site = factor(Site, levels = site_order, ordered = TRUE),
       AddOnVolume = ifelse(is.na(AddOnVolume), 0, AddOnVolume))
 
   add_on_table <- dcast(add_on_volume, Test ~ Site, value.var = "AddOnVolume")
@@ -857,7 +884,9 @@ kable_add_on_volume <- function(x) {
   # Create kable of add on orders
   add_on_table %>%
     kable(format = "html", escape = FALSE, align = "c",
-          col.names = c("Test", "MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM"),
+          col.names = c("Test",
+                        "MSH", "MSQ", "MSBI", "MSB", "MSW",
+                        "MSM", "MSSN", "RTC"),
           color = "gray") %>%
     kable_styling(
       bootstrap = "hover",
