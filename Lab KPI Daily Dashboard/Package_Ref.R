@@ -140,9 +140,9 @@ test_name_division <- unique(cp_test_divisions[, c("Division", "Test")])
 test_names <- cp_test_divisions$Test
 
 # Create data frame of test and site combinations
-rep_test_site <- sort(rep(test_names, length(site_order)))
+rep_test_site <- sort(rep(test_names, length(all_sites)))
 
-rep_sites <- rep(site_order, length(test_names))
+rep_sites <- rep(all_sites, length(test_names))
 
 test_site_comb <- data.frame("Test" = rep_test_site,
                              "Site" = rep_sites,
