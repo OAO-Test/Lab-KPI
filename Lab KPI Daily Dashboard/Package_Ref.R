@@ -119,8 +119,9 @@ cp_micro_lab_order <- c("Troponin",
                         "Rapid Flu",
                         "C. diff")
 
-site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN", "RTC")
-city_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
+all_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN", "RTC")
+hosp_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
+infusion_sites <- c("RTC")
 
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
