@@ -27,6 +27,7 @@ library(formattable)
 library(rmarkdown)
 library(stringr)
 library(writexl)
+library(tidyr)
 
 rm(list = ls())
 
@@ -45,50 +46,95 @@ if ("Presidents" %in% list.files("J://")) {
 user_path <- paste0(user_directory, "\\*.*")
 
 # Import data for two scenarios - first time compiling repo and updating repo ----------
-initial_run <- FALSE
+initial_run <- TRUE
 
+# Determine today's date to determine last possible data report
+todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
+
+# Determine date range for reports to include in repository
 if (initial_run == TRUE) {
-  # Find list of data reports from 2020
-  file_list_scc <- list.files(
-    path = paste0(user_directory,
-                  "\\SCC CP Reports"),
-    pattern = "^(Doc){1}.+(202)[0-9]{1}\\-[0-9]{2}-[0-9]{2}.xlsx")
+  # Provide start date for new data repository
+  repo_start_date <- as.Date("2021-03-01", format = "%Y-%m-%d")
+  # Create vector with date range for new data repository
+  repo_date_range <- seq(from = repo_start_date + 1,
+                         to = todays_date,
+                         by = "day")
+  scc_date_range <- repo_date_range
+  sun_date_range <- repo_date_range
   
-  # Pattern for daily Sunquest reports
-  sun_daily_pattern = c(paste0("^(KPI_Daily_TAT_Report ){1}",
-                               "(202)[0-9]{1}\\-[0-9]{2}-[0-9]{2}.xls"),
-                        paste0("^(KPI_Daily_TAT_Report_Updated ){1}",
-                               "(202)[0-9]{1}\\-[0-9]{2}-[0-9]{2}.xls"))
-
-  file_list_sun_daily <- list.files(
-    path = paste0(user_directory, "\\SUN CP Reports"),
-    pattern = paste0(sun_daily_pattern, collapse = "|"))
+} else {
+  # Import existing historical repository as a RDS file
+  existing_repo <- readRDS(
+    choose.files(default = paste0(user_directory,
+                                  "/CP Historical Repo/*.*"),
+                 caption = "Select CP Historical Repository"))
   #
-  file_list_sun_monthly <- list.files(
-    path = paste0(user_directory, "\\SUN CP Reports"),
-    pattern = "^(KPI_TAT Report_){1}[A-z]+\\s(2020.xlsx)")
+  # Find last date of resulted lab data in historical repo for SCC and Sunquest sites
+  last_dates <- data.frame(
+    "SCCSites" = as.Date(
+      max(existing_repo[
+        which(existing_repo$Site %in% c("MSH", "MSQ")), ]$ResultDate),
+      format = "%Y-%m-%d"),
+    "SunSites" = as.Date(
+      max(existing_repo[
+        which(!(existing_repo$Site %in% c("MSH", "MSQ"))), ]$ResultDate),
+      format = "%Y-%m-%d"))
+  # Create vector with possible data report dates for SCC and Sunquest sites
+  scc_date_range <- seq(from = last_dates$SCCSites + 2,
+                        to = todays_date,
+                        by = "day")
+  sun_date_range <- seq(from = last_dates$SunSites + 2,
+                        to = todays_date,
+                        by = "day")
+}
 
-  # Read in data reports from possible date range
-  scc_list <- lapply(file_list_scc,
-                     function(x)
-                       read_excel(path = paste0(user_directory,
-                                                "\\SCC CP Reports\\", x)))
-  sun_daily_list <- lapply(file_list_sun_daily,
-                           function(x)
-                             (read_excel(
-                               path = paste0(user_directory,
-                                             "\\SUN CP Reports\\", x),
-                               col_types = c("text", "text", "text", "text",
-                                             "text", "text", "text", "text",
-                                             "text", "numeric", "numeric",
-                                             "numeric", "numeric", "numeric",
-                                             "text", "text", "text", "text",
-                                             "text", "text", "text", "text",
-                                             "text", "text", "text", "text",
-                                             "text", "text", "text", "text",
-                                             "text", "text", "text", "text",
-                                             "text"))))
-  #
+# Find list of SCC data reports within date range
+file_list_scc <- list.files(
+  path = paste0(user_directory, "\\SCC CP Reports"),
+  pattern = paste0("^(Doc){1}.+",
+                   scc_date_range,
+                   ".xlsx",
+                   collapse = "|"))
+
+# Find list of daily Sunquest data reports within date range
+file_list_sun_daily <- list.files(
+  path = paste0(user_directory, "\\SUN CP Reports"),
+  pattern = paste0("^(KPI_Daily_TAT_Report){1}.*",
+                   sun_date_range,
+                   ".xls", collapse = "|"))
+
+# Find list of monthly Sunquest reports
+file_list_sun_monthly <- list.files(
+  path = paste0(user_directory, "\\SUN CP Reports"),
+  pattern = "^(KPI_TAT Report_){1}[A-z]+\\s(2021.xlsx)")
+
+# Read daily SCC reports from date range, if any exist --------
+if (length(file_list_scc) > 0) {
+  scc_raw_data_list <- lapply(
+    file_list_scc, function(x) read_excel(
+      path = paste0(user_directory, "\\SCC CP Reports\\", x)))
+} else {
+  scc_raw_data_list <- NULL
+}
+
+# Read daily Sunquest reports, if any exist --------
+if (length(file_list_sun_daily) > 0) {
+  sun_daily_raw_data_list <- lapply(
+    file_list_sun_daily, function(x) (read_excel(
+      path = paste0(user_directory, "\\SUN CP Reports\\", x),
+      col_types = c("text", "text", "text", "text", "text",
+                    "text", "text", "text", "text",
+                    "numeric", "numeric", "numeric", "numeric", "numeric",
+                    "text", "text", "text", "text", "text",
+                    "text", "text", "text", "text", "text",
+                    "text", "text", "text", "text", "text",
+                    "text", "text", "text", "text", "text", "text"))))
+} else {
+  sun_daily_raw_data_list <- NULL
+}
+
+# Read monthly Sunquest reports, if any exist ---------
+if (length(file_list_sun_monthly) > 0) {
   sun_monthly_list <- lapply(file_list_sun_monthly,
                              function(x)
                                (read_excel(
@@ -104,71 +150,8 @@ if (initial_run == TRUE) {
                                                "text", "text", "text", "text",
                                                "text", "text", "text", "text",
                                                "text"))))
-} else {
-  # Import existing historical repository as a RDS file
-  existing_repo <- readRDS(
-    choose.files(default = paste0(user_directory,
-                                  "/CP Historical Repo/*.*"),
-                 caption = "Select CP Historical Repository"))
-  #
-  # Find last date of resulted lab data in historical rpe for SCC and Sunquest sites
-  last_dates <- data.frame(
-    "SCCSites" = as.Date(
-      max(existing_repo[
-        which(existing_repo$Site %in% c("MSH", "MSQ")), ]$ResultDate),
-      format = "%Y-%m-%d"),
-    "SunSites" = as.Date(
-      max(existing_repo[
-        which(!(existing_repo$Site %in% c("MSH", "MSQ"))), ]$ResultDate),
-      format = "%Y-%m-%d"))
-  # Determine today's date to determine last possible data report
-  todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
-  # todays_date <- as.Date("2020-11-11", format = "%Y-%m-%d")
-  # Create vector with possible data report dates for SCC and Sunquest sites
-  scc_date_range <- seq(from = last_dates$SCCSites + 2,
-                        to = todays_date,
-                        by = "day")
-  sun_date_range <- seq(from = last_dates$SunSites + 2,
-                        to = todays_date,
-                        by = "day")
-  # Find list of SCC data reports within date range
-  file_list_scc <- list.files(
-    path = paste0(user_directory, "\\SCC CP Reports"),
-    pattern = paste0("^(Doc){1}.+",
-                     scc_date_range,
-                     ".xlsx",
-                     collapse = "|"))
-  # Pattern for daily Sunquest reports
-  sun_daily_file_pattern = c(
-    paste0("^(KPI_Daily_TAT_Report ){1}",
-           sun_date_range,
-           ".xls", collapse = "|"),
-    paste0("^(KPI_Daily_TAT_Report_Updated ){1}",
-           sun_date_range,
-           ".xls",
-           collapse = "|"))
-  # Find list of Sunquest data reports within date range
-  file_list_sun_daily <- list.files(
-    path = paste0(user_directory, "\\SUN CP Reports"),
-    pattern = paste0(sun_daily_file_pattern,
-                     collapse = "|"))
-  # Read in data reports from possible date range
-  scc_raw_data_list <- lapply(
-    file_list_scc, function(x) read_excel(
-      path = paste0(user_directory, "\\SCC CP Reports\\", x)))
-  #
-  sun_daily_raw_data_list <- lapply(
-    file_list_sun_daily, function(x) (read_excel(
-      path = paste0(user_directory, "\\SUN CP Reports\\", x),
-      col_types = c("text", "text", "text", "text", "text",
-                    "text", "text", "text", "text",
-                    "numeric", "numeric", "numeric", "numeric", "numeric",
-                    "text", "text", "text", "text", "text",
-                    "text", "text", "text", "text", "text",
-                    "text", "text", "text", "text", "text",
-                    "text", "text", "text", "text", "text", "text"))))
   
-  # Create empty list for Sunquest monthly report
+} else {
   sun_monthly_list <- NULL
 }
 
@@ -273,8 +256,11 @@ preprocess_scc <- function(raw_scc)  {
       # Subset HGB and BUN tests completed at RTC as a separate site since they
       # are processed at RTC
       Site = ifelse(Test %in% c("HGB", "BUN") &
-                      str_detect(WARD_NAME, "Ruttenberg Treatment Center"),
+                      str_detect(replace_na(WARD_NAME, ""),
+                                 "Ruttenberg Treatment Center"),
                     "RTC", Site),
+      # Update division to Infusion for RTC
+      Division = ifelse(Site %in% c("RTC"), "Infusion", Division),
       # Determine if unit is an ICU based on crosswalk results
       ICU = ifelse(is.na(ICU), FALSE, ICU),
       # Create a column for resulted date
