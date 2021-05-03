@@ -97,10 +97,10 @@ tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 # Add a column concatenating test, priority, and setting for matching later
 tat_targets <- tat_targets %>%
   mutate(Concate = ifelse(
-    Priority == "All" & `Pt Setting` == "All", paste(Test, Division),
-    ifelse(Priority != "All" & `Pt Setting` == "All",
+    Priority == "All" & `PtSetting` == "All", paste(Test, Division),
+    ifelse(Priority != "All" & `PtSetting` == "All",
            paste(Test, Division, Priority),
-           paste(Test, Division, Priority, `Pt Setting`))))
+           paste(Test, Division, Priority, `PtSetting`))))
 
 scc_icu <- read_excel(reference_file, sheet = "SCC_ICU")
 scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")
@@ -130,6 +130,8 @@ pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
+
+cp_divisions <- c("Chemistry", "Hematology", "Microbiology RRL", "Infusion")
 
 # Create template dataframes for combinations of tests, priority, and settings
 # that will be used in TAT and volume look back tables. These templates ensure
