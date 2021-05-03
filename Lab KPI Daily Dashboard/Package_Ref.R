@@ -97,9 +97,10 @@ tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 # Add a column concatenating test, priority, and setting for matching later
 tat_targets <- tat_targets %>%
   mutate(Concate = ifelse(
-    Priority == "All" & `Pt Setting` == "All", Test,
-    ifelse(Priority != "All" & `Pt Setting` == "All", paste(Test, Priority),
-           paste(Test, Priority, `Pt Setting`))))
+    Priority == "All" & `Pt Setting` == "All", paste(Test, Division),
+    ifelse(Priority != "All" & `Pt Setting` == "All",
+           paste(Test, Division, Priority),
+           paste(Test, Division, Priority, `Pt Setting`))))
 
 scc_icu <- read_excel(reference_file, sheet = "SCC_ICU")
 scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")

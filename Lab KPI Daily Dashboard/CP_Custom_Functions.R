@@ -86,7 +86,9 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                              PRIORITY %in% "S", "Stat", "Routine"),
       # Create dashboard priority column
       DashboardPriority = ifelse(
-        tat_targets$Priority[match(Test, tat_targets$Test)] == "All",
+        tat_targets$Priority[match(
+          paste(Test, Division), 
+          paste(tat_targets$Test, tat_targets$Division))] == "All",
         "All", AdjPriority),
       # Calculate turnaround times
       CollectToReceive =
@@ -104,47 +106,50 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # Determine if collection time is missing
       MissingCollect = CollectToReceive == 0,
       #
-      # Determine TAT based on test, priority, and patient setting
-      # Create column concatenating test and priority to determine TAT targets
-      Concate1 = paste(Test, DashboardPriority),
-      # Create column concatenating test, priority, and setting to determine
+      # Determine TAT based on test, division, priority, and patient setting
+      # Create column concatenating test and division to determine TAT targets
+      Concate1 = paste(Test, Division),
+      # Create column concatenating test, division, and priority to determine
       # TAT targets
-      Concate2 = paste(Test, DashboardPriority, MasterSetting),
+      Concate2 = paste(Test, Division, DashboardPriority),
+      # Create column concatenating test, division, priority, and setting to
+      # determine TAT targets
+      Concate3 = paste(Test, Division, DashboardPriority, MasterSetting),
       # Determine Receive to Result TAT target using this logic:
-      # 1. Try to match test, priority, and setting (applicable for labs with
-      # different TAT targets based on patient setting and order priority)
-      # 2. Try to match test and priority (applicable for labs with different
-      # TAT targets based on order priority)
-      # 3. Try to match test - this is for tests with (applicable for labs with
+      # 1. Try to match test, division, priority, and setting (applicable for
+      # labs with different TAT targets based on patient setting and order priority)
+      # 2. Try to match test, division, and priority (applicable for labs with
+      # different TAT targets based on order priority)
+      # 3. Try to match test and division - (applicable for labs with
       # TAT targets that are independent of patient setting or priority)
       #
       # Determine Receive to Result TAT target based on above logic/scenarios
       ReceiveResultTarget =
         # Match on scenario 1
-        ifelse(!is.na(match(Concate2, tat_targets$Concate)),
+        ifelse(!is.na(match(Concate3, tat_targets$Concate)),
                tat_targets$ReceiveToResultTarget[
-                 match(Concate2, tat_targets$Concate)],
+                 match(Concate3, tat_targets$Concate)],
                # Match on scenario 2
-               ifelse(!is.na(match(Concate1, tat_targets$Concate)),
+               ifelse(!is.na(match(Concate2, tat_targets$Concate)),
                       tat_targets$ReceiveToResultTarget[
-                        match(Concate1, tat_targets$Concate)],
+                        match(Concate2, tat_targets$Concate)],
                       # Match on scenario 3
                       tat_targets$ReceiveToResultTarget[
-                        match(Test, tat_targets$Concate)])),
+                        match(Concate1, tat_targets$Concate)])),
       #
       # Determine Collect to Result TAT target based on above logic/scenarios
       CollectResultTarget =
         # Match on scenario 1
-        ifelse(!is.na(match(Concate2, tat_targets$Concate)),
+        ifelse(!is.na(match(Concate3, tat_targets$Concate)),
                tat_targets$CollectToResultTarget[
-                 match(Concate2, tat_targets$Concate)],
+                 match(Concate3, tat_targets$Concate)],
                # Match on scenario 2
-               ifelse(!is.na(match(Concate1, tat_targets$Concate)),
+               ifelse(!is.na(match(Concate2, tat_targets$Concate)),
                       tat_targets$CollectToResultTarget[
-                        match(Concate1, tat_targets$Concate)],
+                        match(Concate2, tat_targets$Concate)],
                       # Match on scenario 3
                       tat_targets$CollectToResultTarget[
-                        match(Test, tat_targets$Concate)])),
+                        match(Concate1, tat_targets$Concate)])),
       #
       # Determine if Receive to Result and Collect to Result TAT meet targets
       ReceiveResultInTarget = ReceiveToResult <= ReceiveResultTarget,
@@ -445,8 +450,7 @@ summarize_cp_tat <- function(x, lab_division) {
   # Subset data to be included based on lab division, whether or not TAT
   # meets inclusion criteria, and site location
   lab_div_df <- x %>%
-    filter(Division == lab_division &
-             Site %in% site_order)
+    filter(Division == lab_division)
   #
   # Summarize data based on test, site, priority, setting, and TAT targets.
   lab_summary <- lab_div_df %>%
@@ -487,7 +491,7 @@ summarize_cp_tat <- function(x, lab_division) {
       #
       # Set test, site, priority, and setting as factors
       Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
-      Site = droplevels(factor(Site, levels = site_order, ordered = TRUE)),
+      Site = droplevels(factor(Site, levels = all_sites, ordered = TRUE)),
       DashboardPriority = droplevels(factor(DashboardPriority,
                                             levels = dashboard_priority_order,
                                             ordered = TRUE)),
@@ -569,11 +573,14 @@ summarize_cp_tat <- function(x, lab_division) {
                          (ReceiveResultPercent >= 0.95 &
                             lab_division %in% c("Chemistry", "Hematology")) |
                            (ReceiveResultPercent == 1.00 &
-                              lab_division %in% c("Microbiology RRL")),
+                              lab_division %in% c("Microbiology RRL")) |
+                           (ReceiveResultPercent >= 0.90 &
+                              lab_division %in% c("Infusion")),
                          "green",
                          ifelse(
                            (ReceiveResultPercent >= 0.8 &
-                              lab_division %in% c("Chemistry", "Hematology")) |
+                              lab_division %in%
+                              c("Chemistry", "Hematology", "Infusion")) |
                              (ReceiveResultPercent >= 0.9 &
                                 lab_division %in% c("Microbiology RRL")),
                            "orange", "red")))),
@@ -584,11 +591,14 @@ summarize_cp_tat <- function(x, lab_division) {
                          (CollectResultPercent >= 0.95 &
                             lab_division %in% c("Chemistry", "Hematology")) |
                            (CollectResultPercent == 1.00 &
-                              lab_division %in% c("Microbiology RRL")),
+                              lab_division %in% c("Microbiology RRL")) |
+                           (CollectResultPercent >= 0.90 &
+                              lab_division %in% c("Infusion")),
                          "green",
                          ifelse(
                            (CollectResultPercent >= 0.8 &
-                              lab_division %in% c("Chemistry", "Hematology")) |
+                              lab_division %in%
+                              c("Chemistry", "Hematology", "Infusion")) |
                              (CollectResultPercent >= 0.9 &
                                 lab_division %in% c("Microbiology RRL")),
                            "orange", "red")))),
