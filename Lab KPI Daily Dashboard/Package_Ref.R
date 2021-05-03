@@ -18,6 +18,7 @@
 # install.packages("stringr")
 # install.packages("writexl")
 # install.packages("gsubfn")
+# install.packages("tidyr")
 #-------------------------------Required packages------------------------------#
 
 #Required packages: run these every time you run the code
@@ -35,7 +36,7 @@ library(rmarkdown)
 library(stringr)
 library(writexl)
 library(gsubfn)
-
+library(tidyr)
 
 #Clear existing history
 rm(list = ls())
