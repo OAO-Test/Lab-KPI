@@ -201,6 +201,8 @@ test_site_prty_setting_vol <- left_join(test_site_prty_setting_vol,
 # Select applicable test, priority, setting combinations based on lab operations
 tat_dashboard_templ <- test_site_prty_setting_tat %>%
   mutate(
+    # Update Division for RTC to Infusion
+    Division = ifelse(Site %in% c("RTC"), "Infusion", Division),
     # Create column for applicable combinations
     Incl = ifelse(
       # Remove ED & ICU labs with Routine priority since all labs in these
@@ -209,24 +211,30 @@ tat_dashboard_templ <- test_site_prty_setting_tat %>%
          DashboardSetting %in% c("ED & ICU")) |
         # Remove ambulatory troponin and lactate since these labs are collected
         # in ambulatory settings. Remove stat and routine stratification for
-        # these labs since all are treated as stat.
+        # these labs since all are treated as stat
         (Test %in% c("Troponin", "Lactate WB") &
            (DashboardPriority %in% c("Stat", "Routine") |
               DashboardSetting %in% c("Amb"))) |
-        # Remove "all" priority for BUN, PT, and HGB labs
-        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All")) |
+        # Remove "all" priority for BUN, PT, and HGB labs for non-infusion
+        # settings
+        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All") &
+           !(Division %in% c("Infusion"))) |
         # Remove priority stratification for rapid flu and c. diff since all
         # are treated as stat
         (Test %in% c("Rapid Flu", "C. diff") &
            !(DashboardPriority %in% c("All"))) |
-        # Remove any labs other than BUN and HGB from RTC since those are the
-        # only labs processed there
-        (Site %in% c("RTC") & (!(Test %in% c("BUN", "HGB")) |
-           !(DashboardSetting %in% c("Amb")))), "Excl", "Incl")) %>%
+        # Remove any labs other than BUN and HGB for infusion since those are
+        # the only labs processed there. Remove stat and routine stratification
+        # for infusion labs since all labs treated the same
+        (Division %in% c("Infusion") & (!(Test %in% c("BUN", "HGB")) |
+           !(DashboardSetting %in% c("Amb")) |
+           !(DashboardPriority %in% c("All")))), "Excl", "Incl")) %>%
   filter(Incl == "Incl")
 
 vol_dashboard_templ <- test_site_prty_setting_vol %>%
   mutate(
+    # Update Division for RTC to Infusion
+    Division = ifelse(Site %in% c("RTC"), "Infusion", Division),
     # Create column for applicable combinations
     Incl = ifelse(
       # Remove ED & ICU labs with Routine priority since all labs in these
@@ -238,14 +246,16 @@ vol_dashboard_templ <- test_site_prty_setting_vol %>%
         (Test %in% c("Troponin", "Lactate WB") &
            (DashboardPriority %in% c("Stat", "Routine"))) |
         # Remove "all" priority for BUN, PT, and HGB labs
-        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All")) |
+        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All") &
+           !(Division %in% c("Infusion"))) |
         # Remove Microbiology RRL since resulted volume is included already in
         # TAT tables
         (Division %in% c("Microbiology RRL")) |
         # Remove any labs other than BUN and HGB from RTC since those are the
         # only labs processed there. Also remove non-amb setting
-        (Site %in% c("RTC") & (!(Test %in% c("BUN", "HGB")) |
-                                 !(PtSetting %in% c("Amb")))),
+        (Division %in% c("Infusion") & (!(Test %in% c("BUN", "HGB")) |
+                                          !(PtSetting %in% c("Amb")) |
+                                          !(DashboardPriority %in% c("All")))),
       "Excl", "Incl")) %>%
   filter(Incl == "Incl")
 
