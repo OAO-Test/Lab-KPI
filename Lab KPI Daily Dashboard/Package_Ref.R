@@ -131,7 +131,7 @@ dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
 
-cp_divisions <- c("Chemistry", "Hematology", "Microbiology RRL", "Infusion")
+cp_division_order <- c("Chemistry", "Hematology", "Microbiology RRL", "Infusion")
 
 # Create template dataframes for combinations of tests, priority, and settings
 # that will be used in TAT and volume look back tables. These templates ensure

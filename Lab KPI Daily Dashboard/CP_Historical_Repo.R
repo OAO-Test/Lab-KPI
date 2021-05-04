@@ -11,6 +11,7 @@
 #install.packages("rmarkdown")
 #install.packages("stringr")
 #install.packages("writexl")
+#install.packages("tidyr")
 
 #-------------------------------Required packages-------------------------------#
 
@@ -167,9 +168,10 @@ tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 
 tat_targets <- tat_targets %>%
   mutate(Concate = ifelse(
-    Priority == "All" & `Pt Setting` == "All", Test,
-    ifelse(Priority != "All" & `Pt Setting` == "All", paste(Test, Priority),
-           paste(Test, Priority, `Pt Setting`))))
+    Priority == "All" & `PtSetting` == "All", paste(Test, Division),
+    ifelse(Priority != "All" & `PtSetting` == "All",
+           paste(Test, Division, Priority),
+           paste(Test, Division, Priority, `PtSetting`))))
 
 scc_icu <- read_excel(reference_file, sheet = "SCC_ICU")
 scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")
@@ -195,6 +197,8 @@ pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
+
+cp_division_order <- c("Chemistry", "Hematology", "Microbiology RRL", "Infusion")
 
 # Custom function for preprocessing SCC data ---------------------------------
 preprocess_scc <- function(raw_scc)  {
@@ -278,10 +282,6 @@ preprocess_scc <- function(raw_scc)  {
       # ICU labs are treated as stat per operational leadership
       AdjPriority = ifelse(MasterSetting %in% c("ED", "ICU") |
                              PRIORITY %in% "S", "Stat", "Routine"),
-      # Create dashboard priority column
-      DashboardPriority = ifelse(
-        tat_targets$Priority[match(Test, tat_targets$Test)] == "All",
-        "All", AdjPriority),
       # Calculate turnaround times
       CollectToReceive =
         as.numeric(RECEIVE_DATE - COLLECTION_DATE, units = "mins"),
@@ -298,63 +298,73 @@ preprocess_scc <- function(raw_scc)  {
       # Determine if collection time is missing
       MissingCollect = CollectToReceive == 0,
       #
-      # Determine TAT based on test, priority, and patient setting
-      # Create column concatenating test and priority to determine TAT targets
-      Concate1 = paste(Test, DashboardPriority),
-      # Create column concatenating test, priority, and setting to determine
+      # Determine TAT based on test, division, priority, and patient setting
+      # Create column concatenating test and division to determine TAT targets
+      Concate1 = paste(Test, Division),
+      #
+      # Create dashboard priority column
+      DashboardPriority = ifelse(
+        tat_targets$Priority[match(
+          Concate1, 
+          paste(tat_targets$Test, tat_targets$Division))] == "All",
+        "All", AdjPriority),
+      # Create column concatenating test, division, and priority to determine
       # TAT targets
-      Concate2 = paste(Test, DashboardPriority, MasterSetting),
+      Concate2 = paste(Test, Division, DashboardPriority),
+      # Create column concatenating test, division, priority, and setting to
+      # determine TAT targets
+      Concate3 = paste(Test, Division, DashboardPriority, MasterSetting),
+      #
       # Determine Receive to Result TAT target using this logic:
-      # 1. Try to match test, priority, and setting (applicable for labs with
-      # different TAT targets based on patient setting and order priority)
-      # 2. Try to match test and priority (applicable for labs with different
-      # TAT targets based on order priority)
-      # 3. Try to match test - this is for tests with (applicable for labs with
+      # 1. Try to match test, division, priority, and setting (applicable for
+      # labs with different TAT targets based on patient setting and order priority)
+      # 2. Try to match test, division, and priority (applicable for labs with
+      # different TAT targets based on order priority)
+      # 3. Try to match test and division - (applicable for labs with
       # TAT targets that are independent of patient setting or priority)
       #
       # Determine Receive to Result TAT target based on above logic/scenarios
       ReceiveResultTarget =
         # Match on scenario 1
-        ifelse(!is.na(match(Concate2, tat_targets$Concate)),
+        ifelse(!is.na(match(Concate3, tat_targets$Concate)),
                tat_targets$ReceiveToResultTarget[
-                 match(Concate2, tat_targets$Concate)],
+                 match(Concate3, tat_targets$Concate)],
                # Match on scenario 2
-               ifelse(!is.na(match(Concate1, tat_targets$Concate)),
+               ifelse(!is.na(match(Concate2, tat_targets$Concate)),
                       tat_targets$ReceiveToResultTarget[
-                        match(Concate1, tat_targets$Concate)],
+                        match(Concate2, tat_targets$Concate)],
                       # Match on scenario 3
                       tat_targets$ReceiveToResultTarget[
-                        match(Test, tat_targets$Concate)])),
+                        match(Concate1, tat_targets$Concate)])),
       #
       # Determine Collect to Result TAT target based on above logic/scenarios
       CollectResultTarget =
         # Match on scenario 1
-        ifelse(!is.na(match(Concate2, tat_targets$Concate)),
+        ifelse(!is.na(match(Concate3, tat_targets$Concate)),
                tat_targets$CollectToResultTarget[
-                 match(Concate2, tat_targets$Concate)],
+                 match(Concate3, tat_targets$Concate)],
                # Match on scenario 2
-               ifelse(!is.na(match(Concate1, tat_targets$Concate)),
+               ifelse(!is.na(match(Concate2, tat_targets$Concate)),
                       tat_targets$CollectToResultTarget[
-                        match(Concate1, tat_targets$Concate)],
+                        match(Concate2, tat_targets$Concate)],
                       # Match on scenario 3
                       tat_targets$CollectToResultTarget[
-                        match(Test, tat_targets$Concate)])),
+                        match(Concate1, tat_targets$Concate)])),
       #
       # Determine if Receive to Result and Collect to Result TAT meet targets
       ReceiveResultInTarget = ReceiveToResult <= ReceiveResultTarget,
       CollectResultInTarget = CollectToResult <= CollectResultTarget,
       # Create column with patient name, order ID, test, collect, receive, and
       # result date and determine if there is a duplicate; order time excluded
-      Concate3 = paste(LAST_NAME, FIRST_NAME,
+      Concate4 = paste(LAST_NAME, FIRST_NAME,
                        ORDER_ID, TEST_NAME,
                        COLLECTION_DATE, RECEIVE_DATE, VERIFIED_DATE),
-      DuplTest = duplicated(Concate3),
+      DuplTest = duplicated(Concate4),
       # Determine whether or not to include this particular lab in TAT analysis
       # Exclusion criteria:
       # 1. Add on orders
       # 2. Orders from "Other" settings
-      # 3. Orders with collect or receive times after result time, collect time
-      # after receive time
+      # 3. Orders with collect or receive times after result time
       # 4. Orders with missing collect, receive, or result timestamps
       TATInclude = ifelse(AddOnMaster == "AddOn" |
                             MasterSetting == "Other" |
@@ -490,11 +500,6 @@ preprocess_daily_sun <- function(raw_sun) {
       AdjPriority = ifelse(MasterSetting %in% c("ED", "ICU") |
                              SpecimenPriority %in% "S", "Stat", "Routine"),
       #
-      # Create dashboard priority column
-      DashboardPriority = ifelse(
-        tat_targets$Priority[match(Test, tat_targets$Test)] == "All", "All",
-        AdjPriority),
-      #
       # Calculate turnaround times
       CollectToReceive =
         as.numeric(ReceiveDateTime - CollectDateTime, units = "mins"),
@@ -512,11 +517,22 @@ preprocess_daily_sun <- function(raw_sun) {
       MissingCollect = CollectDateTime == OrderDateTime,
       #
       # Determine TAT target based on test, priority, and patient setting
-      # Create column concatenating test and priority to determine TAT targets
-      Concate1 = paste(Test, DashboardPriority),
-      # Create column concatenating test, priority, and setting to determine
+      # Create column concatenating test and division to determine TAT targets
+      Concate1 = paste(Test, Division),
+      #
+      # Create dashboard priority column
+      DashboardPriority = ifelse(
+        tat_targets$Priority[match(
+          Concate1,
+          paste(tat_targets$Test, tat_targets$Division))] == "All",
+        "All", AdjPriority),
+      # Create column concatenating test, division, and priority to determine
       # TAT targets
-      Concate2 = paste(Test, DashboardPriority, MasterSetting),
+      Concate2 = paste(Test, Division, DashboardPriority),
+      # Create column concatenating test, division, priority, and setting to
+      # determine TAT targets
+      Concate3 = paste(Test, Division, DashboardPriority, MasterSetting),
+      #
       # Determine Receive to Result TAT target using this logic:
       # 1. Try to match test, priority, and setting (applicable for labs with
       # different TAT targets based on patient setting and order priority)
@@ -528,30 +544,30 @@ preprocess_daily_sun <- function(raw_sun) {
       # Determine Receive to Result TAT target based on above logic/scenarios
       ReceiveResultTarget =
         # Match on scenario 1
-        ifelse(!is.na(match(Concate2, tat_targets$Concate)),
+        ifelse(!is.na(match(Concate3, tat_targets$Concate)),
                tat_targets$ReceiveToResultTarget[
-                 match(Concate2, tat_targets$Concate)],
+                 match(Concate3, tat_targets$Concate)],
                # Match on scenario 2
-               ifelse(!is.na(match(Concate1, tat_targets$Concate)),
+               ifelse(!is.na(match(Concate2, tat_targets$Concate)),
                       tat_targets$ReceiveToResultTarget[
-                        match(Concate1, tat_targets$Concate)],
+                        match(Concate2, tat_targets$Concate)],
                       # Match on scenario 3
                       tat_targets$ReceiveToResultTarget[
-                        match(Test, tat_targets$Concate)])),
+                        match(Concate1, tat_targets$Concate)])),
       #
       # Determine Collect to Result TAT target based on above logic/scenarios
       CollectResultTarget =
         # Match on scenario 1
-        ifelse(!is.na(match(Concate2, tat_targets$Concate)),
+        ifelse(!is.na(match(Concate3, tat_targets$Concate)),
                tat_targets$CollectToResultTarget[
-                 match(Concate2, tat_targets$Concate)],
+                 match(Concate3, tat_targets$Concate)],
                # Match on scenario 2
-               ifelse(!is.na(match(Concate1, tat_targets$Concate)),
+               ifelse(!is.na(match(Concate2, tat_targets$Concate)),
                       tat_targets$CollectToResultTarget[
-                        match(Concate1, tat_targets$Concate)],
+                        match(Concate2, tat_targets$Concate)],
                       # Match on scenario 3
                       tat_targets$CollectToResultTarget[
-                        match(Test, tat_targets$Concate)])),
+                        match(Concate1, tat_targets$Concate)])),
       #
       # Determine if Receive to Result and Collect to Result TAT meet targets
       ReceiveResultInTarget = ReceiveToResult <= ReceiveResultTarget,
@@ -559,16 +575,15 @@ preprocess_daily_sun <- function(raw_sun) {
       #
       # Create column with patient name, order ID, test, collect, receive, and
       # result date and determine if there is a duplicate; order time excluded
-      Concate3 = paste(PtNumber, HISOrderNumber, TSTName,
+      Concate4 = paste(PtNumber, HISOrderNumber, TSTName,
                        CollectDateTime, ReceiveDateTime, ResultDateTime),
-      DuplTest = duplicated(Concate3),
+      DuplTest = duplicated(Concate4),
       #
       # Determine whether or not to include this particular lab in TAT analysis
       # Exclusion criteria:
       # 1. Add on orders
       # 2. Orders from "Other" settings
-      # 3. Orders with collect or receive times after result time, collect 
-      # time after receive time
+      # 3. Orders with collect or receive times after result time
       # 4. Orders with missing collect, receive, or result timestamps
       TATInclude = ifelse(AddOnMaster == "AddOn" |
                             MasterSetting == "Other" |

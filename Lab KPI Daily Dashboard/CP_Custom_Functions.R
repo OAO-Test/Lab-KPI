@@ -84,12 +84,6 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # ICU labs are treated as stat per operational leadership
       AdjPriority = ifelse(MasterSetting %in% c("ED", "ICU") |
                              PRIORITY %in% "S", "Stat", "Routine"),
-      # Create dashboard priority column
-      DashboardPriority = ifelse(
-        tat_targets$Priority[match(
-          paste(Test, Division), 
-          paste(tat_targets$Test, tat_targets$Division))] == "All",
-        "All", AdjPriority),
       # Calculate turnaround times
       CollectToReceive =
         as.numeric(RECEIVE_DATE - COLLECTION_DATE, units = "mins"),
@@ -115,6 +109,14 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # Create column concatenating test, division, priority, and setting to
       # determine TAT targets
       Concate3 = paste(Test, Division, DashboardPriority, MasterSetting),
+      #
+      # Create dashboard priority column
+      DashboardPriority = ifelse(
+        tat_targets$Priority[match(
+          Concate1, 
+          paste(tat_targets$Test, tat_targets$Division))] == "All",
+        "All", AdjPriority),
+      #
       # Determine Receive to Result TAT target using this logic:
       # 1. Try to match test, division, priority, and setting (applicable for
       # labs with different TAT targets based on patient setting and order priority)
@@ -289,11 +291,6 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       AdjPriority = ifelse(MasterSetting %in% c("ED", "ICU") |
                              SpecimenPriority %in% "S", "Stat", "Routine"),
       #
-      # Create dashboard priority column
-      DashboardPriority = ifelse(
-        tat_targets$Priority[match(Test, tat_targets$Test)] == "All", "All",
-        AdjPriority),
-      #
       # Calculate turnaround times
       CollectToReceive =
         as.numeric(ReceiveDateTime - CollectDateTime, units = "mins"),
@@ -319,6 +316,14 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # Create column concatenating test, division, priority, and setting to
       # determine TAT targets
       Concate3 = paste(Test, Division, DashboardPriority, MasterSetting),
+      #
+      # Create dashboard priority column
+      DashboardPriority = ifelse(
+        tat_targets$Priority[match(
+          Concate1,
+          paste(tat_targets$Test, tat_targets$Division))] == "All",
+        "All", AdjPriority),
+      #
       # Determine Receive to Result TAT target using this logic:
       # 1. Try to match test, priority, and setting (applicable for labs with
       # different TAT targets based on patient setting and order priority)

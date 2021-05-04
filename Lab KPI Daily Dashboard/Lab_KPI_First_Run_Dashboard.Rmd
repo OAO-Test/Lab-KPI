@@ -917,7 +917,7 @@ tat_targets_kable <- tat_targets %>%
   select(Division, Test,
          Priority, PtSetting,
          ReceiveToResultTarget, CollectToResultTarget) %>%
-  mutate(Division = factor(Division, levels = cp_divisions, ordered = TRUE),
+  mutate(Division = factor(Division, levels = cp_division_order, ordered = TRUE),
          Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE),
          Priority = factor(Priority, levels = dashboard_priority_order,
                            ordered = TRUE)) %>%
