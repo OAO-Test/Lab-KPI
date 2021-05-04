@@ -103,12 +103,6 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # Determine TAT based on test, division, priority, and patient setting
       # Create column concatenating test and division to determine TAT targets
       Concate1 = paste(Test, Division),
-      # Create column concatenating test, division, and priority to determine
-      # TAT targets
-      Concate2 = paste(Test, Division, DashboardPriority),
-      # Create column concatenating test, division, priority, and setting to
-      # determine TAT targets
-      Concate3 = paste(Test, Division, DashboardPriority, MasterSetting),
       #
       # Create dashboard priority column
       DashboardPriority = ifelse(
@@ -116,6 +110,12 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
           Concate1, 
           paste(tat_targets$Test, tat_targets$Division))] == "All",
         "All", AdjPriority),
+      # Create column concatenating test, division, and priority to determine
+      # TAT targets
+      Concate2 = paste(Test, Division, DashboardPriority),
+      # Create column concatenating test, division, priority, and setting to
+      # determine TAT targets
+      Concate3 = paste(Test, Division, DashboardPriority, MasterSetting),
       #
       # Determine Receive to Result TAT target using this logic:
       # 1. Try to match test, division, priority, and setting (applicable for
@@ -310,12 +310,6 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # Determine TAT target based on test, priority, and patient setting
       # Create column concatenating test and division to determine TAT targets
       Concate1 = paste(Test, Division),
-      # Create column concatenating test, division, and priority to determine
-      # TAT targets
-      Concate2 = paste(Test, Division, DashboardPriority),
-      # Create column concatenating test, division, priority, and setting to
-      # determine TAT targets
-      Concate3 = paste(Test, Division, DashboardPriority, MasterSetting),
       #
       # Create dashboard priority column
       DashboardPriority = ifelse(
@@ -323,6 +317,12 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
           Concate1,
           paste(tat_targets$Test, tat_targets$Division))] == "All",
         "All", AdjPriority),
+      # Create column concatenating test, division, and priority to determine
+      # TAT targets
+      Concate2 = paste(Test, Division, DashboardPriority),
+      # Create column concatenating test, division, priority, and setting to
+      # determine TAT targets
+      Concate3 = paste(Test, Division, DashboardPriority, MasterSetting),
       #
       # Determine Receive to Result TAT target using this logic:
       # 1. Try to match test, priority, and setting (applicable for labs with

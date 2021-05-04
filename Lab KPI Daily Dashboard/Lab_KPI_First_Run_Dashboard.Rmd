@@ -639,7 +639,7 @@ micro_not_wday_dashboard_cast <- micro_not_wday_dashboard_cast %>%
 row.names(micro_not_wday_dashboard_cast) <-
   seq_len(nrow(micro_not_wday_dashboard_cast))
 
-# Hematology
+# Infusion
 inf_not_wday_sub_output <- summarize_cp_tat(cp_not_wday_summary,
                                         lab_division = "Infusion")
 
@@ -854,6 +854,15 @@ hem_vol_not_wday_table <- summarize_cp_vol(x = cp_not_wday_summary,
 
 kable_cp_vol(hem_vol_not_wday_table)
 
+```
+
+### Infusion
+#### *Infusion Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
+```{r Infusion: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
+inf_vol_not_wday_table <- summarize_cp_vol(x = cp_not_wday_summary,
+                                         lab_division = "Infusion")
+
+kable_cp_vol(inf_vol_not_wday_table)
 ```
 
 `r if (include_not_wday != TRUE) {"-->"}`
