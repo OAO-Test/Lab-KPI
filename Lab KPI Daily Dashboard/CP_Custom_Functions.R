@@ -50,13 +50,6 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
   raw_scc <- left_join(raw_scc, mshs_site,
                        by = c("SITE" = "DataSite"))
 
-  # Crosswalk units and identify ICUs
-  raw_scc <- raw_scc %>%
-    mutate(WardandName = paste(Ward, WARD_NAME))
-
-  raw_scc <- left_join(raw_scc, scc_icu[, c("Concatenate", "ICU")],
-                       by = c("WardandName" = "Concatenate"))
-
   # Preprocess SCC data and add any necessary columns
   raw_scc <- raw_scc %>%
     mutate(
@@ -68,8 +61,8 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                     "RTC", Site),
       # Update division to Infusion for RTC
       Division = ifelse(Site %in% c("RTC"), "Infusion", Division),
-      # Determine if unit is an ICU based on crosswalk results
-      ICU = ifelse(is.na(ICU), FALSE, ICU),
+      # Determine if unit is an ICU based on site mappings
+      ICU = paste(Site, Ward, WARD_NAME) %in% scc_icu$SiteCodeName,
       # Create a column for resulted date
       ResultedDate = date(VERIFIED_DATE),
       # Create master setting column to identify ICU and IP Non-ICU units
@@ -181,7 +174,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
     filter(!DuplTest)
 
   # Select columns
-  scc_master <- raw_scc[, c("Ward", "WARD_NAME", "WardandName",
+  scc_master <- raw_scc[, c("Ward", "WARD_NAME",
                             "ORDER_ID", "REQUESTING_DOC NAME",
                             "MPI", "WORK SHIFT",
                             "TEST_NAME", "Test", "Division", "PRIORITY",
@@ -199,7 +192,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")]
   # Rename columns
-  colnames(scc_master) <- c("LocCode", "LocName", "LocConcat",
+  colnames(scc_master) <- c("LocCode", "LocName",
                             "OrderID", "RequestMD",
                             "MSMRN", "WorkShift",
                             "TestName", "Test", "Division", "OrderPriority",
@@ -260,21 +253,12 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
   raw_sun <- left_join(raw_sun, mshs_site,
                        by = c("HospCode" = "DataSite"))
 
-  # Crosswalk units and identify ICUs
-  raw_sun <- raw_sun %>%
-    mutate(LocandName = paste(LocCode, LocName))
-
-  raw_sun <- left_join(raw_sun, sun_icu[, c("Concatenate", "ICU")],
-                       by = c("LocandName" = "Concatenate"))
-
-  raw_sun[is.na(raw_sun$ICU), "ICU"] <- FALSE
-
   # # Sunquest data formatting-----------------------------
   # Preprocess Sunquest data and add any necessary columns
   raw_sun <- raw_sun %>%
     mutate(
-      # Determine if unit is an ICU based on crosswalk results
-      ICU = ifelse(is.na(ICU), FALSE, ICU),
+      # Determine if unit is an ICU based on site mappings
+      ICU = paste(Site, LocCode, LocName) %in% sun_icu$SiteCodeName,
       # Create a column for resulted date
       ResultedDate = as.Date(ResultDateTime, format = "%m/%d/%Y"),
       # Create master setting column to identify ICU and IP Non-ICU units
@@ -389,7 +373,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
     filter(!DuplTest)
 
   # Select columns
-  sun_master <- raw_sun[, c("LocCode", "LocName", "LocandName",
+  sun_master <- raw_sun[, c("LocCode", "LocName",
                             "HISOrderNumber", "PhysName",
                             "PtNumber", "SHIFT",
                             "TSTName", "Test", "Division", "SpecimenPriority",
@@ -407,7 +391,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "ReceiveResultInTarget", "CollectResultInTarget",
                             "TATInclude")]
 
-  colnames(sun_master) <- c("LocCode", "LocName", "LocConcat",
+  colnames(sun_master) <- c("LocCode", "LocName",
                             "OrderID", "RequestMD",
                             "MSMRN", "WorkShift",
                             "TestName", "Test", "Division", "OrderPriority",

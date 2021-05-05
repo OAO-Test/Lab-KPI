@@ -103,8 +103,15 @@ tat_targets <- tat_targets %>%
            paste(Test, Division, Priority, `PtSetting`))))
 
 scc_icu <- read_excel(reference_file, sheet = "SCC_ICU")
-scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")
 sun_icu <- read_excel(reference_file, sheet = "SUN_ICU")
+
+scc_icu <- scc_icu %>%
+  mutate(SiteCodeName = paste(Site, Ward, Ward_Name))
+
+sun_icu <- sun_icu %>%
+  mutate(SiteCodeName = paste(Site, LocCode, LocName))
+
+scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")
 sun_setting <- read_excel(reference_file, sheet = "SUN_LocType")
 
 mshs_site <- read_excel(reference_file, sheet = "SiteNames")
