@@ -858,7 +858,7 @@ kable_cp_vol(hem_vol_not_wday_table)
 
 ### Infusion
 #### *Infusion Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
-```{r Infusion Weekend/Holiday: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
+```{r Infusion Weekend/Holiday: 24 hour volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 inf_vol_not_wday_table <- summarize_cp_vol(x = cp_not_wday_summary,
                                          lab_division = "Infusion")
 
