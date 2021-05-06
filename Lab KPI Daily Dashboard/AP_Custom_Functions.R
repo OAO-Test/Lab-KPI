@@ -53,6 +53,7 @@ cyto_prep <- function(epic_data, raw_data) {
 patho_prep <- function(raw_data, gi_codes) {
   if (is.null(raw_data) || nrow(raw_data) == 0) {
     raw_data <- NULL
+    sp_data <- NULL
   } else {
     
     #------------Extract the All Breast and GI specs Data Only--------------#
@@ -61,40 +62,36 @@ patho_prep <- function(raw_data, gi_codes) {
     
     raw_data <- merge(x = raw_data, y = gi_codes, all.x = TRUE)
     
-    # create an extra column for old Fcaility
+    # Create an extra column for old facility and update names for MSH and MSM
+    # Change specimen group to proper case for BREAST specimens
     raw_data <- raw_data %>%
-      mutate(Facility_Old = Facility)
+      mutate(Facility_Old = Facility,
+             Facility = ifelse(Facility_Old == "MSS", "MSH",
+                               ifelse(Facility_Old == "STL", "SL",
+                                      Facility_Old)),
+             spec_group = ifelse(spec_group == "BREAST", "Breast", spec_group))
+
+    #Create dataframe with cases that should be excluded based on GI code
+    exclude_gi_codes_df <- raw_data %>%
+      filter(GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies. %in%
+               c("Exclude"))
     
-    raw_data$Facility[raw_data$Facility_Old == "MSS"] <- "MSH"
-    raw_data$Facility[raw_data$Facility_Old == "STL"] <- "SL"
-    raw_data$spec_group[raw_data$spec_group == "BREAST"] <- "Breast"
+    # Create vector of case numbers to exclude
+    exclude_case_num <- unique(exclude_gi_codes_df$Case_no)
     
-    #find case numbers with GI_Code = exclude
-    exclude_gi_codes_df <-
-      raw_data[
-        which
-        ((
-          raw_data$spec_group == "GI") &
-            (raw_data$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies. ==
-               "Exclude")), ]
+    # Create a reference dataframe with GI specimens that are excluded from dashboard
+    excluded_gi_specimens <- raw_data %>%
+      filter(Case_no %in% exclude_case_num)
     
-    must_exclude_cnum <- unique(exclude_gi_codes_df$Case_no)
-    
-    #this dataframe has all the GI specs and biopsies that should be excluded
-    #it includes any biopsy that came with another excluded code
-    #this DF is only for our reference
-    must_exclude_cnum_df <-
-      raw_data[which(raw_data$Case_no %in% must_exclude_cnum), ]
-    
-    sp_data <-
-      raw_data[which((((raw_data$spec_group == "GI") &
-                         (!(raw_data$Case_no %in% must_exclude_cnum))) |
-                        (raw_data$spec_group == "Breast")) &
-                       raw_data$spec_sort_order == "A"), ]
-    
-    sp_data <-
-      sp_data[which(
-        sp_data$Facility != "NYEE"), ]
+    # Subset surgical pathology data based on inclusion criteria
+    sp_data <- raw_data %>%
+      filter(# Select primary specimens only
+        spec_sort_order == "A" &
+          # Select GI specimens with codes that are included and any breast specimens
+          ((spec_group == "GI" & !(Case_no %in% exclude_case_num)) |
+             (spec_group == "Breast" )) &
+          # Exclude NYEE
+          Facility != "NYEE")
   }
   
   return(sp_data)
