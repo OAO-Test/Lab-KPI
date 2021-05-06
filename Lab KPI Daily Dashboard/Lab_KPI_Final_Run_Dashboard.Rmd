@@ -264,7 +264,7 @@ micro_volume_melt <- micro_volume_melt %>%
     #
     # Set test, site, priority, and setting as factors
     Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
-    Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+    Site = droplevels(factor(Site, levels = all_sites, ordered = TRUE)),
     DashboardPriority = droplevels(factor(DashboardPriority,
                                           levels = dashboard_priority_order,
                                           ordered = TRUE)),
@@ -344,7 +344,7 @@ kable_cp_tat(x = micro_tat_vol_cast)
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
 ### Infusion       
-#### *Infusion KPI (Labs Resulted on `r wday_result_date`)*
+#### *Infusion KPI (Labs Resulted on `r wkday_date`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
 <span style = "color:orange">Yellow:</span> >=80% & <90%,
 <span style = "color:green">Green:</span> >=90%</h5>
@@ -516,7 +516,7 @@ kable_cp_vol(hem_vol_wday_table)
 ```
 
 ### Infusion
-#### *Infusion Resulted Lab Volume (Labs Resulted on `r wday_result_date`)*
+#### *Infusion Resulted Lab Volume (Labs Resulted on `r wkday_date`)*
 ```{r Infusion: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
 inf_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
                                          lab_division = "Infusion")
@@ -674,7 +674,7 @@ micro_not_wday_volume_melt <- micro_not_wday_volume_melt %>%
     #
     # Set test, site, priority, and setting as factors
     Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
-    Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+    Site = droplevels(factor(Site, levels = all_sites, ordered = TRUE)),
     DashboardPriority = droplevels(factor(DashboardPriority,
                                           levels = dashboard_priority_order,
                                           ordered = TRUE)),
@@ -707,7 +707,8 @@ micro_not_wday_volume_cast <- micro_not_wday_volume_cast %>%
     ResultedVolume_MSBI2 = ResultedVolume_MSBI,
     ResultedVolume_MSB2 = ResultedVolume_MSB,
     ResultedVolume_MSW2 = ResultedVolume_MSW,
-    ResultedVolume_MSM2 = ResultedVolume_MSM) %>%
+    ResultedVolume_MSM2 = ResultedVolume_MSM,
+    ResultedVolume_MSSN2 = ResultedVolume_MSSN) %>%
   select(Test,
          DashboardPriority,
          TestAndPriority,
@@ -719,6 +720,7 @@ micro_not_wday_volume_cast <- micro_not_wday_volume_cast %>%
          ResultedVolume_MSB,
          ResultedVolume_MSW,
          ResultedVolume_MSM,
+         ResultedVolume_MSSN,
          CollectResultTarget,
          DashboardSetting2,
          ResultedVolume_MSH2,
@@ -726,7 +728,8 @@ micro_not_wday_volume_cast <- micro_not_wday_volume_cast %>%
          ResultedVolume_MSBI2,
          ResultedVolume_MSB2,
          ResultedVolume_MSW2,
-         ResultedVolume_MSM2)
+         ResultedVolume_MSM2,
+         ResultedVolume_MSSN2)
 
 # Rename columns to match TAT table for binding
 colnames(micro_not_wday_volume_cast) <- colnames(micro_not_wday_dashboard_cast)
@@ -916,8 +919,8 @@ tat_targets_kable %>%
 
 <h4><b>Turnaround Time Exclusions</b></h4> 
 
+Turnaround time analysis excludes labs with out of order steps (ie, collect after receive), missing timestamps, add-on orders, and labs not originating in IP, ED, or ambulatory settings (ie, Outreach).
 
-   Turnaround time analysis excludes labs with out of order steps (ie, collect after receive), missing timestamps, add-on orders, and labs not originating in IP, ED, or ambulatory settings (ie, Outreach).
 MSH turnaround times exclude BUN and HGB labs collected at RTC.
 
 <br>
