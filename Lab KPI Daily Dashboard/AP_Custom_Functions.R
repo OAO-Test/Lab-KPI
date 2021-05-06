@@ -4,45 +4,46 @@
 #######
 
 #create a function to prepare cytology data for pre-processing
-cyto_prep <- function(epic_data, raw_data) {
-  if (is.null(raw_data) || nrow(raw_data) == 0) {
-    raw_data <- NULL
+cyto_prep <- function(epic_data, pp_data) {
+  if (is.null(pp_data) || nrow(pp_data) == 0) {
+    pp_data <- NULL
     epic_data <- NULL
+    cyto_final <- NULL
   } else {
-    #preprocessing for epic data
-    #we are only looking for the specimens that were finalized/final
-    #edited in epic
-    epic_data_final <-
-      epic_data[which(epic_data$LAB_STATUS == "Final result" |
-                        epic_data$LAB_STATUS == "Edited Result - FINAL"), ]
+    #Preprocess Epic data
+    #Select specimens that were finalized/final edited in epic
+    epic_data_final <- epic_data %>%
+      filter(LAB_STATUS %in% c("Final result", "Edited Result - FINAL"))
 
     globalVariables(names(epic_data_final))
 
-    #get only the SPECIMEN_ID Column from Epic data
-    epic_data_spec <- NULL
-    epic_data_spec <- as.data.frame(epic_data_final$SPECIMEN_ID)
-    colnames(epic_data_spec) <- c("Case_no")
+    #Select the SPECIMEN_ID Column from Epic data and rename as Case_no for matching
+    epic_data_spec <- epic_data_final %>%
+      mutate(Case_no = SPECIMEN_ID) %>%
+      select(Case_no)
 
-    #keep only the unique spec IDs
+    #Remove any duplicate specimen ids
     epic_data_spec <- unique(epic_data_spec)
-
-    # create an extra column for old Fcaility
-    raw_data <- raw_data %>%
-      mutate(Facility_Old = Facility)
-
-    raw_data$Facility[raw_data$Facility_Old == "MSS"] <- "MSH"
-    raw_data$Facility[raw_data$Facility_Old == "STL"] <- "SL"
-
+    
+    # Create an extra column for old facility and update names for MSH and MSM
+    # Change specimen group to proper case for BREAST specimens
+    pp_data <- pp_data %>%
+      mutate(Facility_Old = Facility,
+             Facility = ifelse(Facility_Old == "MSS", "MSH",
+                               ifelse(Facility_Old == "STL", "SL",
+                                      Facility_Old)))
+    
     #--------------Extract the Cytology GYN and NON-GYN Data Only------------#
-    #Cytology
+    # Subset powerpath data to keep cyto gyn and cyto non-gyn only 
+    # Cytology
     #Keep the cyto gyn and cyto non-gyn
 
-    cyto_raw <-
-      raw_data[which((raw_data$spec_group == "CYTO NONGYN" |
-                        raw_data$spec_group == "CYTO GYN") &
-                       raw_data$spec_sort_order == "A"), ]
+    cyto_raw <- pp_data %>%
+      filter(spec_sort_order == "A" &
+               spec_group %in% c("CYTO NONGYN", "CYTO GYN"))
 
     cyto_final <- merge(x = cyto_raw, y = epic_data_spec)
+
   }
 
   return(cyto_final)
