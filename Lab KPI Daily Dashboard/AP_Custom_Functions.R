@@ -110,13 +110,10 @@ pre_processing_pp <- function(raw_data) {
     summarized_table <- NULL
     return_tables <- NULL
   } else {
-    #vlookup the Rev_Center and its corresponding patient setting for the
-    #PowerPath Data
+    # Crosswalk Rev_ctr and patient setting for PowerPath data
     raw_data_ps <- merge(x = raw_data, y = patient_setting, all.x = TRUE)
 
-    #make sure to fix the MSBK patient type based on the extra column in the
-    #new report
-
+    # Update MSB patient setting based on patient type column
     raw_data_ps$Patient.Setting[raw_data_ps$Rev_ctr == "MSBK" &
                                   (raw_data_ps$patient_type == "A" |
                                      raw_data_ps$patient_type == "O")] <- "Amb"
@@ -124,11 +121,11 @@ pre_processing_pp <- function(raw_data) {
     raw_data_ps$Patient.Setting[raw_data_ps$Rev_ctr == "MSBK" &
                                   raw_data_ps$patient_type == "IN"] <- "IP"
 
-    #vlookup targets based on spec_group and patient setting
+    # Crosswalk TAT targets based on spec_group and patient setting
     raw_data_new <- merge(x = raw_data_ps, y = tat_targets_ap,
                           all.x = TRUE, by = c("spec_group", "Patient.Setting"))
 
-    #check if any of the dates was imported as char
+    # check if any of the dates were imported as characters
     if (is.character(raw_data_new$Collection_Date)) {
       raw_data_new <- raw_data_new %>%
         mutate(Collection_Date = as.numeric(Collection_Date)) %>%
@@ -149,26 +146,39 @@ pre_processing_pp <- function(raw_data) {
                             "signed_out_date")],
              as.POSIXct, tz = "", format = "%m/%d/%y %I:%M %p")
 
-    #add columns for calculations:
-    #collection to signed out and received to signed out
-    #collection to signed out
-    #All days in the calendar
+    # Add columns for turnaround time calculations:
+    # Collection to signed out (in calendar days) and
+    # received to signed out (in business days)
     raw_data_new <- raw_data_new %>%
-      mutate(Collection_to_signed_out =
-               as.numeric(difftime(signed_out_date, Collection_Date,
-                                   units = "days")))
-    #recieve to signed out
-    #without weekends and holidays
-    raw_data_new <- raw_data_new %>%
-      mutate(Received_to_signed_out = bizdays(Received_Date, signed_out_date))
-
-    #prepare data for first part accessioned volume analysis
-    #1. Find the date that we need to report --> the date of the last weekday
-    raw_data_new$report_date_only <- as.Date(raw_data_new$signed_out_date) + 1
-
-    #2. count the accessioned volume that was accessioned on that date
-    #from the cyto report
-    raw_data_new$acc_date_only <- as.Date(raw_data_new$Received_Date)
+      mutate(
+        # Add column for collected to signed out turnaround time in calendar days
+        Collection_to_signed_out =
+          as.numeric(difftime(signed_out_date, Collection_Date,
+                                   units = "days")),
+        # Add column for received to signed out turnaround time in business days
+        Received_to_signed_out = bizdays(Received_Date, signed_out_date),
+        # Prepare data for accessioned volume analysis
+        # First find the date of the last weekday and add 1 for report date
+        report_date_only = as.Date(signed_out_date) + 1,
+        #  Find the accessioned date and use this for determining accessioned volume
+        acc_date_only = as.Date(Received_Date))
+    
+    # raw_data_new <- raw_data_new %>%
+    #   mutate(Collection_to_signed_out =
+    #            as.numeric(difftime(signed_out_date, Collection_Date,
+    #                                units = "days")))
+    # #recieve to signed out
+    # #without weekends and holidays
+    # raw_data_new <- raw_data_new %>%
+    #   mutate(Received_to_signed_out = bizdays(Received_Date, signed_out_date))
+    # 
+    # #prepare data for first part accessioned volume analysis
+    # #1. Find the date that we need to report --> the date of the last weekday
+    # raw_data_new$report_date_only <- as.Date(raw_data_new$signed_out_date) + 1
+    # 
+    # #2. count the accessioned volume that was accessioned on that date
+    # #from the cyto report
+    # raw_data_new$acc_date_only <- as.Date(raw_data_new$Received_Date)
 
     #summarize the data to be used for analysis and to be stored as historical
     #repo
