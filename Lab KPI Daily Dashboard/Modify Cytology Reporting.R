@@ -79,14 +79,32 @@ cyto_raw_new <- pp_data %>%
          FinalizedCase = Case_no %in% epic_data_spec$Case_no)
 
 
-sp_raw <- test_pp_data %>%
+sp_raw <- test_pp_data
+
+sp_raw <- merge(x = sp_raw, y = gi_codes, all.x = TRUE)
+
+sp_raw <- sp_raw %>%
   mutate(Facility_Old = Facility,
          Facility = ifelse(Facility_Old == "MSS", "MSH",
                            ifelse(Facility_Old == "STL", "SL",
                                   Facility_Old)),
          spec_group = ifelse(spec_group == "BREAST", "Breast", spec_group))
 
+exclude_gi_codes_df <- sp_raw %>%
+  filter(GI_Code_InclExcl %in% c("Exclude"))
 
+exclude_case_num <- unique(exclude_gi_codes_df$Case_no)
+
+sp_raw <- sp_raw %>%
+  filter(# Select primary specimens only
+    spec_sort_order == "A" &
+      # Select GI specimens with codes that are included and any breast specimens
+      ((spec_group == "GI" & !(Case_no %in% exclude_case_num)) |
+         (spec_group == "Breast" )) &
+      # Exclude NYEE
+      Facility != "NYEE") %>%
+  mutate(SignOutDept = NA,
+         FinalizedCase = TRUE)
 
 
 
