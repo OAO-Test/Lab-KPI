@@ -74,7 +74,7 @@ patho_prep <- function(raw_data, gi_codes) {
 
     #Create dataframe with cases that should be excluded based on GI code
     exclude_gi_codes_df <- raw_data %>%
-      filter(GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies. %in%
+      filter(GI_Code_InclExcl %in%
                c("Exclude"))
     
     # Create vector of case numbers to exclude
