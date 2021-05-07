@@ -456,7 +456,7 @@ exclude_gi_codes_df <-
   sp_df_exc[
     which(
       (sp_df_exc$spec_group == "GI") &
-        (sp_df_exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies. ==
+        (sp_df_exc$GI_Code_InclExcl ==
            "Exclude")), ]
 must_exclude_cnum <- unique(exclude_gi_codes_df$Case_no)
 
