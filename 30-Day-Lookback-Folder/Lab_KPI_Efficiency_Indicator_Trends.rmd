@@ -148,6 +148,8 @@ dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
 
+cp_division_order <- c("Chemistry", "Hematology", "Microbiology RRL", "Infusion")
+
 #-----------Patient Setting Excel File-----------#
 #Using Rev Center to determine patient setting
 patient_setting <- data.frame(read_excel(reference_file,
@@ -1613,24 +1615,29 @@ test_codes_kable %>%
 <h4><b>Target Turnaround Times</b></h4>
 The table below summarizes target turnaround times as agreed upon by clinical and operational leadership. 
 ```{r Create and format tables for TAT targets }
+
 tat_targets_kable <- tat_targets %>%
-  mutate(Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE),
+  select(Division, Test,
+         Priority, PtSetting,
+         ReceiveToResultTarget, CollectToResultTarget) %>%
+  mutate(Division = factor(Division, levels = cp_division_order, ordered = TRUE),
+         Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE),
          Priority = factor(Priority, levels = dashboard_priority_order,
                            ordered = TRUE)) %>%
-  arrange(Test, Priority)
+  arrange(Division, Test, Priority)
 
 tat_targets_kable <- tat_targets_kable %>%
   mutate(Concate = NULL)
 
 tat_targets_kable %>%
   kable(format = "html", escape = FALSE, align = "c",
-        col.names = c("Test", "Priority", "Patient Setting",
+        col.names = c("Division", "Test", "Priority", "Patient Setting",
                       "Receive to Result TAT Target (min)",
                       "Collect to Result TAT Target (min)"),
         caption = "Target Turnaround Times") %>%
   kable_styling(bootstrap_options = "hover", position = "center",
                 font_size = 11, full_width = FALSE) %>%
-  column_spec(column = c(1, 2, 3, 5), border_right = "thin solid lightgray") %>%
+  column_spec(column = c(1:ncol(tat_targets_kable)), border_right = "thin solid lightgray") %>%
   row_spec(row = 0, font_size = 13, background = "#221f72", color = "white")
 
 ```
