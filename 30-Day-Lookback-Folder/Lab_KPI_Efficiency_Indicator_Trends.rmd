@@ -106,25 +106,27 @@ mshs_colors <- c("#221f72", "#00AEFF", "#D80B8C", "#7f7f7f")
 # Import analysis reference data
 reference_file <- paste0(user_directory,
                          "/Code Reference/",
-                         "Analysis Reference 2021-03-22.xlsx")
+                         "Analysis Reference 2021-05-05.xlsx")
 
 # CP and Micro --------------------------------
 scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
 sun_test_code <- read_excel(reference_file, sheet = "SUN_TestCodes")
+
+# Create data frame of CP tests and divisions
+cp_test_divisions <- 
+  unique(
+    rbind(unique(scc_test_code[, c("Test", "Division")]),
+          unique(sun_test_code[, c("Test", "Division")])))
 
 tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 #
 # Add a column concatenating test, priority, and setting for matching later
 tat_targets <- tat_targets %>%
   mutate(Concate = ifelse(
-    Priority == "All" & `Pt Setting` == "All", Test,
-    ifelse(Priority != "All" & `Pt Setting` == "All", paste(Test, Priority),
-           paste(Test, Priority, `Pt Setting`))))
-
-scc_icu <- read_excel(reference_file, sheet = "SCC_ICU")
-scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")
-sun_icu <- read_excel(reference_file, sheet = "SUN_ICU")
-sun_setting <- read_excel(reference_file, sheet = "SUN_LocType")
+    Priority == "All" & `PtSetting` == "All", paste(Test, Division),
+    ifelse(Priority != "All" & `PtSetting` == "All",
+           paste(Test, Division, Priority),
+           paste(Test, Division, Priority, `PtSetting`))))
 
 mshs_site <- read_excel(reference_file, sheet = "SiteNames")
 
@@ -136,8 +138,9 @@ cp_micro_lab_order <- c("Troponin",
                         "Rapid Flu",
                         "C. diff")
 
-site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
-city_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
+all_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN", "RTC")
+hosp_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
+infusion_sites <- c("RTC")
 
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
@@ -176,10 +179,11 @@ cp_dashboard_tat_summary <- cp_hist %>%
          CollectResultDefects = ResultedVolumeWithTAT - CollectResultInTarget,
          ReceiveResultPercent = ReceiveResultInTarget / ResultedVolumeWithTAT,
          CollectResultPercent = CollectResultInTarget / ResultedVolumeWithTAT,
-         SafeThreshold = ifelse(Test == "Rapid Flu" |
-                                  Test == "C. diff", 1.0, 0.95),
-         NotSafeThreshold = ifelse(Test == "Rapid Flu" |
-                                     Test == "C. diff", 0.9, 0.8))
+         SafeThreshold = ifelse(Division %in% c("Microbiology RRL"), 1.0,
+                                 ifelse(Division %in% c("Infusion"), 0.9,
+                                        0.95)),
+         NotSafeThreshold = ifelse(Division %in% c("Microbiology RRL"), 0.9,
+                                    0.8))
 
 cp_dashboard_vol_summary <- cp_hist %>%
   group_by(Site, ResultDate, Test, DashboardPriority) %>%
@@ -199,7 +203,7 @@ cp_dashboard_tat_filter <- cp_dashboard_tat_summary %>%
 # Convert characters to factors and arrange
 cp_dashboard_tat_filter <- cp_dashboard_tat_filter %>%
   mutate(Site = factor(Site,
-                       levels = site_order,
+                       levels = all_sites,
                        ordered = TRUE),
          Test = factor(Test,
                        levels = cp_micro_lab_order,
