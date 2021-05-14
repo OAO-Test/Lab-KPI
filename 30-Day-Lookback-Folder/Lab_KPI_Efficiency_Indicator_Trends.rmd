@@ -1699,7 +1699,7 @@ Only the codes for GI biopsies are included in the analysis.
 ```{r GI Codes Table}
 
 gi_codes_updated <-
-  gi_codes[, c("GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.",
+  gi_codes[, c("GI_Code_InclExcl",
               "Spec_code")]
 
 gi_codes_updated  %>%
