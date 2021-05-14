@@ -112,12 +112,21 @@ sp_weekday <- patho_prep(pp_weekday, gi_codes)
 #this table gives the summarized cyto data for historical repo
 cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final)[[1]]
 
+# Filter out any specimens signed out on other dates
+cyto_table_weekday_summarized <- cyto_table_weekday_summarized %>%
+  filter(Signed_out_date_only %in% wkday_date)
+
+
 #this table gives the processed and cleaned raw cyto data only
 cyto_table_weekday_raw <-
   pre_processing_pp(cyto_weekday_final)[[2]]
 
 #this table gives the summarized surgical pathology data for historical repo
 sp_table_weekday_summarized <- pre_processing_pp(sp_weekday)[[1]]
+
+# Filter out any specimens signed out on other dates
+sp_table_weekday_summarized <- sp_table_weekday_summarized %>%
+  filter(Signed_out_date_only %in% wkday_date)
 
 #this table gives the processed and cleaned raw surgical pathology data only
 sp_table_weekday_raw <-
@@ -126,67 +135,67 @@ sp_table_weekday_raw <-
 ```
 
 ```{r Add the current summary to the historical repo for cytology/pathology, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
-
-#1. import the historical repo
-hist_repo_ap <- readRDS(file =
-  choose.files(default = paste0(user_directory,
-                                "/AP & Cytology Historical Repo",
-                                "/*.*"),
-               caption = "Select Pathology and Cytology Historical Repository"))
-#2. append all the summary tables together
-
-#bind the cyto repo with the surgical pathology repo to prepare for the
-#merge with the historical repo
-current_summary <- rbind(cyto_table_weekday_summarized,
-                         sp_table_weekday_summarized)
-
-#make sure that the summarized data is a data frame
-current_summary <- as.data.frame(current_summary)
-
-#make sure the data types for both dataframes are the same
-common <-
-  names(hist_repo_ap)[names(hist_repo_ap) %in% names(current_summary)]
-
-hist_repo_ap[common] <- lapply(common, function(x) {
-  match.fun(paste0("as.", class(current_summary[[x]])))(hist_repo_ap[[x]])
-})
-
-#3. combine the current summary with the historical repo and write them
-#into a xlsx file
-
-hist_repo_ap_updated <- rbind(hist_repo_ap, current_summary)
-
-#4. to ensure that the selected rows are the unique ones only without
-#any dupilacation
-
-hist_repo_ap_updated <- unique(hist_repo_ap_updated)
-
-ap_start_date <-
-  format(min(hist_repo_ap_updated$Signed_out_date_only), "%m-%d-%y")
-ap_end_date <-
-  format(max(hist_repo_ap_updated$Signed_out_date_only), "%m-%d-%y")
-
-ap_repo_file_name <- paste0(user_directory,
-                       "/AP & Cytology Historical Repo/",
-                       "AP Repo", "_",
-                       ap_start_date, " to ", ap_end_date,
-                       " Created ", Sys.Date(), ".RDS")
-
-saveRDS(hist_repo_ap_updated, file = ap_repo_file_name)
-
-#5. subset ap repo correctly to make sure only cases signed out yesterday are
-#included --> exclude anything signed out today at 12am
-# Subset AP data for most recent weekday
-ap_wday_summary <- hist_repo_ap_updated %>%
-  filter((report_date_only - 1) %in% wkday_date)
-
-# Subset most recent weekday AP data to get cyto
-cyto_table_weekday_summarized <- ap_wday_summary %>%
-  filter(Spec_group %in% cyto_spec_group)
-
-# Subset most recent weekday AP data to get patho
-sp_table_weekday_summarized <- ap_wday_summary %>%
-  filter(Spec_group %in% patho_spec_group)
+# 
+# #1. import the historical repo
+# hist_repo_ap <- readRDS(file =
+#   choose.files(default = paste0(user_directory,
+#                                 "/AP & Cytology Historical Repo",
+#                                 "/*.*"),
+#                caption = "Select Pathology and Cytology Historical Repository"))
+# #2. append all the summary tables together
+# 
+# #bind the cyto repo with the surgical pathology repo to prepare for the
+# #merge with the historical repo
+# current_summary <- rbind(cyto_table_weekday_summarized,
+#                          sp_table_weekday_summarized)
+# 
+# #make sure that the summarized data is a data frame
+# current_summary <- as.data.frame(current_summary)
+# 
+# #make sure the data types for both dataframes are the same
+# common <-
+#   names(hist_repo_ap)[names(hist_repo_ap) %in% names(current_summary)]
+# 
+# hist_repo_ap[common] <- lapply(common, function(x) {
+#   match.fun(paste0("as.", class(current_summary[[x]])))(hist_repo_ap[[x]])
+# })
+# 
+# #3. combine the current summary with the historical repo and write them
+# #into a xlsx file
+# 
+# hist_repo_ap_updated <- rbind(hist_repo_ap, current_summary)
+# 
+# #4. to ensure that the selected rows are the unique ones only without
+# #any dupilacation
+# 
+# hist_repo_ap_updated <- unique(hist_repo_ap_updated)
+# 
+# ap_start_date <-
+#   format(min(hist_repo_ap_updated$Signed_out_date_only), "%m-%d-%y")
+# ap_end_date <-
+#   format(max(hist_repo_ap_updated$Signed_out_date_only), "%m-%d-%y")
+# 
+# ap_repo_file_name <- paste0(user_directory,
+#                        "/AP & Cytology Historical Repo/",
+#                        "AP Repo", "_",
+#                        ap_start_date, " to ", ap_end_date,
+#                        " Created ", Sys.Date(), ".RDS")
+# 
+# saveRDS(hist_repo_ap_updated, file = ap_repo_file_name)
+# 
+# #5. subset ap repo correctly to make sure only cases signed out yesterday are
+# #included --> exclude anything signed out today at 12am
+# # Subset AP data for most recent weekday
+# ap_wday_summary <- hist_repo_ap_updated %>%
+#   filter((report_date_only - 1) %in% wkday_date)
+# 
+# # Subset most recent weekday AP data to get cyto
+# cyto_table_weekday_summarized <- ap_wday_summary %>%
+#   filter(Spec_group %in% cyto_spec_group)
+# 
+# # Subset most recent weekday AP data to get patho
+# sp_table_weekday_summarized <- ap_wday_summary %>%
+#   filter(Spec_group %in% patho_spec_group)
 
 ```
 
