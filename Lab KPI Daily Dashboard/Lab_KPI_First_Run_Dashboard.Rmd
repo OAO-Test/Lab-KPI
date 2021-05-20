@@ -46,7 +46,7 @@ source(here::here("Lab KPI Daily Dashboard/CP_Custom_Functions.R"))
 # Code for preprocessing CP data prior to receipt of Ops &
 # Quality Indicators Form
 source(here::here(paste0("Lab KPI Daily Dashboard",
-                         "/CP_PreProcessing_Analysis_First_Run.R")))
+                         "/CP_PreProcessing_Analysis.R")))
 ```
 
 ```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = FALSE, message = FALSE, echo = FALSE}

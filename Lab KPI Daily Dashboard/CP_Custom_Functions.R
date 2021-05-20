@@ -161,13 +161,23 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # 2. Orders from "Other" settings
       # 3. Orders with collect or receive times after result time
       # 4. Orders with missing collect, receive, or result timestamps
-      TATInclude = ifelse(AddOnMaster == "AddOn" |
-                            MasterSetting == "Other" |
-                            CollectToReceive < 0 |
-                            CollectToResult < 0 |
-                            ReceiveToResult < 0 |
-                            is.na(CollectToResult) |
-                            is.na(ReceiveToResult), FALSE, TRUE))
+      # 5. Orders with missing collection times are excluded from
+      # collect-to-result and collect-to-receive turnaround time analyis
+      ReceiveTime_TATInclude = ifelse(AddOnMaster == "AddOn" |
+                                        MasterSetting == "Other" |
+                                        CollectToReceive < 0 |
+                                        CollectToResult < 0 |
+                                        ReceiveToResult < 0 |
+                                        is.na(CollectToResult) |
+                                        is.na(ReceiveToResult), FALSE, TRUE),
+      CollectTime_TATInclude = ifelse(MissingCollect |
+                                        AddOnMaster == "AddOn" |
+                                        MasterSetting == "Other" |
+                                        CollectToReceive < 0 |
+                                        CollectToResult < 0 |
+                                        ReceiveToResult < 0 |
+                                        is.na(CollectToResult) |
+                                        is.na(ReceiveToResult), FALSE, TRUE))
 
   # Remove duplicate tests
   raw_scc <- raw_scc %>%
@@ -190,7 +200,8 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "AddOnMaster", "MissingCollect",
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")]
+                            "ReceiveTime_TATInclude",
+                            "CollectTime_TATInclude")]
   # Rename columns
   colnames(scc_master) <- c("LocCode", "LocName",
                             "OrderID", "RequestMD",
@@ -208,7 +219,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "AddOnMaster", "MissingCollect",
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")
+                            "ReceiveTime_TATInclude", "CollectTime_TATInclude")
 
   # Preprocess Sunquest data --------------------------------
   # Remove any duplicates
@@ -360,13 +371,23 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
       # 2. Orders from "Other" settings
       # 3. Orders with collect or receive times after result time
       # 4. Orders with missing collect, receive, or result timestamps
-      TATInclude = ifelse(AddOnMaster == "AddOn" |
-                            MasterSetting == "Other" |
-                            CollectToReceive < 0 |
-                            CollectToResult < 0 |
-                            ReceiveToResult < 0 |
-                            is.na(CollectToResult) |
-                            is.na(ReceiveToResult), FALSE, TRUE))
+      # 5. Orders with missing collection times are excluded from
+      # collect-to-result and collect-to-receive turnaround time analyis
+      ReceiveTime_TATInclude = ifelse(AddOnMaster == "AddOn" |
+                                        MasterSetting == "Other" |
+                                        CollectToReceive < 0 |
+                                        CollectToResult < 0 |
+                                        ReceiveToResult < 0 |
+                                        is.na(CollectToResult) |
+                                        is.na(ReceiveToResult), FALSE, TRUE),
+      CollectTime_TATInclude = ifelse(MissingCollect |
+                                        AddOnMaster == "AddOn" |
+                                        MasterSetting == "Other" |
+                                        CollectToReceive < 0 |
+                                        CollectToResult < 0 |
+                                        ReceiveToResult < 0 |
+                                        is.na(CollectToResult) |
+                                        is.na(ReceiveToResult), FALSE, TRUE))
 
   # Remove duplicate tests
   raw_sun <- raw_sun %>%
@@ -389,7 +410,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "AddOnMaster", "MissingCollect",
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")]
+                            "ReceiveTime_TATInclude", "CollectTime_TATInclude")]
 
   colnames(sun_master) <- c("LocCode", "LocName",
                             "OrderID", "RequestMD",
@@ -407,7 +428,7 @@ preprocess_cp <- function(raw_scc, raw_sun)  {
                             "AddOnMaster", "MissingCollect",
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")
+                            "ReceiveTime_TATInclude", "CollectTime_TATInclude")
 
   scc_sun_master <- rbind(scc_master, sun_master)
 

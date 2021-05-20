@@ -57,34 +57,98 @@ initial_run <- TRUE
 
 # Determine today's date to determine last possible data report
 todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
+this_month <- month(todays_date)
 
 # Determine date range for reports to include in repository
 if (initial_run == TRUE) {
   # Provide start date for new data repository
-  repo_start_date <- as.Date("2021-05-01", format = "%Y-%m-%d")
+  repo_start_date <- as.Date(paste0(this_month, "/",
+                                    1, "/",
+                                    year(Sys.Date())), format = "%m/%d/%Y")
   # Create vector with date range for new data repository
   repo_date_range <- seq(from = repo_start_date + 1,
-                         to = todays_date,
+                         to = todays_date - 3,
                          by = "day")
   scc_date_range <- repo_date_range
   sun_date_range <- repo_date_range
   
 } else {
-  # Import existing historical repository as a RDS file
-  existing_repo <- readRDS(
-    choose.files(default = paste0(user_directory,
-                                  "/CP Historical Repo/*.*"),
-                 caption = "Select CP Historical Repository"))
+  # Import existing historical repositories
+  
+  # Select latest raw data repository
+  raw_data_repo_files <- data.frame(
+    "FileName" = list.files(path = paste0(user_directory,
+                                          "/CP Repositories",
+                                          "/RawDataRepo"),
+                            pattern = "*.RDS",
+                            full.names = TRUE))
+  
+  raw_data_repo_files <- raw_data_repo_files %>%
+    mutate(CreatedTime = file.info(FileName)$ctime) %>%
+    arrange(desc(CreatedTime))
+  
+  latest_raw_data_repo <- raw_data_repo_files[1, "FileName"]
+  
+  raw_data_repo <- readRDS(latest_raw_data_repo)
+  
+  # Select latest daily summary repository
+  daily_repo_files <- data.frame(
+    "FileName" = list.files(path = paste0(user_directory,
+                                          "/CP Repositories",
+                                          "/DailyRepo"),
+                            pattern = "*.RDS",
+                            full.names = TRUE))
+  
+  daily_repo_files <- daily_repo_files %>%
+    mutate(CreatedTime = file.info(FileName)$ctime) %>%
+    arrange(desc(CreatedTime))
+  
+  latest_daily_repo <- daily_repo_files[1, "FileName"]
+  
+  daily_repo <- readRDS(latest_daily_repo)
+  
+  # Select latest weekly summary repository
+  weekly_repo_files <- data.frame(
+    "FileName" = list.files(path = paste0(user_directory,
+                                          "/CP Repositories",
+                                          "/WeeklyRepo"),
+                            pattern = "*.RDS",
+                            full.names = TRUE))
+  
+  weekly_repo_files <- weekly_repo_files %>%
+    mutate(CreatedTime = file.info(FileName)$ctime) %>%
+    arrange(desc(CreatedTime))
+  
+  latest_weekly_repo <- weekly_repo_files[1, "FileName"]
+  
+  weekly_repo <- readRDS(latest_weekly_repo)
+  
+  # Select latest daily summary repository
+  monthly_repo_files <- data.frame(
+    "FileName" = list.files(path = paste0(user_directory,
+                                          "/CP Repositories",
+                                          "/MonthlyRepo"),
+                            pattern = "*.RDS",
+                            full.names = TRUE))
+  
+  monthly_repo_files <- monthly_repo_files %>%
+    mutate(CreatedTime = file.info(FileName)$ctime) %>%
+    arrange(desc(CreatedTime))
+  
+  latest_monthly_repo <- monthly_repo_files[1, "FileName"]
+  
+  monthly_repo <- readRDS(latest_monthly_repo)
+
   #
   # Find last date of resulted lab data in historical repo for SCC and Sunquest sites
   last_dates <- data.frame(
     "SCCSites" = as.Date(
-      max(existing_repo[
-        which(existing_repo$Site %in% c("MSH", "MSQ")), ]$ResultDate),
+      max(raw_data_repo[
+        which(raw_data_repo$Site %in% c("MSH", "MSQ")), ]$ResultDate),
       format = "%Y-%m-%d"),
     "SunSites" = as.Date(
-      max(existing_repo[
-        which(!(existing_repo$Site %in% c("MSH", "MSQ"))), ]$ResultDate),
+      max(raw_data_repo[
+        which(!(raw_data_repo$Site %in% c("MSH", "MSQ"))), ]$ResultDate),
       format = "%Y-%m-%d"))
   # Create vector with possible data report dates for SCC and Sunquest sites
   scc_date_range <- seq(from = last_dates$SCCSites + 2,
@@ -345,13 +409,21 @@ preprocess_scc <- function(raw_scc)  {
       # 2. Orders from "Other" settings
       # 3. Orders with collect or receive times after result time
       # 4. Orders with missing collect, receive, or result timestamps
-      TATInclude = ifelse(AddOnMaster == "AddOn" |
+      ReceiveTime_TATInclude = ifelse(AddOnMaster == "AddOn" |
                             MasterSetting == "Other" |
                             CollectToReceive < 0 |
                             CollectToResult < 0 |
                             ReceiveToResult < 0 |
                             is.na(CollectToResult) |
-                            is.na(ReceiveToResult), FALSE, TRUE))
+                            is.na(ReceiveToResult), FALSE, TRUE),
+      CollectTime_TATInclude = ifelse(MissingCollect |
+                                        AddOnMaster == "AddOn" |
+                                        MasterSetting == "Other" |
+                                        CollectToReceive < 0 |
+                                        CollectToResult < 0 |
+                                        ReceiveToResult < 0 |
+                                        is.na(CollectToResult) |
+                                        is.na(ReceiveToResult), FALSE, TRUE))
   
   # Remove duplicate tests
   raw_scc <- raw_scc %>%
@@ -374,7 +446,8 @@ preprocess_scc <- function(raw_scc)  {
                             "AddOnMaster", "MissingCollect",
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")]
+                            "ReceiveTime_TATInclude",
+                            "CollectTime_TATInclude")]
   # Rename columns
   colnames(scc_master) <- c("LocCode", "LocName",
                             "OrderID", "RequestMD",
@@ -392,7 +465,7 @@ preprocess_scc <- function(raw_scc)  {
                             "AddOnMaster", "MissingCollect",
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")
+                            "ReceiveTime_TATInclude", "CollectTime_TATInclude")
   
   
   scc_daily_list <- list(raw_scc, scc_master)
@@ -554,13 +627,21 @@ preprocess_daily_sun <- function(raw_sun) {
       # 2. Orders from "Other" settings
       # 3. Orders with collect or receive times after result time
       # 4. Orders with missing collect, receive, or result timestamps
-      TATInclude = ifelse(AddOnMaster == "AddOn" |
-                            MasterSetting == "Other" |
-                            CollectToReceive < 0 |
-                            CollectToResult < 0 |
-                            ReceiveToResult < 0 |
-                            is.na(CollectToResult) |
-                            is.na(ReceiveToResult), FALSE, TRUE))
+      ReceiveTime_TATInclude = ifelse(AddOnMaster == "AddOn" |
+                                        MasterSetting == "Other" |
+                                        CollectToReceive < 0 |
+                                        CollectToResult < 0 |
+                                        ReceiveToResult < 0 |
+                                        is.na(CollectToResult) |
+                                        is.na(ReceiveToResult), FALSE, TRUE),
+      CollectTime_TATInclude = ifelse(MissingCollect |
+                                        AddOnMaster == "AddOn" |
+                                        MasterSetting == "Other" |
+                                        CollectToReceive < 0 |
+                                        CollectToResult < 0 |
+                                        ReceiveToResult < 0 |
+                                        is.na(CollectToResult) |
+                                        is.na(ReceiveToResult), FALSE, TRUE))
   
   # Remove duplicate tests
   raw_sun <- raw_sun %>%
@@ -583,7 +664,7 @@ preprocess_daily_sun <- function(raw_sun) {
                             "AddOnMaster", "MissingCollect",
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")]
+                            "ReceiveTime_TATInclude", "CollectTime_TATInclude")]
   
   colnames(sun_master) <- c("LocCode", "LocName",
                             "OrderID", "RequestMD",
@@ -601,7 +682,7 @@ preprocess_daily_sun <- function(raw_sun) {
                             "AddOnMaster", "MissingCollect",
                             "ReceiveResultTarget", "CollectResultTarget",
                             "ReceiveResultInTarget", "CollectResultInTarget",
-                            "TATInclude")
+                            "ReceiveTime_TATInclude", "CollectTime_TATInclude")
   
   sun_daily_list <- list(raw_sun, sun_master)
   
@@ -677,7 +758,6 @@ bind_all_data <- bind_all_data %>%
                    "-",
                    format(WeekEnd, "%m/%d/%y")))
 
-
 # Summarize data for each day
 cp_daily_summary <- bind_all_data %>%
   group_by(
@@ -700,30 +780,32 @@ cp_daily_summary <- bind_all_data %>%
     ReceiveResultTarget,
     CollectResultTarget) %>%
   summarize(
-    # Calculate total number of labs resulted and those with valid TAT
+    # Calculate total number of labs resulted
     TotalResulted = n(),
-    TotalResultedTAT = sum(TATInclude),
+    # Calculate number of labs with valid receive times and collection times
+    ReceiveTime_VolIncl = sum(ReceiveTime_TATInclude),
+    CollectTime_VolIncl = sum(CollectTime_TATInclude),
     # Calculate number of labs within target TAT
     TotalReceiveResultInTarget =
-      sum(ReceiveResultInTarget[TATInclude], na.rm = TRUE),
+      sum(ReceiveResultInTarget[ReceiveTime_TATInclude], na.rm = TRUE),
     TotalCollectResultInTarget =
-      sum(CollectResultInTarget[TATInclude], na.rm = TRUE),
+      sum(CollectResultInTarget[CollectTime_TATInclude], na.rm = TRUE),
     TotalAddOnOrder = sum(AddOnMaster %in% c("AddOn"), na.rm = TRUE),
-    TotalMissingCollections = sum(MissingCollect[TATInclude]),
+    TotalMissingCollections = sum(MissingCollect),
     # Calculate key statistics for collect-to-receive TAT
-    CollectReceive_Avg = mean(CollectToReceiveTAT[TATInclude], na.rm = TRUE),
-    CollectReceive_Median = median(CollectToReceiveTAT[TATInclude], na.rm = TRUE),
-    CollectReceive_95 = quantile(CollectToReceiveTAT[TATInclude], probs = c(0.95),
+    CollectReceive_Avg = mean(CollectToReceiveTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectReceive_Median = median(CollectToReceiveTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectReceive_95 = quantile(CollectToReceiveTAT[CollectTime_TATInclude], probs = c(0.95),
                                  na.rm = TRUE),
     # Calculate key statistics for receive-to-result TAT
-    ReceiveResult_Avg = mean(ReceiveToResultTAT[TATInclude], na.rm = TRUE),
-    ReceiveResult_Median = median(ReceiveToResultTAT[TATInclude], na.rm = TRUE),
-    ReceiveResult_95 = quantile(ReceiveToResultTAT[TATInclude], probs = c(0.95),
+    ReceiveResult_Avg = mean(ReceiveToResultTAT[ReceiveTime_TATInclude], na.rm = TRUE),
+    ReceiveResult_Median = median(ReceiveToResultTAT[ReceiveTime_TATInclude], na.rm = TRUE),
+    ReceiveResult_95 = quantile(ReceiveToResultTAT[ReceiveTime_TATInclude], probs = c(0.95),
                                 na.rm = TRUE),
     # Calculate key statistics for collect-to-result TAT
-    CollectResult_Avg = mean(CollectToResultTAT[TATInclude], na.rm = TRUE),
-    CollectResult_Median = median(CollectToResultTAT[TATInclude], na.rm = TRUE),
-    CollectResult_95 = quantile(CollectToResultTAT[TATInclude], probs = c(0.95),
+    CollectResult_Avg = mean(CollectToResultTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectResult_Median = median(CollectToResultTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectResult_95 = quantile(CollectToResultTAT[CollectTime_TATInclude], probs = c(0.95),
                                 na.rm = TRUE),
     .groups = "keep")
 
@@ -743,30 +825,32 @@ cp_weekly_summary <- bind_all_data %>%
     ReceiveResultTarget,
     CollectResultTarget) %>%
   summarize(
-    # Calculate total number of labs resulted and those with valid TAT
+    # Calculate total number of labs resulted
     TotalResulted = n(),
-    TotalResultedTAT = sum(TATInclude),
+    # Calculate number of labs with valid receive times and collection times
+    ReceiveTime_VolIncl = sum(ReceiveTime_TATInclude),
+    CollectTime_VolIncl = sum(CollectTime_TATInclude),
     # Calculate number of labs within target TAT
     TotalReceiveResultInTarget =
-      sum(ReceiveResultInTarget[TATInclude], na.rm = TRUE),
+      sum(ReceiveResultInTarget[ReceiveTime_TATInclude], na.rm = TRUE),
     TotalCollectResultInTarget =
-      sum(CollectResultInTarget[TATInclude], na.rm = TRUE),
+      sum(CollectResultInTarget[CollectTime_TATInclude], na.rm = TRUE),
     TotalAddOnOrder = sum(AddOnMaster %in% c("AddOn"), na.rm = TRUE),
-    TotalMissingCollections = sum(MissingCollect[TATInclude]),
+    TotalMissingCollections = sum(MissingCollect),
     # Calculate key statistics for collect-to-receive TAT
-    CollectReceive_Avg = mean(CollectToReceiveTAT[TATInclude], na.rm = TRUE),
-    CollectReceive_Median = median(CollectToReceiveTAT[TATInclude], na.rm = TRUE),
-    CollectReceive_95 = quantile(CollectToReceiveTAT[TATInclude], probs = c(0.95),
+    CollectReceive_Avg = mean(CollectToReceiveTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectReceive_Median = median(CollectToReceiveTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectReceive_95 = quantile(CollectToReceiveTAT[CollectTime_TATInclude], probs = c(0.95),
                                  na.rm = TRUE),
     # Calculate key statistics for receive-to-result TAT
-    ReceiveResult_Avg = mean(ReceiveToResultTAT[TATInclude], na.rm = TRUE),
-    ReceiveResult_Median = median(ReceiveToResultTAT[TATInclude], na.rm = TRUE),
-    ReceiveResult_95 = quantile(ReceiveToResultTAT[TATInclude], probs = c(0.95),
+    ReceiveResult_Avg = mean(ReceiveToResultTAT[ReceiveTime_TATInclude], na.rm = TRUE),
+    ReceiveResult_Median = median(ReceiveToResultTAT[ReceiveTime_TATInclude], na.rm = TRUE),
+    ReceiveResult_95 = quantile(ReceiveToResultTAT[ReceiveTime_TATInclude], probs = c(0.95),
                                 na.rm = TRUE),
     # Calculate key statistics for collect-to-result TAT
-    CollectResult_Avg = mean(CollectToResultTAT[TATInclude], na.rm = TRUE),
-    CollectResult_Median = median(CollectToResultTAT[TATInclude], na.rm = TRUE),
-    CollectResult_95 = quantile(CollectToResultTAT[TATInclude], probs = c(0.95),
+    CollectResult_Avg = mean(CollectToResultTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectResult_Median = median(CollectToResultTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectResult_95 = quantile(CollectToResultTAT[CollectTime_TATInclude], probs = c(0.95),
                                 na.rm = TRUE),
     .groups = "keep")
 
@@ -787,49 +871,126 @@ cp_monthly_summary <- bind_all_data %>%
   summarize(
     # Calculate total number of labs resulted and those with valid TAT
     TotalResulted = n(),
-    TotalResultedTAT = sum(TATInclude),
+    # Calculate number of labs with valid receive times and collection times
+    ReceiveTime_VolIncl = sum(ReceiveTime_TATInclude),
+    CollectTime_VolIncl = sum(CollectTime_TATInclude),
     # Calculate number of labs within target TAT
     TotalReceiveResultInTarget =
-      sum(ReceiveResultInTarget[TATInclude], na.rm = TRUE),
+      sum(ReceiveResultInTarget[ReceiveTime_TATInclude], na.rm = TRUE),
     TotalCollectResultInTarget =
-      sum(CollectResultInTarget[TATInclude], na.rm = TRUE),
+      sum(CollectResultInTarget[CollectTime_TATInclude], na.rm = TRUE),
     TotalAddOnOrder = sum(AddOnMaster %in% c("AddOn"), na.rm = TRUE),
-    TotalMissingCollections = sum(MissingCollect[TATInclude]),
+    TotalMissingCollections = sum(MissingCollect),
     # Calculate key statistics for collect-to-receive TAT
-    CollectReceive_Avg = mean(CollectToReceiveTAT[TATInclude], na.rm = TRUE),
-    CollectReceive_Median = median(CollectToReceiveTAT[TATInclude], na.rm = TRUE),
-    CollectReceive_95 = quantile(CollectToReceiveTAT[TATInclude], probs = c(0.95),
+    CollectReceive_Avg = mean(CollectToReceiveTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectReceive_Median = median(CollectToReceiveTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectReceive_95 = quantile(CollectToReceiveTAT[CollectTime_TATInclude], probs = c(0.95),
                                  na.rm = TRUE),
     # Calculate key statistics for receive-to-result TAT
-    ReceiveResult_Avg = mean(ReceiveToResultTAT[TATInclude], na.rm = TRUE),
-    ReceiveResult_Median = median(ReceiveToResultTAT[TATInclude], na.rm = TRUE),
-    ReceiveResult_95 = quantile(ReceiveToResultTAT[TATInclude], probs = c(0.95),
+    ReceiveResult_Avg = mean(ReceiveToResultTAT[ReceiveTime_TATInclude], na.rm = TRUE),
+    ReceiveResult_Median = median(ReceiveToResultTAT[ReceiveTime_TATInclude], na.rm = TRUE),
+    ReceiveResult_95 = quantile(ReceiveToResultTAT[ReceiveTime_TATInclude], probs = c(0.95),
                                 na.rm = TRUE),
     # Calculate key statistics for collect-to-result TAT
-    CollectResult_Avg = mean(CollectToResultTAT[TATInclude], na.rm = TRUE),
-    CollectResult_Median = median(CollectToResultTAT[TATInclude], na.rm = TRUE),
-    CollectResult_95 = quantile(CollectToResultTAT[TATInclude], probs = c(0.95),
+    CollectResult_Avg = mean(CollectToResultTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectResult_Median = median(CollectToResultTAT[CollectTime_TATInclude], na.rm = TRUE),
+    CollectResult_95 = quantile(CollectToResultTAT[CollectTime_TATInclude], probs = c(0.95),
                                 na.rm = TRUE),
     .groups = "keep")
 
+cp_monthly_summary <- cp_monthly_summary %>%
+  mutate(MonthRollUp = as.Date(paste0(MonthNo, "/",
+                                      1, "/",
+                                      Year),
+                               format = "%m/%d/%Y"))
 
-# Test code to find latest data
-a <- file.info(list.files(path = paste0(user_directory, "/CP Historical Repo"),
-                pattern = "*.RDS",
-                full.names = TRUE))
-b <- data.frame("FileName" = list.files(path = paste0(user_directory,
-                                                      "/CP Historical Repo"),
-                                        pattern = "*.RDS"),
-                "ModifedTime" = file.info(list.files(path = paste0(user_directory,
-                                                                   "/CP Historical Repo"),
-                                                     pattern = "*.RDS",
-                                                     full.names = TRUE))$ctime)
+# Update repositories with latest data
+if (initial_run == TRUE) {
+  raw_data_repo <- bind_all_data
+  daily_summary_repo <- cp_daily_summary
+  weekly_summary_repo <- cp_weekly_summary
+  monthly_summary_repo <- cp_monthly_summary
+  
+} else {
+  raw_data_repo <- rbind(raw_data_repo, bind_all_data)
+  raw_data_repo <- raw_data_repo %>%
+    filter(ResultDate > todays_date - 60)
+  
+  daily_summary_repo <- rbind(daily_repo, cp_daily_summary)
+  weekly_summary_repo <- rbind(weekly_repo, cp_weekly_summary)
+  monthly_summary_repo <- rbind(monthly_repo, cp_monthly_summary)
 
-existing_repo_files <- data.frame(
-  "FileName" = list.files(path = paste0(user_directory,
-                                        "/CP Historical Repo"),
-                          pattern = "*.RDS",
-                          full.names = TRUE))
-existing_repo_files <- existing_repo_files %>%
-  mutate(
-    "CreatedTime" = file.info(FileName)$ctime)
+}
+
+monthly_summary_repo <- monthly_summary_repo %>%
+  mutate(DummyDate = as.Date(paste0(MonthNo, "/", 1, "/", Year),
+                             format = "%m/%d/%Y"))
+
+# Save repositories in appropriate folder
+saveRDS(raw_data_repo,
+        file = paste0(user_directory,
+                      "/CP Repositories",
+                      "/RawDataRepo",
+                      "/Labs Resulted ",
+                      format(min(raw_data_repo$ResultDate), "%m-%d-%y"),
+                      " to ",
+                      format(max(raw_data_repo$ResultDate), "%m-%d-%y"),
+                      " as of ",
+                      format(Sys.Date(), "%m-%d-%y"),
+                      ".RDS"))
+
+saveRDS(daily_summary_repo,
+        file = paste0(user_directory,
+                      "/CP Repositories",
+                      "/DailyRepo",
+                      "/Daily Repo ",
+                      format(min(daily_summary_repo$ResultDate), "%m-%d-%y"),
+                      " to ",
+                      format(max(daily_summary_repo$ResultDate), "%m-%d-%y"),
+                      " as of ",
+                      format(Sys.Date(), "%m-%d-%y"),
+                      ".RDS"))
+
+saveRDS(weekly_summary_repo,
+        file = paste0(user_directory,
+                      "/CP Repositories",
+                      "/WeeklyRepo",
+                      "/Weekly Repo ",
+                      format(min(weekly_summary_repo$WeekStart), "%m-%d-%y"),
+                      " to ",
+                      format(max(weekly_summary_repo$WeekEnd), "%m-%d-%y"),
+                      " as of ",
+                      format(Sys.Date(), "%m-%d-%y"),
+                      ".RDS"))
+
+saveRDS(monthly_summary_repo,
+        file = paste0(user_directory,
+                      "/CP Repositories",
+                      "/MonthlyRepo",
+                      "/Monthly Repo ",
+                      paste0(month(min(monthly_summary_repo$MonthRollUp), 
+                                   label = TRUE, abbr = TRUE), 
+                             year(min(monthly_summary_repo$MonthRollUp))),
+                      " to ",
+                      paste0(month(max(monthly_summary_repo$MonthRollUp), 
+                                   label = TRUE, abbr = TRUE), 
+                             year(max(monthly_summary_repo$MonthRollUp))),
+                      " as of ",
+                      format(Sys.Date(), "%m-%d-%y"),
+                      ".RDS"))
+
+one_week_data <- bind_all_data %>%
+  filter(WeekNo == 19)
+
+troponin_subset <- one_week_data %>%
+  filter(Test == "Troponin")
+
+troponin_daily <- cp_daily_summary %>%
+  filter(Test == "Troponin" &
+           WeekNo == 19)
+
+troponin_weekly <- cp_weekly_summary %>%
+  filter(Test == "Troponin" &
+           WeekNo == 19)
+
+
