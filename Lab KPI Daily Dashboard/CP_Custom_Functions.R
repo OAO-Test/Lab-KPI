@@ -474,13 +474,14 @@ summarize_cp_tat <- function(x, lab_division) {
              ReceiveResultTarget,
              CollectResultTarget) %>%
     summarize(ResultedVolume = sum(TotalResulted),
-              ResultedVolumeTAT = sum(TotalResultedTAT),
+              ResultedVol_ReceiveTAT = sum(ReceiveTime_VolIncl),
+              ResultedVol_CollectTAT = sum(CollectTime_VolIncl),
               ReceiveResultInTarget = sum(TotalReceiveResultInTarget),
               CollectResultInTarget = sum(TotalCollectResultInTarget),
               ReceiveResultPercent = round(
-                ReceiveResultInTarget / ResultedVolumeTAT, digits = 3),
+                ReceiveResultInTarget / ResultedVol_ReceiveTAT, digits = 3),
               CollectResultPercent = round(
-                CollectResultInTarget / ResultedVolumeTAT, digits = 3),
+                CollectResultInTarget / ResultedVol_CollectTAT, digits = 3),
               .groups = "keep") %>%
     ungroup()
   #
@@ -823,9 +824,9 @@ kable_missing_collections <- function(x) {
   # Filter data for city sites and summarize
   missing_collect <- x %>%
     group_by(Site) %>%
-    summarize(ResultedVolumeTAT = sum(TotalResultedTAT),
+    summarize(ResultedVolume = sum(TotalResulted),
               MissingCollection = sum(TotalMissingCollections, na.rm = TRUE),
-              Percent = percent(MissingCollection / ResultedVolumeTAT,
+              Percent = percent(MissingCollection / ResultedVolume,
                                 digits = 0),
               .groups = "keep") %>%
     ungroup() %>%
@@ -859,7 +860,7 @@ kable_missing_collections <- function(x) {
                         "MSM", "MSSN", "RTC")) %>%
     kable_styling(
       bootstrap = "hover",
-      position = "float_left",
+      position = "left",
       font_size = 11,
       full_width = FALSE) %>%
     add_header_above(
@@ -913,7 +914,7 @@ kable_add_on_volume <- function(x) {
           color = "gray") %>%
     kable_styling(
       bootstrap = "hover",
-      position = "right",
+      position = "left",
       font_size = 11,
       full_width = FALSE) %>%
     add_header_above(

@@ -53,7 +53,7 @@ if ("Presidents" %in% list.files("J://")) {
 user_path <- paste0(user_directory, "\\*.*")
 
 # Import data for two scenarios - first time compiling repo and updating repo ----------
-initial_run <- TRUE
+initial_run <- FALSE
 
 # Determine today's date to determine last possible data report
 todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
@@ -62,12 +62,13 @@ this_month <- month(todays_date)
 # Determine date range for reports to include in repository
 if (initial_run == TRUE) {
   # Provide start date for new data repository
-  repo_start_date <- as.Date(paste0(this_month, "/",
-                                    1, "/",
-                                    year(Sys.Date())), format = "%m/%d/%Y")
+  # repo_start_date <- as.Date(paste0(this_month, "/",
+  #                                   1, "/",
+  #                                   year(Sys.Date())), format = "%m/%d/%Y")
+  repo_start_date <- Sys.Date() - 60
   # Create vector with date range for new data repository
   repo_date_range <- seq(from = repo_start_date + 1,
-                         to = todays_date - 3,
+                         to = todays_date,
                          by = "day")
   scc_date_range <- repo_date_range
   sun_date_range <- repo_date_range
@@ -409,6 +410,8 @@ preprocess_scc <- function(raw_scc)  {
       # 2. Orders from "Other" settings
       # 3. Orders with collect or receive times after result time
       # 4. Orders with missing collect, receive, or result timestamps
+      # 5. Orders with missing collection times are excluded from
+      # collect-to-result and collect-to-receive turnaround time analyis
       ReceiveTime_TATInclude = ifelse(AddOnMaster == "AddOn" |
                             MasterSetting == "Other" |
                             CollectToReceive < 0 |
@@ -627,6 +630,8 @@ preprocess_daily_sun <- function(raw_sun) {
       # 2. Orders from "Other" settings
       # 3. Orders with collect or receive times after result time
       # 4. Orders with missing collect, receive, or result timestamps
+      # 5. Orders with missing collection times are excluded from
+      # collect-to-result and collect-to-receive turnaround time analyis
       ReceiveTime_TATInclude = ifelse(AddOnMaster == "AddOn" |
                                         MasterSetting == "Other" |
                                         CollectToReceive < 0 |
@@ -751,6 +756,10 @@ bind_all_data <- bind_all_data %>%
     Year = year(ResultDate),
     MonthNo = month(ResultDate),
     MonthName = month(ResultDate, label = TRUE, abbr = TRUE),
+    MonthRollUp = as.Date(paste0(MonthNo, "/",
+                   1, "/",
+                   Year),
+            format = "%m/%d/%Y"),
     WeekNo = format(ResultDate, "%U"),
     WeekStart = ResultDate - (wday(ResultDate) - 1),
     WeekEnd = ResultDate + (7 - wday(ResultDate)),
@@ -758,8 +767,52 @@ bind_all_data <- bind_all_data %>%
                    "-",
                    format(WeekEnd, "%m/%d/%y")))
 
+# Combine raw data repo with new data
+if (initial_run == TRUE) {
+  raw_data_repo <- bind_all_data
+} else {
+  raw_data_repo <- raw_data_repo %>%
+    filter(ResultDate > todays_date - 60 ) %>%
+    mutate(CompleteWeek = NULL,
+           CompleteMonth = NULL)
+  
+  raw_data_repo <- rbind(raw_data_repo, bind_all_data)
+  
+}
+
+# Create data frame of start and end dates of weeks and months
+# This will be used to determine if the data for a complete week or month is present
+# If the week or month is not complete, that data will not be included in the repositories
+week_dates <- unique(raw_data_repo[, c("WeekNo", "WeekStart", "WeekEnd")])
+
+week_dates <- week_dates %>%
+  mutate(StartInData = WeekStart %in% unique(raw_data_repo$ResultDate),
+         EndInData = WeekEnd %in% unique(raw_data_repo$ResultDate),
+         CompleteWeek = StartInData & EndInData)
+
+month_dates <- unique(raw_data_repo[, c("MonthNo", "Year")])
+
+month_dates <- month_dates %>%
+  mutate(MonthRollUp = as.Date(paste0(MonthNo, "/",
+                                      1, "/",
+                                      Year),
+                               format = "%m/%d/%Y"),
+         MonthStart = floor_date(MonthRollUp, unit = "month"),
+         MonthEnd = ceiling_date(MonthRollUp, unit = "month") - 1,
+         StartInData = MonthStart %in% unique(raw_data_repo$ResultDate),
+         EndInData = MonthEnd %in% unique(raw_data_repo$ResultDate),
+         CompleteMonth = StartInData & EndInData)
+
+raw_data_repo <- left_join(raw_data_repo,
+                           week_dates[, c("WeekNo", "CompleteWeek")],
+                           by = c("WeekNo" = "WeekNo"))
+
+raw_data_repo <- left_join(raw_data_repo,
+                           month_dates[, c("MonthRollUp", "CompleteMonth")],
+                           by = c("MonthRollUp" = "MonthRollUp"))
+
 # Summarize data for each day
-cp_daily_summary <- bind_all_data %>%
+cp_daily_summary <- raw_data_repo %>%
   group_by(
     Site,
     ResultDate,
@@ -810,7 +863,9 @@ cp_daily_summary <- bind_all_data %>%
     .groups = "keep")
 
 # Summarize data for each week
-cp_weekly_summary <- bind_all_data %>%
+# Filter out data for incomplete weeks
+cp_weekly_summary <- raw_data_repo %>%
+  filter(CompleteWeek) %>%
   group_by(
     Site,
     WeekStart,
@@ -855,9 +910,12 @@ cp_weekly_summary <- bind_all_data %>%
     .groups = "keep")
 
 # Summarize data for each month
-cp_monthly_summary <- bind_all_data %>%
+# Filter out data for incomplete months
+cp_monthly_summary <- raw_data_repo %>%
+  filter(CompleteMonth) %>%
   group_by(
     Site,
+    MonthRollUp,
     MonthNo,
     MonthName,
     Year,
@@ -898,33 +956,31 @@ cp_monthly_summary <- bind_all_data %>%
                                 na.rm = TRUE),
     .groups = "keep")
 
-cp_monthly_summary <- cp_monthly_summary %>%
-  mutate(MonthRollUp = as.Date(paste0(MonthNo, "/",
-                                      1, "/",
-                                      Year),
-                               format = "%m/%d/%Y"))
-
 # Update repositories with latest data
 if (initial_run == TRUE) {
-  raw_data_repo <- bind_all_data
   daily_summary_repo <- cp_daily_summary
   weekly_summary_repo <- cp_weekly_summary
   monthly_summary_repo <- cp_monthly_summary
   
 } else {
-  raw_data_repo <- rbind(raw_data_repo, bind_all_data)
-  raw_data_repo <- raw_data_repo %>%
-    filter(ResultDate > todays_date - 60)
+  # Remove data from daily repo for dates that are in current daily summary
+  daily_summary_repo <- daily_repo %>%
+    filter(!(ResultDate %in% cp_daily_summary$ResultDate))
+  # Bind repository with current daily summary
+  daily_summary_repo <- rbind(daily_summary_repo, cp_daily_summary)
   
-  daily_summary_repo <- rbind(daily_repo, cp_daily_summary)
-  weekly_summary_repo <- rbind(weekly_repo, cp_weekly_summary)
-  monthly_summary_repo <- rbind(monthly_repo, cp_monthly_summary)
-
+  # Remove data from weekly repo for weeks that are in current weekly summary
+  weekly_summary_repo <- weekly_repo %>%
+    filter(!(WeekStart %in% cp_weekly_summary$WeekStart))
+  # Bind repository with current weekly summary
+  weekly_summary_repo <- rbind(weekly_summary_repo, cp_weekly_summary)
+  
+  # Remove data from monthly_repo for months that are in current monthly summary
+  monthly_summary_repo <- monthly_repo %>%
+    filter(!(MonthRollUp %in% cp_monthly_summary$MonthRollUp))
+  # Bind repository with current monthly summary
+  monthly_summary_repo <- rbind(monthly_summary_repo, cp_monthly_summary)
 }
-
-monthly_summary_repo <- monthly_summary_repo %>%
-  mutate(DummyDate = as.Date(paste0(MonthNo, "/", 1, "/", Year),
-                             format = "%m/%d/%Y"))
 
 # Save repositories in appropriate folder
 saveRDS(raw_data_repo,
@@ -992,5 +1048,4 @@ troponin_daily <- cp_daily_summary %>%
 troponin_weekly <- cp_weekly_summary %>%
   filter(Test == "Troponin" &
            WeekNo == 19)
-
 

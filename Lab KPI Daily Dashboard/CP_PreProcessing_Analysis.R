@@ -77,16 +77,18 @@ cp_wday_summary <- scc_sun_wday_master %>%
            ReceiveResultTarget,
            CollectResultTarget) %>%
   summarize(TotalResulted = n(),
-            TotalResultedTAT = sum(TATInclude),
+            ReceiveTime_VolIncl = sum(ReceiveTime_TATInclude),
+            CollectTime_VolIncl = sum(CollectTime_TATInclude),
             TotalReceiveResultInTarget =
-              sum(ReceiveResultInTarget[TATInclude]),
+              sum(ReceiveResultInTarget[ReceiveTime_TATInclude]),
             TotalCollectResultInTarget =
-              sum(CollectResultInTarget[TATInclude]),
+              sum(CollectResultInTarget[CollectTime_TATInclude]),
             TotalAddOnOrder = sum(AddOnMaster == "AddOn"),
-            TotalMissingCollections = sum(MissingCollect[TATInclude]),
+            TotalMissingCollections = sum(MissingCollect),
             .groups = "keep") %>%
   arrange(Site, ResultDate) %>%
   ungroup()
+
 
 # Format and summarize data to update repository ----------------
 # Summarize and bind weekday and non-weekday data, if any exists
@@ -107,13 +109,14 @@ if (!is.null(scc_sun_not_wday_master)) {
              ReceiveResultTarget,
              CollectResultTarget) %>%
     summarize(TotalResulted = n(),
-              TotalResultedTAT = sum(TATInclude),
+              ReceiveTime_VolIncl = sum(ReceiveTime_TATInclude),
+              CollectTime_VolIncl = sum(CollectTime_TATInclude),
               TotalReceiveResultInTarget =
-                sum(ReceiveResultInTarget[TATInclude]),
+                sum(ReceiveResultInTarget[ReceiveTime_TATInclude]),
               TotalCollectResultInTarget =
-                sum(CollectResultInTarget[TATInclude]),
+                sum(CollectResultInTarget[CollectTime_TATInclude]),
               TotalAddOnOrder = sum(AddOnMaster == "AddOn"),
-              TotalMissingCollections = sum(MissingCollect[TATInclude]),
+              TotalMissingCollections = sum(MissingCollect),
               .groups = "keep") %>%
     arrange(Site, ResultDate) %>%
     ungroup()

@@ -366,7 +366,7 @@ sp_table_weekday_new3$Spec_group[
 ```{r Chemistry dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
 kable_cp_tat(x = chem_dashboard_cast)
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. MSH BUN excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. Labs with missing collection times excluded from collect-to-result analysis. MSH BUN excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>
 
 
 ### Hematology
@@ -377,7 +377,7 @@ kable_cp_tat(x = chem_dashboard_cast)
 ```{r Hematology dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
 kable_cp_tat(x = hem_dashboard_cast)
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. MSH HGB excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. Labs with missing collection times excluded from collect-to-result analysis. MSH HGB excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>
 
 ```{r Microbiology RRL volume and TAT table creation, warning = FALSE, message = FALSE, echo = FALSE}
 #
@@ -491,7 +491,7 @@ micro_tat_vol_cast <- micro_tat_vol_cast %>%
 ```{r Create Micro RRL TAT and Volume Table, warning = FALSE, message = FALSE, echo = FALSE}
 kable_cp_tat(x = micro_tat_vol_cast)
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. Labs with missing collection times excluded from collect-to-result analysis.*</h6>
 
 ### Infusion       
 #### *Infusion KPI (Labs Resulted on `r wday_result_date`)*
@@ -501,7 +501,7 @@ kable_cp_tat(x = micro_tat_vol_cast)
 ```{r Create Infusion TAT and Volume Table, warning = FALSE, message = FALSE, echo = FALSE}
 kable_cp_tat(x = inf_dashboard_cast)
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. Labs with missing collection times excluded from collect-to-result analysis.*</h6>
 
 ### Missing Collections & Add Ons
 #### *Missing Collection Times and Add On Order Volume (Labs Resulted on `r wday_result_date`)*
@@ -675,7 +675,7 @@ kable_cp_tat(chem_not_wday_dashboard_cast)
 
 
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. MSH BUN excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>'
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. Labs with missing collection times excluded from collect-to-result analysis. MSH BUN excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>'
 
 ### Hematology
 #### *Hematology KPI (Labs Resulted on `r wkend_holiday_result_date`)*
@@ -687,7 +687,7 @@ kable_cp_tat(chem_not_wday_dashboard_cast)
 kable_cp_tat(hem_not_wday_dashboard_cast)
 
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. MSH HGB excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. Labs with missing collection times excluded from collect-to-result analysis. MSH HGB excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>
 
 ```{r Microbiology RRL volume and TAT table creation for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 #
@@ -806,7 +806,7 @@ micro_not_wday_tat_vol_cast <- micro_not_wday_tat_vol_cast %>%
 kable_cp_tat(micro_not_wday_tat_vol_cast)
 
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. Labs with missing collection times excluded from collect-to-result analysis.*</h6>
 
 ### Infusion
 #### *Infusion KPI (Labs Resulted on `r wkend_holiday_result_date`)*
@@ -818,7 +818,7 @@ kable_cp_tat(micro_not_wday_tat_vol_cast)
 kable_cp_tat(inf_not_wday_dashboard_cast)
 
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. Labs with missing collection times excluded from collect-to-result analysis.*</h6>
 
 ### Missing Collections & Add Ons
     
