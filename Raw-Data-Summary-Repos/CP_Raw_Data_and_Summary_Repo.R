@@ -169,7 +169,7 @@ file_list_scc <- list.files(
                    collapse = "|"))
 
 # Find list of daily Sunquest data reports within date range
-file_list_sun_daily <- list.files(
+file_list_sun <- list.files(
   path = paste0(user_directory, "\\SUN CP Reports"),
   pattern = paste0("^(KPI_Daily_TAT_Report){1}.*",
                    sun_date_range,
@@ -185,9 +185,9 @@ if (length(file_list_scc) > 0) {
 }
 
 # Read daily Sunquest reports, if any exist --------
-if (length(file_list_sun_daily) > 0) {
+if (length(file_list_sun) > 0) {
   sun_daily_raw_data_list <- lapply(
-    file_list_sun_daily, function(x) (read_excel(
+    file_list_sun, function(x) (read_excel(
       path = paste0(user_directory, "\\SUN CP Reports\\", x),
       col_types = c("text", "text", "text", "text", "text",
                     "text", "text", "text", "text",
@@ -772,25 +772,26 @@ if (initial_run == TRUE) {
   raw_data_repo <- bind_all_data
 } else {
   raw_data_repo <- raw_data_repo %>%
-    filter(ResultDate > todays_date - 60 ) %>%
+    filter(ResultDate >= (todays_date - 60) &
+             !(ResultDate %in% bind_all_data$ResultDate)) %>%
     mutate(CompleteWeek = NULL,
            CompleteMonth = NULL)
   
-  raw_data_repo <- rbind(raw_data_repo, bind_all_data)
+  updated_raw_data_repo <- rbind(raw_data_repo, bind_all_data)
   
 }
 
 # Create data frame of start and end dates of weeks and months
 # This will be used to determine if the data for a complete week or month is present
 # If the week or month is not complete, that data will not be included in the repositories
-week_dates <- unique(raw_data_repo[, c("WeekNo", "WeekStart", "WeekEnd")])
+week_dates <- unique(updated_raw_data_repo[, c("WeekNo", "WeekStart", "WeekEnd")])
 
 week_dates <- week_dates %>%
-  mutate(StartInData = WeekStart %in% unique(raw_data_repo$ResultDate),
-         EndInData = WeekEnd %in% unique(raw_data_repo$ResultDate),
+  mutate(StartInData = WeekStart %in% unique(updated_raw_data_repo$ResultDate),
+         EndInData = WeekEnd %in% unique(updated_raw_data_repo$ResultDate),
          CompleteWeek = StartInData & EndInData)
 
-month_dates <- unique(raw_data_repo[, c("MonthNo", "Year")])
+month_dates <- unique(updated_raw_data_repo[, c("MonthNo", "Year")])
 
 month_dates <- month_dates %>%
   mutate(MonthRollUp = as.Date(paste0(MonthNo, "/",
@@ -799,20 +800,20 @@ month_dates <- month_dates %>%
                                format = "%m/%d/%Y"),
          MonthStart = floor_date(MonthRollUp, unit = "month"),
          MonthEnd = ceiling_date(MonthRollUp, unit = "month") - 1,
-         StartInData = MonthStart %in% unique(raw_data_repo$ResultDate),
-         EndInData = MonthEnd %in% unique(raw_data_repo$ResultDate),
+         StartInData = MonthStart %in% unique(updated_raw_data_repo$ResultDate),
+         EndInData = MonthEnd %in% unique(updated_raw_data_repo$ResultDate),
          CompleteMonth = StartInData & EndInData)
 
-raw_data_repo <- left_join(raw_data_repo,
+updated_raw_data_repo <- left_join(updated_raw_data_repo,
                            week_dates[, c("WeekNo", "CompleteWeek")],
                            by = c("WeekNo" = "WeekNo"))
 
-raw_data_repo <- left_join(raw_data_repo,
+updated_raw_data_repo <- left_join(updated_raw_data_repo,
                            month_dates[, c("MonthRollUp", "CompleteMonth")],
                            by = c("MonthRollUp" = "MonthRollUp"))
 
 # Summarize data for each day
-cp_daily_summary <- raw_data_repo %>%
+cp_daily_summary <- updated_raw_data_repo %>%
   group_by(
     Site,
     ResultDate,
@@ -864,7 +865,7 @@ cp_daily_summary <- raw_data_repo %>%
 
 # Summarize data for each week
 # Filter out data for incomplete weeks
-cp_weekly_summary <- raw_data_repo %>%
+cp_weekly_summary <- updated_raw_data_repo %>%
   filter(CompleteWeek) %>%
   group_by(
     Site,
@@ -911,7 +912,7 @@ cp_weekly_summary <- raw_data_repo %>%
 
 # Summarize data for each month
 # Filter out data for incomplete months
-cp_monthly_summary <- raw_data_repo %>%
+cp_monthly_summary <- updated_raw_data_repo %>%
   filter(CompleteMonth) %>%
   group_by(
     Site,
@@ -983,14 +984,14 @@ if (initial_run == TRUE) {
 }
 
 # Save repositories in appropriate folder
-saveRDS(raw_data_repo,
+saveRDS(updated_raw_data_repo,
         file = paste0(user_directory,
                       "/CP Repositories",
                       "/RawDataRepo",
                       "/Labs Resulted ",
-                      format(min(raw_data_repo$ResultDate), "%m-%d-%y"),
+                      format(min(updated_raw_data_repo$ResultDate), "%m-%d-%y"),
                       " to ",
-                      format(max(raw_data_repo$ResultDate), "%m-%d-%y"),
+                      format(max(updated_raw_data_repo$ResultDate), "%m-%d-%y"),
                       " as of ",
                       format(Sys.Date(), "%m-%d-%y"),
                       ".RDS"))
