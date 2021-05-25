@@ -76,7 +76,7 @@ if (initial_run == TRUE) {
 } else {
   # Import existing historical repositories
   
-  # Select latest raw data repository
+  # Import raw data repository by finding file with the latest creation time
   raw_data_repo_files <- data.frame(
     "FileName" = list.files(path = paste0(user_directory,
                                           "/CP Repositories",
@@ -92,7 +92,7 @@ if (initial_run == TRUE) {
   
   raw_data_repo <- readRDS(latest_raw_data_repo)
   
-  # Select latest daily summary repository
+  # Import daily summary repository by finding file with the latest creation time
   daily_repo_files <- data.frame(
     "FileName" = list.files(path = paste0(user_directory,
                                           "/CP Repositories",
@@ -108,7 +108,7 @@ if (initial_run == TRUE) {
   
   daily_repo <- readRDS(latest_daily_repo)
   
-  # Select latest weekly summary repository
+  # Import weekly summary repository by finding file with the latest creation time
   weekly_repo_files <- data.frame(
     "FileName" = list.files(path = paste0(user_directory,
                                           "/CP Repositories",
@@ -124,7 +124,7 @@ if (initial_run == TRUE) {
   
   weekly_repo <- readRDS(latest_weekly_repo)
   
-  # Select latest daily summary repository
+  # Import monthly summary repository by finding file with the latest creation time
   monthly_repo_files <- data.frame(
     "FileName" = list.files(path = paste0(user_directory,
                                           "/CP Repositories",
@@ -141,7 +141,8 @@ if (initial_run == TRUE) {
   monthly_repo <- readRDS(latest_monthly_repo)
 
   #
-  # Find last date of resulted lab data in historical repo for SCC and Sunquest sites
+  # Find last date of resulted lab data in historical repositories for
+  # SCC and Sunquest sites
   last_dates <- data.frame(
     "SCCSites" = as.Date(
       max(raw_data_repo[
@@ -746,7 +747,7 @@ if (!is.null(sun_daily_raw_data_list)) {
   sun_daily_bind <- NULL
 }
 
-# Bind together all SCC and Sunquest data --------------------------------------
+# Bind together preprocessed SCC and Sunquest data --------------------------------------
 bind_all_data <- rbind(sun_daily_bind, scc_daily_bind)
 
 # Add columns for month and week number
@@ -769,29 +770,31 @@ bind_all_data <- bind_all_data %>%
 
 # Combine raw data repo with new data
 if (initial_run == TRUE) {
-  raw_data_repo <- bind_all_data
+  latest_raw_data_repo <- bind_all_data
 } else {
-  raw_data_repo <- raw_data_repo %>%
+  # Remove dates more than 60 days back and remove any dates that are in the
+  # latest data imports
+  mod_raw_data_repo <- raw_data_repo %>%
     filter(ResultDate >= (todays_date - 60) &
              !(ResultDate %in% bind_all_data$ResultDate)) %>%
     mutate(CompleteWeek = NULL,
            CompleteMonth = NULL)
   
-  updated_raw_data_repo <- rbind(raw_data_repo, bind_all_data)
+  latest_raw_data_repo <- rbind(mod_raw_data_repo, bind_all_data)
   
 }
 
 # Create data frame of start and end dates of weeks and months
 # This will be used to determine if the data for a complete week or month is present
 # If the week or month is not complete, that data will not be included in the repositories
-week_dates <- unique(updated_raw_data_repo[, c("WeekNo", "WeekStart", "WeekEnd")])
+week_dates <- unique(latest_raw_data_repo[, c("WeekNo", "WeekStart", "WeekEnd")])
 
 week_dates <- week_dates %>%
-  mutate(StartInData = WeekStart %in% unique(updated_raw_data_repo$ResultDate),
-         EndInData = WeekEnd %in% unique(updated_raw_data_repo$ResultDate),
+  mutate(StartInData = WeekStart %in% unique(latest_raw_data_repo$ResultDate),
+         EndInData = WeekEnd %in% unique(latest_raw_data_repo$ResultDate),
          CompleteWeek = StartInData & EndInData)
 
-month_dates <- unique(updated_raw_data_repo[, c("MonthNo", "Year")])
+month_dates <- unique(latest_raw_data_repo[, c("MonthNo", "Year")])
 
 month_dates <- month_dates %>%
   mutate(MonthRollUp = as.Date(paste0(MonthNo, "/",
@@ -800,20 +803,20 @@ month_dates <- month_dates %>%
                                format = "%m/%d/%Y"),
          MonthStart = floor_date(MonthRollUp, unit = "month"),
          MonthEnd = ceiling_date(MonthRollUp, unit = "month") - 1,
-         StartInData = MonthStart %in% unique(updated_raw_data_repo$ResultDate),
-         EndInData = MonthEnd %in% unique(updated_raw_data_repo$ResultDate),
+         StartInData = MonthStart %in% unique(latest_raw_data_repo$ResultDate),
+         EndInData = MonthEnd %in% unique(latest_raw_data_repo$ResultDate),
          CompleteMonth = StartInData & EndInData)
 
-updated_raw_data_repo <- left_join(updated_raw_data_repo,
+latest_raw_data_repo <- left_join(latest_raw_data_repo,
                            week_dates[, c("WeekNo", "CompleteWeek")],
                            by = c("WeekNo" = "WeekNo"))
 
-updated_raw_data_repo <- left_join(updated_raw_data_repo,
+latest_raw_data_repo <- left_join(latest_raw_data_repo,
                            month_dates[, c("MonthRollUp", "CompleteMonth")],
                            by = c("MonthRollUp" = "MonthRollUp"))
 
 # Summarize data for each day
-cp_daily_summary <- updated_raw_data_repo %>%
+cp_daily_summary <- latest_raw_data_repo %>%
   group_by(
     Site,
     ResultDate,
@@ -865,7 +868,7 @@ cp_daily_summary <- updated_raw_data_repo %>%
 
 # Summarize data for each week
 # Filter out data for incomplete weeks
-cp_weekly_summary <- updated_raw_data_repo %>%
+cp_weekly_summary <- latest_raw_data_repo %>%
   filter(CompleteWeek) %>%
   group_by(
     Site,
@@ -912,7 +915,7 @@ cp_weekly_summary <- updated_raw_data_repo %>%
 
 # Summarize data for each month
 # Filter out data for incomplete months
-cp_monthly_summary <- updated_raw_data_repo %>%
+cp_monthly_summary <- latest_raw_data_repo %>%
   filter(CompleteMonth) %>%
   group_by(
     Site,
@@ -959,94 +962,79 @@ cp_monthly_summary <- updated_raw_data_repo %>%
 
 # Update repositories with latest data
 if (initial_run == TRUE) {
-  daily_summary_repo <- cp_daily_summary
-  weekly_summary_repo <- cp_weekly_summary
-  monthly_summary_repo <- cp_monthly_summary
+  latest_daily_repo <- cp_daily_summary
+  latest_weekly_repo <- cp_weekly_summary
+  latest_monthly_repo <- cp_monthly_summary
   
 } else {
   # Remove data from daily repo for dates that are in current daily summary
-  daily_summary_repo <- daily_repo %>%
+  mod_daily_repo <- daily_repo %>%
     filter(!(ResultDate %in% cp_daily_summary$ResultDate))
   # Bind repository with current daily summary
-  daily_summary_repo <- rbind(daily_summary_repo, cp_daily_summary)
+  latest_daily_repo <- rbind(mod_daily_repo, cp_daily_summary)
   
   # Remove data from weekly repo for weeks that are in current weekly summary
-  weekly_summary_repo <- weekly_repo %>%
+  mod_weekly_repo <- weekly_repo %>%
     filter(!(WeekStart %in% cp_weekly_summary$WeekStart))
   # Bind repository with current weekly summary
-  weekly_summary_repo <- rbind(weekly_summary_repo, cp_weekly_summary)
+  latest_weekly_repo <- rbind(mod_weekly_repo, cp_weekly_summary)
   
   # Remove data from monthly_repo for months that are in current monthly summary
-  monthly_summary_repo <- monthly_repo %>%
+  mod_monthly_repo <- monthly_repo %>%
     filter(!(MonthRollUp %in% cp_monthly_summary$MonthRollUp))
   # Bind repository with current monthly summary
-  monthly_summary_repo <- rbind(monthly_summary_repo, cp_monthly_summary)
+  latest_monthly_repo <- rbind(mod_monthly_repo, cp_monthly_summary)
 }
 
 # Save repositories in appropriate folder
-saveRDS(updated_raw_data_repo,
+saveRDS(latest_raw_data_repo,
         file = paste0(user_directory,
                       "/CP Repositories",
                       "/RawDataRepo",
                       "/Labs Resulted ",
-                      format(min(updated_raw_data_repo$ResultDate), "%m-%d-%y"),
+                      format(min(latest_raw_data_repo$ResultDate), "%m-%d-%y"),
                       " to ",
-                      format(max(updated_raw_data_repo$ResultDate), "%m-%d-%y"),
+                      format(max(latest_raw_data_repo$ResultDate), "%m-%d-%y"),
                       " as of ",
                       format(Sys.Date(), "%m-%d-%y"),
                       ".RDS"))
 
-saveRDS(daily_summary_repo,
+saveRDS(latest_daily_repo,
         file = paste0(user_directory,
                       "/CP Repositories",
                       "/DailyRepo",
                       "/Daily Repo ",
-                      format(min(daily_summary_repo$ResultDate), "%m-%d-%y"),
+                      format(min(latest_daily_repo$ResultDate), "%m-%d-%y"),
                       " to ",
-                      format(max(daily_summary_repo$ResultDate), "%m-%d-%y"),
+                      format(max(latest_daily_repo$ResultDate), "%m-%d-%y"),
                       " as of ",
                       format(Sys.Date(), "%m-%d-%y"),
                       ".RDS"))
 
-saveRDS(weekly_summary_repo,
+saveRDS(latest_weekly_repo,
         file = paste0(user_directory,
                       "/CP Repositories",
                       "/WeeklyRepo",
                       "/Weekly Repo ",
-                      format(min(weekly_summary_repo$WeekStart), "%m-%d-%y"),
+                      format(min(latest_weekly_repo$WeekStart), "%m-%d-%y"),
                       " to ",
-                      format(max(weekly_summary_repo$WeekEnd), "%m-%d-%y"),
+                      format(max(latest_weekly_repo$WeekEnd), "%m-%d-%y"),
                       " as of ",
                       format(Sys.Date(), "%m-%d-%y"),
                       ".RDS"))
 
-saveRDS(monthly_summary_repo,
+saveRDS(latest_monthly_repo,
         file = paste0(user_directory,
                       "/CP Repositories",
                       "/MonthlyRepo",
                       "/Monthly Repo ",
-                      paste0(month(min(monthly_summary_repo$MonthRollUp), 
+                      paste0(month(min(latest_monthly_repo$MonthRollUp), 
                                    label = TRUE, abbr = TRUE), 
-                             year(min(monthly_summary_repo$MonthRollUp))),
+                             year(min(latest_monthly_repo$MonthRollUp))),
                       " to ",
-                      paste0(month(max(monthly_summary_repo$MonthRollUp), 
+                      paste0(month(max(latest_monthly_repo$MonthRollUp), 
                                    label = TRUE, abbr = TRUE), 
-                             year(max(monthly_summary_repo$MonthRollUp))),
+                             year(max(latest_monthly_repo$MonthRollUp))),
                       " as of ",
                       format(Sys.Date(), "%m-%d-%y"),
                       ".RDS"))
-
-one_week_data <- bind_all_data %>%
-  filter(WeekNo == 19)
-
-troponin_subset <- one_week_data %>%
-  filter(Test == "Troponin")
-
-troponin_daily <- cp_daily_summary %>%
-  filter(Test == "Troponin" &
-           WeekNo == 19)
-
-troponin_weekly <- cp_weekly_summary %>%
-  filter(Test == "Troponin" &
-           WeekNo == 19)
-
