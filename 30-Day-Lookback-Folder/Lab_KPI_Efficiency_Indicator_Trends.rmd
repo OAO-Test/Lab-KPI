@@ -75,7 +75,7 @@ if ("Presidents" %in% list.files("J://")) {
                            "Service Lines/Lab Kpi/Data")
 }
 
-cp_user_path <- paste0(user_directory, "/CP Historical Repo/*.*")
+cp_user_path <- paste0(user_directory, "/CP Repositories/DailyRepo/*.*")
 ap_user_path <- paste0(user_directory, "/AP & Cytology Historical Repo/*.*")
 
 # Import Clinical Pathology historical repository (Sunquest and SCC)
@@ -174,13 +174,14 @@ cp_dashboard_tat_summary <- cp_hist %>%
            DashboardPriority, DashboardSetting,
            ReceiveResultTarget, CollectResultTarget) %>%
   summarize(ResultedVolume = sum(TotalResulted), 
-            ResultedVolumeWithTAT = sum(TotalResultedTAT), 
+            ResultedVol_ReceiveTAT = sum(ReceiveTime_VolIncl),
+            ResultedVol_CollectTAT = sum(CollectTime_VolIncl),
             ReceiveResultInTarget = sum(TotalReceiveResultInTarget), 
             CollectResultInTarget = sum(TotalCollectResultInTarget)) %>%
-  mutate(ReceiveResultDefects = ResultedVolumeWithTAT - ReceiveResultInTarget,
-         CollectResultDefects = ResultedVolumeWithTAT - CollectResultInTarget,
-         ReceiveResultPercent = ReceiveResultInTarget / ResultedVolumeWithTAT,
-         CollectResultPercent = CollectResultInTarget / ResultedVolumeWithTAT,
+  mutate(ReceiveResultDefects = ResultedVol_ReceiveTAT - ReceiveResultInTarget,
+         CollectResultDefects = ResultedVol_CollectTAT - CollectResultInTarget,
+         ReceiveResultPercent = ReceiveResultInTarget / ResultedVol_ReceiveTAT,
+         CollectResultPercent = CollectResultInTarget / ResultedVol_CollectTAT,
          SafeThreshold = ifelse(Division %in% c("Microbiology RRL"), 1.0,
                                  ifelse(Division %in% c("Infusion"), 0.9,
                                         0.95)),
@@ -559,13 +560,13 @@ cp_stratified_data_for_plots <- function(tat_data, test) {
 cp_dashboard_defect_summary <- cp_dashboard_tat_filter %>%
   group_by(Site, ResultDate, Division, Test, DashboardPriority) %>%
   summarize(ResultedVolume = sum(ResultedVolume),
-            ResultedVolumeWithTAT = sum(ResultedVolumeWithTAT),
+            ResultedVol_ReceiveTAT = sum(ResultedVol_ReceiveTAT),
             ReceiveResultInTarget = sum(ReceiveResultInTarget),
             CollectResultInTarget = sum(CollectResultInTarget),
             ReceiveResultDefects =
-              ResultedVolumeWithTAT - ReceiveResultInTarget,
+              ResultedVol_ReceiveTAT - ReceiveResultInTarget,
             ReceiveResultDefectRate =
-              ReceiveResultDefects / ResultedVolumeWithTAT)
+              ReceiveResultDefects / ResultedVol_ReceiveTAT)
 
 cp_dashboard_defect_summary <- cp_dashboard_defect_summary %>%
   filter(!is.na(ReceiveResultDefectRate))
@@ -587,14 +588,14 @@ cp_receive_result_pchart <-
     # Calculate center line
     center_line <- 
       mean(QC_Lines(data = data_defect_plot$ReceiveResultDefectRate,
-                    n = data_defect_plot$ResultedVolumeWithTAT,
+                    n = data_defect_plot$ResultedVol_ReceiveTAT,
                     method = "p")$pBar)
     #
     # Create plot and standard settings
   ggplot(data = data_defect_plot,
          aes(x = ResultDate,
              y = ReceiveResultDefectRate,
-             n = ResultedVolumeWithTAT)) +
+             n = ResultedVol_ReceiveTAT)) +
     # Create point and connecting lines for defect rate data
     geom_point(color = mshs_colors[1], shape = 16, size = 3) +
     geom_line(color = mshs_colors[1], linetype = "dashed") +
@@ -654,7 +655,7 @@ cp_stratified_data_for_pcharts <- function(defect_data, test) {
         filter(DashboardPriority == priority)
       # Determine average resulted volume over last 30 days to see if p-chart is valid
       avg_resulted_volume <- 
-        mean(priority_df$ResultedVolumeWithTAT[
+        mean(priority_df$ResultedVol_ReceiveTAT[
           priority_df$ResultDate >= start_date])
       # print(avg_resulted_volume)
       if (avg_resulted_volume >= 50) {
