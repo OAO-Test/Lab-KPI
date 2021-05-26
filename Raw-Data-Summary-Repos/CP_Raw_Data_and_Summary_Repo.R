@@ -21,7 +21,7 @@
 
 #-------------------------------Required packages-------------------------------#
 
-#Required packages: run these everytime you run the code
+#Required packages: run these every time you run the code
 library(timeDate)
 library(readxl)
 library(bizdays)
