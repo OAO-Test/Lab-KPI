@@ -864,7 +864,8 @@ cp_daily_summary <- latest_raw_data_repo %>%
     CollectResult_Median = median(CollectToResultTAT[CollectTime_TATInclude], na.rm = TRUE),
     CollectResult_95 = quantile(CollectToResultTAT[CollectTime_TATInclude], probs = c(0.95),
                                 na.rm = TRUE),
-    .groups = "keep")
+    .groups = "keep") %>%
+  ungroup()
 
 # Summarize data for each week
 # Filter out data for incomplete weeks
@@ -911,7 +912,8 @@ cp_weekly_summary <- latest_raw_data_repo %>%
     CollectResult_Median = median(CollectToResultTAT[CollectTime_TATInclude], na.rm = TRUE),
     CollectResult_95 = quantile(CollectToResultTAT[CollectTime_TATInclude], probs = c(0.95),
                                 na.rm = TRUE),
-    .groups = "keep")
+    .groups = "keep") %>%
+  ungroup()
 
 # Summarize data for each month
 # Filter out data for incomplete months
@@ -958,7 +960,8 @@ cp_monthly_summary <- latest_raw_data_repo %>%
     CollectResult_Median = median(CollectToResultTAT[CollectTime_TATInclude], na.rm = TRUE),
     CollectResult_95 = quantile(CollectToResultTAT[CollectTime_TATInclude], probs = c(0.95),
                                 na.rm = TRUE),
-    .groups = "keep")
+    .groups = "keep") %>%
+  ungroup()
 
 # Update repositories with latest data
 if (initial_run == TRUE) {

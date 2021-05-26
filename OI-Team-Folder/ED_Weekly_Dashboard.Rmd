@@ -1,10 +1,10 @@
 ---
-title: "MSHS ED Lab Dashboard"
+title: "MSHS System Lab Dashboard"
 date: "`r format(Sys.Date(), '%m/%d/%y')`"
 output: html_document
 ---
 
-<h2><span style="color: red;">Draft - Not for Distribution</span></h2>
+<h3><span style="color: red;">Draft - Not for Distribution</span></h3>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
@@ -237,7 +237,7 @@ resulted_volume_kable <- function (site, test) {
 }
 ```
 
-## KPI by Site {.tabset}
+## {.tabset}
 
 ### MSB
 ```{r MSB graphs and tables}
