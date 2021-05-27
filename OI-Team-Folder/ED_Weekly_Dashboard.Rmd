@@ -316,3 +316,7 @@ collect_result_stacked_bar(site = "MSW", test = "Troponin", setting = "ED")
 resulted_volume_kable(site = "MSW", test = "Troponin")
 
 ```
+
+## {-}
+
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. Labs with missing collection times excluded from collect-to-receive and collect-to-result analysis. Resulted volume includes all resulted specimens, including add-on orders, labs with missing timestamps, etc.*</h6>
