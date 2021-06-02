@@ -41,28 +41,6 @@ kpi_form_today  <-
                    (kpi_form$Completion_Date == as.Date(yesterday) &
                       kpi_form$Completion_Hour >= "17:00:00")), ]
 
-#do not run now until test it - waiting for Daya to send the data for today's
-#1. read current historical repo
-historical_repo_form <-
-  readRDS(file = choose.files(
-    default = paste0(user_directory,
-                     "/Lab KPI Form/Lab KPI Historical Repo",
-                     "/*.*"),
-                     caption = "Select Lab KPI Form Historical Repository"))
-
-#2. combine the current summary with the historical repo and write them
-#into a xlsx file
-historical_repo_form2 <- rbind(historical_repo_form, kpi_form_today)
-
-#3. to ensure that the selected rows are the unique ones only without
-#any dupilacation
-historical_repo_form2 <- unique(historical_repo_form2)
-
-rds_name <- paste0(user_directory, "/Lab KPI Form/Lab KPI Historical Repo/",
-                    "Lab_KPI_Form_Repo", "_", today, ".RDS")
-
-saveRDS(historical_repo_form2, file = rds_name)
-
 #split the data into 3 datasets
 # the first dataset representes the following: CP/AP/CPA/4LABS
 clinical_labs_ops_ind <-
