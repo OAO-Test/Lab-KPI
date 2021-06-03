@@ -263,7 +263,15 @@ if (initial_run == TRUE) {
   # Determine today's date to determine last possible data report
   todays_date <- today
   # Create vector with possible data report dates
-  date_range <- seq(from = last_date + 2, to = todays_date, by = "day")
+  if (last_date + 2 > todays_date) {
+    date_range <- seq(from = todays_date,
+                          to = todays_date,
+                          by = "day")
+  } else {
+    date_range <- seq(from = last_date + 2,
+                          to = todays_date,
+                          by = "day")
+  }
 
   ##### pull powerpath daily data
   file_list_sp <-

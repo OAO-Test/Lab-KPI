@@ -153,12 +153,25 @@ if (initial_run == TRUE) {
         which(!(raw_data_repo$Site %in% c("MSH", "MSQ"))), ]$ResultDate),
       format = "%Y-%m-%d"))
   # Create vector with possible data report dates for SCC and Sunquest sites
-  scc_date_range <- seq(from = last_dates$SCCSites + 2,
-                        to = todays_date,
-                        by = "day")
-  sun_date_range <- seq(from = last_dates$SunSites + 2,
-                        to = todays_date,
-                        by = "day")
+  if (last_dates$SCCSites + 2 > todays_date) {
+    scc_date_range <- seq(from = todays_date,
+                          to = todays_date,
+                          by = "day")
+  } else {
+    scc_date_range <- seq(from = last_dates$SCCSites + 2,
+                          to = todays_date,
+                          by = "day")
+  }
+  
+  if (last_dates$SunSites + 2 > todays_date) {
+    sun_date_range <- seq(from = todays_date,
+                          to = todays_date,
+                          by = "day")
+  } else {
+    sun_date_range <- seq(from = last_dates$SunSites + 2,
+                          to = todays_date,
+                          by = "day")
+  }
 }
 
 # Find list of SCC data reports within date range
