@@ -65,7 +65,8 @@ if (initial_run == TRUE) {
   # repo_start_date <- as.Date(paste0(this_month, "/",
   #                                   1, "/",
   #                                   year(Sys.Date())), format = "%m/%d/%Y")
-  repo_start_date <- Sys.Date() - 60
+  # repo_start_date <- todays_date - 60
+  repo_start_date <- as.Date("12/1/2020", format = "%m/%d/%Y")
   # Create vector with date range for new data repository
   repo_date_range <- seq(from = repo_start_date + 1,
                          to = todays_date,
@@ -1003,7 +1004,15 @@ if (initial_run == TRUE) {
 }
 
 # Save repositories in appropriate folder
-saveRDS(latest_raw_data_repo,
+# First ensure that raw data repository only includes 60 days of data
+if (initial_run == TRUE) {
+  raw_data_repo_export <- latest_raw_data_repo %>%
+    filter(ResultDate >= todays_date - 60)
+} else {
+  raw_data_repo_export <- latest_raw_data_repo
+}
+
+saveRDS(raw_data_repo_export,
         file = paste0(user_directory,
                       "/CP Repositories",
                       "/RawDataRepo",
