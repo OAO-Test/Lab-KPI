@@ -53,7 +53,7 @@ if ("Presidents" %in% list.files("J://")) {
 user_path <- paste0(user_directory, "\\*.*")
 
 # Import data for two scenarios - first time compiling repo and updating repo ----------
-initial_run <- FALSE
+initial_run <- TRUE
 
 # Determine today's date to determine last possible data report
 todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
@@ -204,7 +204,7 @@ if (length(file_list_sun) > 0) {
 # Import Clinical Pathology analysis reference data ---------------
 reference_file <- paste0(user_directory,
                          "/Code Reference/",
-                         "Analysis Reference 2021-05-05.xlsx")
+                         "Analysis Reference 2021-06-01.xlsx")
 
 scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
 sun_test_code <- read_excel(reference_file, sheet = "SUN_TestCodes")
