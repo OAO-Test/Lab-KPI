@@ -53,7 +53,7 @@ if ("Presidents" %in% list.files("J://")) {
 user_path <- paste0(user_directory, "\\*.*")
 
 # Import data for two scenarios - first time compiling repo and updating repo ----------
-initial_run <- FALSE
+initial_run <- TRUE
 
 # Determine today's date to determine last possible data report
 todays_date <- as.Date(Sys.Date(), format = "%Y-%m-%d")
@@ -775,7 +775,7 @@ bind_all_data <- bind_all_data %>%
                    1, "/",
                    Year),
             format = "%m/%d/%Y"),
-    WeekNo = format(ResultDate, "%U"),
+    # WeekNo = format(ResultDate, "%U"),
     WeekStart = ResultDate - (wday(ResultDate) - 1),
     WeekEnd = ResultDate + (7 - wday(ResultDate)),
     WeekOf = paste0(format(WeekStart, "%m/%d/%y"),
@@ -801,7 +801,7 @@ if (initial_run == TRUE) {
 # Create data frame of start and end dates of weeks and months
 # This will be used to determine if the data for a complete week or month is present
 # If the week or month is not complete, that data will not be included in the repositories
-week_dates <- unique(latest_raw_data_repo[, c("WeekNo", "WeekStart", "WeekEnd")])
+week_dates <- unique(latest_raw_data_repo[, c("WeekStart", "WeekEnd")])
 
 week_dates <- week_dates %>%
   mutate(StartInData = WeekStart %in% unique(latest_raw_data_repo$ResultDate),
@@ -822,8 +822,11 @@ month_dates <- month_dates %>%
          CompleteMonth = StartInData & EndInData)
 
 latest_raw_data_repo <- left_join(latest_raw_data_repo,
-                           week_dates[, c("WeekNo", "CompleteWeek")],
-                           by = c("WeekNo" = "WeekNo"))
+                           week_dates[, c("WeekStart",
+                                          "WeekEnd",
+                                          "CompleteWeek")],
+                           by = c("WeekStart" = "WeekStart",
+                                  "WeekEnd" = "WeekEnd"))
 
 latest_raw_data_repo <- left_join(latest_raw_data_repo,
                            month_dates[, c("MonthRollUp", "CompleteMonth")],
@@ -837,7 +840,6 @@ cp_daily_summary <- latest_raw_data_repo %>%
     WeekStart,
     WeekEnd,
     WeekOf,
-    WeekNo,
     MonthNo,
     MonthName,
     Year,
@@ -890,7 +892,6 @@ cp_weekly_summary <- latest_raw_data_repo %>%
     WeekStart,
     WeekEnd,
     WeekOf,
-    WeekNo,
     Test,
     Division,
     MasterSetting,
