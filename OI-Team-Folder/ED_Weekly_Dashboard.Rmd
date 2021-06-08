@@ -33,12 +33,12 @@ library(ggQC)
 library(ggplot2)
 library(janitor)
 library(tidyr)
+library(purrr)
 ```
 
 ```{r global_options, echo=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
-
 
 ```{r Clear history and import relevant data}
 
@@ -73,7 +73,7 @@ todays_date <- Sys.Date()
 this_week_no <- format(todays_date, "%U")
 this_week_start <- todays_date - (wday(todays_date) - 1)
 
-lookback_period <- 26
+lookback_period <- 24
 dashboard_start <- this_week_start - lookback_period*7
 
 # Specify tests and patient settings in scope for the dashboard
@@ -95,7 +95,6 @@ repo_median_tat <- cp_hist %>%
          WeekStart,
          WeekEnd,
          WeekOf,
-         WeekNo,
          Test,
          Division,
          MasterSetting,
@@ -153,13 +152,15 @@ process_steps_stacked_bar <- function(site, test, setting) {
     geom_text(aes(x = WeekStart, y = MedianTAT, label = MedianTAT),
               color = "white",
               position = position_stack(reverse = TRUE,
-                                        vjust = 0.5)) +
+                                        vjust = 0.5),
+              size = 3) +
     scale_fill_manual(values = mshs_colors,
                       labels = c("Collect to Receive",
                                  "Receive to Result")) +
     scale_y_continuous(expand = c(0, 0, 0.1, 0)) +
     scale_x_date(date_labels = "%m/%d",
-                 breaks = sort(unique(process_steps_median_tat$WeekStart)))
+                 breaks = sort(unique(process_steps_median_tat$WeekStart)),
+                 expand = c(0, 1))
 }
 
 # Custom function for creating a bar graph with median TAT from collect-to-result
@@ -196,12 +197,14 @@ collect_result_stacked_bar <- function(site, test, setting) {
     geom_text(aes(x = WeekStart, y = MedianTAT, label = MedianTAT),
               color = "white",
               position = position_stack(reverse = TRUE,
-                                        vjust = 0.5)) +
+                                        vjust = 0.5),
+              size = 3) +
     scale_fill_manual(values = mshs_colors,
                       labels = c("Collect to Result")) +
     scale_y_continuous(expand = c(0, 0, 0.1, 0)) +
     scale_x_date(date_labels = "%m/%d",
-                 breaks = sort(unique(collect_result_median_tat$WeekStart)))
+                 breaks = sort(unique(collect_result_median_tat$WeekStart)),
+                 expand = c(0, 1))
 }
 
 # Custom function for creating a table with all resulted volume ------------
@@ -210,14 +213,16 @@ resulted_volume_kable <- function (site, test) {
   # Subset the data for the appropriate site and test
   resulted_lab_volume <- cp_hist %>%
     filter(Site == site &
-           Test == test) %>%
+             Test == test &
+             WeekStart >= this_week_start - 12 * 7) %>%
     group_by(WeekStart, MasterSetting) %>%
     rename(Setting = MasterSetting) %>%
     summarize(ResultedVolume = sum(TotalResulted, na.rm = TRUE)) %>%
+    arrange(WeekStart, Setting) %>%
     mutate(WeekStart = format(WeekStart, "%m/%d/%y")) %>%
     pivot_wider(names_from = WeekStart,
                 values_from = ResultedVolume,
-                names_sort = TRUE) %>%
+                names_sort = FALSE) %>%
     adorn_totals()
   
   # Create and format the table
@@ -235,6 +240,51 @@ resulted_volume_kable <- function (site, test) {
     row_spec(row = nrow(resulted_lab_volume), bold = TRUE, hline_after = TRUE)
 
 }
+
+# Custom function for creating a table with missing collections
+missing_collect <- cp_hist %>%
+  filter(Site == "MSH" &
+           Test == "Troponin" &
+           WeekStart >= this_week_start - 12 * 7) %>%
+  group_by(WeekStart, MasterSetting) %>%
+  rename(Setting = MasterSetting) %>%
+  summarize(TotalMissingCollections = sum(TotalMissingCollections, na.rm = TRUE),
+            TotalResultedVolume = sum(TotalResulted, na.rm = TRUE)) %>%
+  arrange(WeekStart, Setting) %>%
+  split(.[,"WeekStart"]) %>%
+  map_df(., adorn_totals, fill = "Total") %>%
+  mutate(WeekStart = ifelse(WeekStart == "Total",
+                            lag(WeekStart, 1),
+                            WeekStart),
+         WeekStart = format(as.Date(WeekStart, format = "%Y-%m-%d"), "%m/%d/%y"),
+         PercentMissing = percent(TotalMissingCollections /
+                                    TotalResultedVolume,
+                                  accuracy = 1),
+         TotalMissingCollections = as.character(TotalMissingCollections)) %>%
+  select(WeekStart, Setting, TotalMissingCollections, PercentMissing) %>%
+  pivot_longer(cols = c(TotalMissingCollections,
+                        PercentMissing),
+               names_to = "Metric") %>%
+  pivot_wider(names_from = WeekStart,
+              names_sort = FALSE) %>%
+  mutate(Metric = ifelse(Metric == "TotalMissingCollections",
+                         "Vol of Labs", "% of Labs"))
+
+kable(missing_collect, format = "html", escape = FALSE, align = "c",
+      caption = paste("MSH", "Troponin", "Missing Collections Summary")) %>%
+  kable_styling(bootstrap_options = "hover", position = "center",
+                  font_size = 11) %>%
+    column_spec(column = c(1),
+                border_right = "thin solid lightgray") %>%
+    add_header_above(c(" " = 1,
+                       "Week Of" = ncol(missing_collect) - 1),
+                     background = c("white", "#221f72"),
+                     color = "white", line = FALSE, font_size = 13) %>%
+    row_spec(row = 0, font_size = 13) %>%
+    row_spec(row = (nrow(missing_collect) - 1):nrow(missing_collect), bold = TRUE, hline_after = TRUE) %>%
+  collapse_rows()
+
+
 ```
 
 ## {.tabset}
