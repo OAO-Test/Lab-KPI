@@ -7,7 +7,7 @@ output:
     toc_float: true
 ---
 
-<h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red">
+<!-- <h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red"> -->
 
 ```{r package_ref file, warning = FALSE, message = FALSE, echo = FALSE}
 #######
