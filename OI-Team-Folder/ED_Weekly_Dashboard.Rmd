@@ -37,7 +37,10 @@ library(purrr)
 ```
 
 ```{r global_options, echo=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.align = "center")
 ```
 
 ```{r Clear history and import relevant data}
@@ -73,7 +76,7 @@ todays_date <- Sys.Date()
 this_week_no <- format(todays_date, "%U")
 this_week_start <- todays_date - (wday(todays_date) - 1)
 
-lookback_period <- 24
+lookback_period <- 12
 dashboard_start <- this_week_start - lookback_period*7
 
 # Specify tests and patient settings in scope for the dashboard
@@ -82,6 +85,9 @@ tests_in_scope <- c("Troponin")
 
 # Sinai color scheme
 mshs_colors <- c("#221f72", "#00AEFF", "#D80B8C", "#7f7f7f")
+
+# Patient settings
+pt_setting <- c("Amb", "ED", "ICU", "IP Non-ICU", "Other", "Total")
 
 ```
 
@@ -136,8 +142,7 @@ process_steps_stacked_bar <- function(site, test, setting) {
          aes(fill = ProcessStep,
              y = MedianTAT,
              x = WeekStart)) +
-    geom_col(position = position_stack(reverse = TRUE),
-             stat = "identity") +
+    geom_col(position = position_stack(reverse = TRUE)) +
     labs(title = paste(site,
                        setting,
                        test,
@@ -181,8 +186,7 @@ collect_result_stacked_bar <- function(site, test, setting) {
          aes(fill = ProcessStep,
              y = MedianTAT,
              x = WeekStart)) +
-    geom_col(position = position_stack(reverse = TRUE),
-             stat = "identity") +
+    geom_col(position = position_stack(reverse = TRUE)) +
     labs(title = paste(site,
                        setting,
                        test,
@@ -207,27 +211,162 @@ collect_result_stacked_bar <- function(site, test, setting) {
                  expand = c(0, 1))
 }
 
+# Custom function for creating a table with missing collections for the desired setting
+missing_collection_kable <- function(site, test, setting) {
+  
+  missing_collect_summary <- cp_hist %>%
+    filter(Site == site &
+             Test == test &
+             MasterSetting == setting &
+             WeekStart >= this_week_start - lookback_period * 7) %>%
+    group_by(WeekStart) %>%
+    summarize(TotalMissingCollections = sum(TotalMissingCollections,
+                                            na.rm = TRUE),
+              TotalResultedVolume = sum(TotalResulted, na.rm = TRUE),
+              .groups = "keep") %>%
+    arrange(WeekStart) %>%
+    mutate(# Convert week start to text for better table formatting
+           WeekStart = format(WeekStart, "%m/%d/%y"),
+           # Calculate percent of missing labs
+           PercentMissing = percent(TotalMissingCollections /
+                                    TotalResultedVolume,
+                                  accuracy = 1),
+           # Convert total missing collections to character for binding/pivot
+           # longer with percent missing
+           TotalMissingCollections = as.character(TotalMissingCollections)) %>%
+    select(WeekStart, TotalMissingCollections, PercentMissing) %>%
+    # Pivot longer to get volume and percentage of missing labs in 1 column
+    pivot_longer(cols = c(TotalMissingCollections,
+                          PercentMissing),
+                 names_to = "Missing Collections") %>%
+    # Pivot wider to get a column for each week
+    pivot_wider(names_from = WeekStart,
+                names_sort = FALSE) %>%
+    mutate(`Missing Collections` = ifelse(
+      `Missing Collections` == "TotalMissingCollections", "Vol of Labs",
+      "% of Labs")) %>%
+    ungroup()
+  
+  kable(missing_collect_summary,
+      format = "html",
+      escape = FALSE,
+      align = "c",
+      caption = paste("Table 1:",
+                      site,
+                      setting,
+                      test,
+                      "Missing Collections Summary")) %>%
+    kable_styling(bootstrap_options = "hover",
+                  position = "center",
+                  font_size = 11) %>%
+    column_spec(column = c(1),
+                border_right = "thin solid lightgray") %>%
+    add_header_above(c(" " = 1,
+                       "Week Of" = ncol(missing_collect_summary) - 1),
+                     background = c("white", "#221f72"),
+                     color = "white", line = FALSE, font_size = 13) %>%
+    row_spec(row = 0, font_size = 13)
+  
+}
+
+
+# Custom function for creating a table with missing collections across all settings
+missing_collection_kable_all_settings <- function(site, test) {
+  # Create a dataframe with missing collections for this site and test over the last 3 months
+  missing_collect_summary <- cp_hist %>%
+    filter(Site == site &
+             Test == test &
+             WeekStart >= this_week_start - lookback_period * 7) %>%
+    group_by(WeekStart, MasterSetting) %>%
+    rename(Setting = MasterSetting) %>%
+    summarize(TotalMissingCollections = sum(TotalMissingCollections,
+                                            na.rm = TRUE),
+              TotalResultedVolume = sum(TotalResulted, na.rm = TRUE),
+              .groups = "keep") %>%
+    arrange(WeekStart) %>%
+    # Split dataframe into a list of dataframes by each week to calculate weekly total
+    split(.[,"WeekStart"]) %>%
+    # Calculate weekly total for each week and then combine list of dataframes
+    # into 1 dataframe
+    map_df(., adorn_totals, fill = "Total") %>%
+    # Rename "total" with the appropriate week start date
+    mutate(WeekStart = ifelse(WeekStart == "Total",
+                              lag(WeekStart, 1),
+                              WeekStart),
+           # Convert week start to date and then back to text for better
+           # table formatting
+           WeekStart = format(as.Date(WeekStart, format = "%Y-%m-%d"),
+                              "%m/%d/%y"),
+           # Calculate percent of missing labs
+           PercentMissing = percent(TotalMissingCollections /
+                                    TotalResultedVolume,
+                                  accuracy = 1),
+           # Convert total missing collections to character for binding/pivot
+           # longer with percent missing
+           TotalMissingCollections = as.character(TotalMissingCollections)) %>%
+    select(WeekStart, Setting, TotalMissingCollections, PercentMissing) %>%
+    # Pivot longer to get volume and percentage of missing labs in 1 column
+    pivot_longer(cols = c(TotalMissingCollections,
+                          PercentMissing),
+                 names_to = "Metric") %>%
+    # Pivot wider to get a column for each week
+    pivot_wider(names_from = WeekStart,
+                names_sort = FALSE) %>%
+    mutate(Metric = ifelse(Metric == "TotalMissingCollections",
+                           "Vol of Labs", "% of Labs"),
+           Setting = factor(Setting, levels = pt_setting, ordered = TRUE)) %>%
+    arrange(Setting) %>%
+  ungroup()
+  
+  kable(missing_collect_summary, format = "html", escape = FALSE, align = "c",
+        caption = paste("Table 2:",
+                        site,
+                        test,
+                        "Missing Collections Summary")) %>%
+    kable_styling(bootstrap_options = "hover", position = "center",
+                  font_size = 11) %>%
+    column_spec(column = c(1, 2),
+                border_right = "thin solid lightgray") %>%
+    add_header_above(c(" " = 2,
+                       "Week Of" = ncol(missing_collect_summary) - 2),
+                     background = c("white", "#221f72"),
+                     color = "white", line = FALSE, font_size = 13) %>%
+    row_spec(row = 0, font_size = 13) %>%
+    row_spec(row = (nrow(missing_collect_summary) - 1):
+               nrow(missing_collect_summary),
+             bold = TRUE,
+             hline_after = TRUE) %>%
+    collapse_rows()
+}
+
 # Custom function for creating a table with all resulted volume ------------
-resulted_volume_kable <- function (site, test) {
+resulted_volume_kable <- function(site, test) {
   
   # Subset the data for the appropriate site and test
   resulted_lab_volume <- cp_hist %>%
     filter(Site == site &
              Test == test &
-             WeekStart >= this_week_start - 12 * 7) %>%
+             WeekStart >= this_week_start - lookback_period * 7) %>%
     group_by(WeekStart, MasterSetting) %>%
     rename(Setting = MasterSetting) %>%
-    summarize(ResultedVolume = sum(TotalResulted, na.rm = TRUE)) %>%
-    arrange(WeekStart, Setting) %>%
+    summarize(ResultedVolume = sum(TotalResulted, na.rm = TRUE),
+              .groups = "keep") %>%
+    arrange(WeekStart) %>%
     mutate(WeekStart = format(WeekStart, "%m/%d/%y")) %>%
     pivot_wider(names_from = WeekStart,
                 values_from = ResultedVolume,
                 names_sort = FALSE) %>%
-    adorn_totals()
+    adorn_totals() %>%
+    mutate(Setting = factor(Setting, levels = pt_setting, ordered = TRUE)) %>%
+    arrange(Setting) %>%
+    ungroup()
   
   # Create and format the table
   kable(resulted_lab_volume, format = "html", escape = FALSE, align = "c",
-        caption = paste(site, test, "Resulted Volume by Week")) %>%
+        caption = paste("Table 3:",
+                        site,
+                        test,
+                        "Resulted Volume by Week")) %>%
     kable_styling(bootstrap_options = "hover", position = "center",
                   font_size = 11) %>%
     column_spec(column = c(1),
@@ -241,50 +380,6 @@ resulted_volume_kable <- function (site, test) {
 
 }
 
-# Custom function for creating a table with missing collections
-missing_collect <- cp_hist %>%
-  filter(Site == "MSH" &
-           Test == "Troponin" &
-           WeekStart >= this_week_start - 12 * 7) %>%
-  group_by(WeekStart, MasterSetting) %>%
-  rename(Setting = MasterSetting) %>%
-  summarize(TotalMissingCollections = sum(TotalMissingCollections, na.rm = TRUE),
-            TotalResultedVolume = sum(TotalResulted, na.rm = TRUE)) %>%
-  arrange(WeekStart, Setting) %>%
-  split(.[,"WeekStart"]) %>%
-  map_df(., adorn_totals, fill = "Total") %>%
-  mutate(WeekStart = ifelse(WeekStart == "Total",
-                            lag(WeekStart, 1),
-                            WeekStart),
-         WeekStart = format(as.Date(WeekStart, format = "%Y-%m-%d"), "%m/%d/%y"),
-         PercentMissing = percent(TotalMissingCollections /
-                                    TotalResultedVolume,
-                                  accuracy = 1),
-         TotalMissingCollections = as.character(TotalMissingCollections)) %>%
-  select(WeekStart, Setting, TotalMissingCollections, PercentMissing) %>%
-  pivot_longer(cols = c(TotalMissingCollections,
-                        PercentMissing),
-               names_to = "Metric") %>%
-  pivot_wider(names_from = WeekStart,
-              names_sort = FALSE) %>%
-  mutate(Metric = ifelse(Metric == "TotalMissingCollections",
-                         "Vol of Labs", "% of Labs"))
-
-kable(missing_collect, format = "html", escape = FALSE, align = "c",
-      caption = paste("MSH", "Troponin", "Missing Collections Summary")) %>%
-  kable_styling(bootstrap_options = "hover", position = "center",
-                  font_size = 11) %>%
-    column_spec(column = c(1),
-                border_right = "thin solid lightgray") %>%
-    add_header_above(c(" " = 1,
-                       "Week Of" = ncol(missing_collect) - 1),
-                     background = c("white", "#221f72"),
-                     color = "white", line = FALSE, font_size = 13) %>%
-    row_spec(row = 0, font_size = 13) %>%
-    row_spec(row = (nrow(missing_collect) - 1):nrow(missing_collect), bold = TRUE, hline_after = TRUE) %>%
-  collapse_rows()
-
-
 ```
 
 ## {.tabset}
@@ -295,6 +390,10 @@ kable(missing_collect, format = "html", escape = FALSE, align = "c",
 process_steps_stacked_bar(site = "MSB", test = "Troponin", setting = "ED")
 
 collect_result_stacked_bar(site = "MSB", test = "Troponin", setting = "ED")
+
+missing_collection_kable(site = "MSB", test = "Troponin", setting = "ED")
+
+missing_collection_kable_all_settings(site = "MSB", test = "Troponin")
 
 resulted_volume_kable(site = "MSB", test = "Troponin")
 
@@ -307,6 +406,10 @@ process_steps_stacked_bar(site = "MSBI", test = "Troponin", setting = "ED")
 
 collect_result_stacked_bar(site = "MSBI", test = "Troponin", setting = "ED")
 
+missing_collection_kable(site = "MSBI", test = "Troponin", setting = "ED")
+
+missing_collection_kable_all_settings(site = "MSBI", test = "Troponin")
+
 resulted_volume_kable(site = "MSBI", test = "Troponin")
 
 ```
@@ -318,7 +421,12 @@ process_steps_stacked_bar(site = "MSH", test = "Troponin", setting = "ED")
 
 collect_result_stacked_bar(site = "MSH", test = "Troponin", setting = "ED")
 
+missing_collection_kable(site = "MSH", test = "Troponin", setting = "ED")
+
+missing_collection_kable_all_settings(site = "MSH", test = "Troponin")
+
 resulted_volume_kable(site = "MSH", test = "Troponin")
+
 
 ```
 
@@ -329,7 +437,12 @@ process_steps_stacked_bar(site = "MSM", test = "Troponin", setting = "ED")
 
 collect_result_stacked_bar(site = "MSM", test = "Troponin", setting = "ED")
 
+missing_collection_kable(site = "MSM", test = "Troponin", setting = "ED")
+
+missing_collection_kable_all_settings(site = "MSM", test = "Troponin")
+
 resulted_volume_kable(site = "MSM", test = "Troponin")
+
 
 ```
 
@@ -340,7 +453,12 @@ process_steps_stacked_bar(site = "MSQ", test = "Troponin", setting = "ED")
 
 collect_result_stacked_bar(site = "MSQ", test = "Troponin", setting = "ED")
 
+missing_collection_kable(site = "MSQ", test = "Troponin", setting = "ED")
+
+missing_collection_kable_all_settings(site = "MSQ", test = "Troponin")
+
 resulted_volume_kable(site = "MSQ", test = "Troponin")
+
 
 ```
 
@@ -352,7 +470,12 @@ process_steps_stacked_bar(site = "MSSN", test = "Troponin", setting = "ED")
 
 collect_result_stacked_bar(site = "MSSN", test = "Troponin", setting = "ED")
 
+missing_collection_kable(site = "MSSN", test = "Troponin", setting = "ED")
+
+missing_collection_kable_all_settings(site = "MSSN", test = "Troponin")
+
 resulted_volume_kable(site = "MSSN", test = "Troponin")
+
 
 ```
 
@@ -363,7 +486,12 @@ process_steps_stacked_bar(site = "MSW", test = "Troponin", setting = "ED")
 
 collect_result_stacked_bar(site = "MSW", test = "Troponin", setting = "ED")
 
+missing_collection_kable(site = "MSW", test = "Troponin", setting = "ED")
+
+missing_collection_kable_all_settings(site = "MSW", test = "Troponin")
+
 resulted_volume_kable(site = "MSW", test = "Troponin")
+
 
 ```
 
