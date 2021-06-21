@@ -5,7 +5,7 @@
 
 #create a function to prepare cytology data for pre-processing
 cyto_prep <- function(epic_data, pp_data) {
-  if (is.null(pp_data) || nrow(pp_data) == 0) {
+  if (is.null(epic_data) || is.null(pp_data) || nrow(pp_data) == 0) {
     pp_data <- NULL
     epic_data <- NULL
     cyto_final <- NULL
@@ -103,7 +103,7 @@ patho_prep <- function(raw_data, gi_codes) {
 ############Create a function for Data pre-processing############
 ##### This function helps in preprocessing the raw AP data.
 # Will be used in first run
-pre_processing_pp <- function(raw_data) {
+pre_processing_pp <- function(raw_data, dates) {
   if (is.null(raw_data) || nrow(raw_data) == 0) {
     raw_data_ps <- NULL
     raw_data_new <- NULL
@@ -226,6 +226,10 @@ pre_processing_pp <- function(raw_data) {
         "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std",
         "Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med",
         "Patient_metric_std", "cyto_acc_vol")
+    
+    # Filter out any specimens signed out on other dates
+    summarize_table <- summarized_table %>%
+      filter(Signed_out_date_only %in% dates)
 
     return_tables <- list(summarized_table,
                           raw_data_new)
@@ -354,7 +358,7 @@ analyze_pp <- function(summarized_table) {
 
 ##### This function helps in preprocessing the raw backlog data.
 # Will be used in first run
-pre_processing_backlog <- function(cyto_backlog_raw) {
+pre_processing_backlog <- function(cyto_backlog_raw, dates) {
   #cyto backlog Calculation
   #vlookup the Rev_Center and its corresponding patient setting for the
   #PowerPath Data
@@ -388,8 +392,9 @@ pre_processing_backlog <- function(cyto_backlog_raw) {
   
   cyto_backlog$acc_date_only <- as.Date(cyto_backlog$Received_Date)
   
-  acc_date <- cyto_table_weekday_summarized$Signed_out_date_only[1]
-  cyto_backlog$Report_Date <- acc_date + 1
+  # acc_date <- cyto_table_weekday_summarized$Signed_out_date_only[1]
+  report_date <- dates
+  cyto_backlog$Report_Date <- report_date + 1
   
   #summarize the data to be used for analysis and to be stored as historical
   #repo

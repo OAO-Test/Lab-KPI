@@ -105,32 +105,33 @@ source(here::here("Lab KPI Daily Dashboard/AP_Custom_Functions.R"))
 # a function to prepare cytology data for pre-processing
 cyto_weekday_final <- cyto_prep(epic_weekday, pp_weekday)
 
-# a function to prepare pathology data for pre-processing
-sp_weekday <- patho_prep(pp_weekday, gi_codes)
-
-##### This function helps in preprocessing the raw AP data.
 #this table gives the summarized cyto data for historical repo
-cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final)[[1]]
+cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final,
+                                                   wkday_date)[[1]]
 
-# Filter out any specimens signed out on other dates
-cyto_table_weekday_summarized <- cyto_table_weekday_summarized %>%
-  filter(Signed_out_date_only %in% wkday_date)
+# # Filter out any specimens signed out on other dates
+# cyto_table_weekday_summarized <- cyto_table_weekday_summarized %>%
+#   filter(Signed_out_date_only %in% wkday_date)
 
 
 #this table gives the processed and cleaned raw cyto data only
 cyto_table_weekday_raw <-
-  pre_processing_pp(cyto_weekday_final)[[2]]
+  pre_processing_pp(cyto_weekday_final,wkday_date)[[2]]
+
+# a function to prepare surgical pathology data for pre-processing
+sp_weekday <- patho_prep(pp_weekday, gi_codes)
 
 #this table gives the summarized surgical pathology data for historical repo
-sp_table_weekday_summarized <- pre_processing_pp(sp_weekday)[[1]]
+sp_table_weekday_summarized <- pre_processing_pp(sp_weekday,
+                                                 wkday_date)[[1]]
 
-# Filter out any specimens signed out on other dates
-sp_table_weekday_summarized <- sp_table_weekday_summarized %>%
-  filter(Signed_out_date_only %in% wkday_date)
+# # Filter out any specimens signed out on other dates
+# sp_table_weekday_summarized <- sp_table_weekday_summarized %>%
+#   filter(Signed_out_date_only %in% wkday_date)
 
 #this table gives the processed and cleaned raw surgical pathology data only
 sp_table_weekday_raw <-
-  pre_processing_pp(sp_weekday)[[2]]
+  pre_processing_pp(sp_weekday, wkday_date)[[2]]
 
 ```
 
@@ -234,7 +235,7 @@ sp_strat_vol_weekday <-
 
 ```{r Calling the Custom functions for preprocessing raw cytology backlog data, warning = FALSE, message = FALSE, echo = FALSE}
 ##### This function helps in preprocessing the raw backlog data.
-cyto_backlog_summarized <- pre_processing_backlog(cyto_backlog_raw)
+cyto_backlog_summarized <- pre_processing_backlog(cyto_backlog_raw, wkday_date)
 
 ```
 

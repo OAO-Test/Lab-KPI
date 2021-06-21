@@ -72,12 +72,16 @@ scc_weekday_file <- list.files(
                    wkday_date_file_format,
                    ".xlsx)$"))
 
-# Import SCC file for most recent weekday
-scc_weekday <- read_excel(path =
-                            paste0(user_directory,
-                                   "/SCC CP Reports/",
-                                   scc_weekday_file),
-                          sheet = 1, col_names = TRUE)
+# Import SCC file for most recent weekday, if file exists
+if (length(scc_weekday_file) != 0) {
+  scc_weekday <- read_excel(path =
+                              paste0(user_directory,
+                                     "/SCC CP Reports/",
+                                     scc_weekday_file),
+                            sheet = 1, col_names = TRUE)
+} else {
+  scc_weekday <- NULL
+}
 
 # Find Sunquest file for most recent weekday
 sq_weekday_file <- list.files(
@@ -87,12 +91,17 @@ sq_weekday_file <- list.files(
                   wkday_date_file_format,
                   ".xls)$"))
 
-# Import Sunquest file for most recent weekday
-sq_weekday <- suppressWarnings(read_excel(path = 
-                                            paste0(user_directory,
-                                                   "/SUN CP Reports/",
-                                                   sq_weekday_file),
-                                          sheet = 1, col_names = TRUE))
+# Import Sunquest file for most recent weekday, if file exists
+if (length(sq_weekday_file) != 0) {
+  sq_weekday <- suppressWarnings(read_excel(path =
+                                              paste0(user_directory,
+                                                     "/SUN CP Reports/",
+                                                     sq_weekday_file),
+                                            sheet = 1, col_names = TRUE))
+} else {
+  sq_weekday <- NULL
+}
+
 
 # Find Powerpath file for signed out cases for most recent weekday
 pp_weekday_file <- list.files(
@@ -102,15 +111,20 @@ pp_weekday_file <- list.files(
                    wkday_date_file_format,
                    ".xls)$"))
 
-# Import Powerpath file for most recent weekday
-pp_weekday <- read_excel(path =
-                           paste0(user_directory,
-                                  "/AP & Cytology Signed Cases Reports/",
-                                  pp_weekday_file),
-                         skip = 1, 1)
+# Import Powerpath file for most recent weekday, if any exists
+if (length(pp_weekday_file) != 0) {
+  pp_weekday <- read_excel(path =
+                             paste0(user_directory,
+                                    "/AP & Cytology Signed Cases Reports/",
+                                    pp_weekday_file),
+                           skip = 1, 1)
+  
+  pp_weekday <- data.frame(pp_weekday[-nrow(pp_weekday), ],
+                           stringsAsFactors = FALSE)
+} else {
+  pp_weekday <- NULL
+}
 
-pp_weekday <- data.frame(pp_weekday[-nrow(pp_weekday), ],
-                         stringsAsFactors = FALSE)
 
 # Find Epic Cytology file for signed out cases for most recent weekday
 epic_weekday_file <- list.files(
@@ -120,12 +134,16 @@ epic_weekday_file <- list.files(
                    wkday_date_file_format,
                    ".xlsx)$"))
 
-# Import Epic Cytology file for most recent weekday
-epic_weekday <- read_excel(path =
-                             paste0(user_directory,
-                                    "/EPIC Cytology/",
-                                    epic_weekday_file),
-                           1)
+# Import Epic Cytology file for most recent weekday, if any exists
+if (length(epic_weekday_file) != 0) {
+  epic_weekday <- read_excel(path =
+                               paste0(user_directory,
+                                      "/EPIC Cytology/",
+                                      epic_weekday_file),1)
+} else {
+  epic_weekday <- NULL
+}
+
 
 # Find Cytology backlog file received today
 cyto_backlog_file <- list.files(
@@ -135,15 +153,19 @@ cyto_backlog_file <- list.files(
                    format(today, "%Y-%m-%d"),
                    ".xls)$"))
 
-# Import Cytology backlog file received today
-cyto_backlog_raw <- read_excel(path =
-                                     paste0(user_directory,
-                                            "/Cytology Backlog Reports/",
-                                            cyto_backlog_file),
-                                   skip = 1, 1)
-
-cyto_backlog_raw <- data.frame(cyto_backlog_raw[-nrow(cyto_backlog_raw), ],
-                               stringsAsFactors = FALSE)
+# Import Cytology backlog file received today, if any exists
+if (length(cyto_backlog_file) != 0) {
+  cyto_backlog_raw <- read_excel(path =
+                                   paste0(user_directory,
+                                          "/Cytology Backlog Reports/",
+                                          cyto_backlog_file),
+                                 skip = 1, 1)
+  
+  cyto_backlog_raw <- data.frame(cyto_backlog_raw[-nrow(cyto_backlog_raw), ],
+                                 stringsAsFactors = FALSE)
+} else {
+  cyto_backlog_raw <- NULL
+}
 
 # Find and import weekend/holiday reports
 if (is.null(wkend_holiday_date)) {
@@ -169,17 +191,21 @@ if (is.null(wkend_holiday_date)) {
                      collapse = "|"))
   
   # Read SCC files for weekend/holiday dates and bind into single dataframe
-  scc_not_weekday_list <- sapply(scc_not_weekday_file,
-                                function(x)
-                                  read_excel(path =
-                                               paste0(user_directory,
-                                                      "/SCC CP Reports/",
-                                                      x),
-                                             sheet = 1,
-                                             col_names = TRUE),
-                                simplify = FALSE)
-  
-  scc_not_weekday <- bind_rows(scc_not_weekday_list)
+  if (length(scc_not_weekday_file) != 0) {
+    scc_not_weekday_list <- sapply(scc_not_weekday_file,
+                                   function(x)
+                                     read_excel(path =
+                                                  paste0(user_directory,
+                                                         "/SCC CP Reports/",
+                                                         x),
+                                                sheet = 1,
+                                                col_names = TRUE),
+                                   simplify = FALSE)
+    
+    scc_not_weekday <- bind_rows(scc_not_weekday_list)
+  } else {
+    scC_not_weekday <- NULL
+  }
   
   # Find Sunquest files for weekend/holiday dates
   sq_not_weekday_file <- list.files(
@@ -191,17 +217,22 @@ if (is.null(wkend_holiday_date)) {
                      collapse = "|"))
   
   # Read Sunquest files for weekend/holiday dates and bind into single dataframe
-  sq_not_weekday_list <- sapply(sq_not_weekday_file,
-                                 function(x)
-                                   suppressWarnings(read_excel(path =
-                                                paste0(user_directory,
-                                                       "/SUN CP Reports/",
-                                                       x),
-                                              sheet = 1,
-                                              col_names = TRUE)),
-                                 simplify = FALSE)
-  
-  sq_not_weekday <- bind_rows(sq_not_weekday_list)
+  if (length(sq_not_weekday_file) != 0) {
+    sq_not_weekday_list <- sapply(sq_not_weekday_file,
+                                  function(x)
+                                    suppressWarnings(
+                                      read_excel(path =
+                                                   paste0(user_directory,
+                                                          "/SUN CP Reports/",
+                                                          x),
+                                                 sheet = 1,
+                                                 col_names = TRUE)),
+                                  simplify = FALSE)
+    
+    sq_not_weekday <- bind_rows(sq_not_weekday_list)
+  } else {
+    sq_not_weekday <- NULL
+  }
   
   # Find Powerpath signed out cases for weekend/holiday dates
   pp_not_weekday_file <- list.files(
@@ -213,22 +244,28 @@ if (is.null(wkend_holiday_date)) {
                      collapse = "|"))
   
   # Read Powerpath files for weekend/holiday dates and bind into single dataframe
-  pp_not_weekday_list <- sapply(pp_not_weekday_file,
-                                function(x)
-                                  read_excel(path =
-                                               paste0(user_directory,
-                                                      "/AP & Cytology Signed Cases Reports/",
-                                                      x),
-                                             skip = 1,	  
-                                             sheet = 1),
-                                simplify = FALSE)
+  if (length(pp_not_weekday_file) != 0) {
+    pp_not_weekday_list <- sapply(pp_not_weekday_file,
+                                  function(x)
+                                    read_excel(
+                                      path =
+                                        paste0(user_directory,
+                                               "/AP & Cytology Signed Cases Reports/",
+                                               x),
+                                      skip = 1,
+                                      sheet = 1),
+                                  simplify = FALSE)
+    
+    pp_not_weekday_list <- lapply(pp_not_weekday_list,
+                                  function(x)
+                                    data.frame(x[-nrow(x), ],
+                                               stringsAsFactors = FALSE))
+    
+    pp_not_weekday <- bind_rows(pp_not_weekday_list)
+  } else {
+    pp_not_weekday <- NULL
+  }
   
-  pp_not_weekday_list <- lapply(pp_not_weekday_list,
-                                function(x)
-                                  data.frame(x[-nrow(x), ],
-                                             stringsAsFactors = FALSE))
-  
-  pp_not_weekday <- bind_rows(pp_not_weekday_list)
   
   # Find Epic Cytology signed out cases for weekend/holiday dates
   epic_not_weekday_file <- list.files(
@@ -239,20 +276,24 @@ if (is.null(wkend_holiday_date)) {
                      ".xlsx)$",
                      collapse = "|"))
   # Read Epic Cytology files for weekend/holiday dates and bind into single dataframe
-  epic_not_weekday_list <- sapply(epic_not_weekday_file,
-                                  function(x)
-                                    read_excel(path =
-                                                 paste0(user_directory,
-                                                        "/EPIC Cytology/",
-                                                        x),
-                                               sheet = 1),
-                                  simplify = FALSE)
-  
-  epic_not_weekday_list <- lapply(epic_not_weekday_list,
-                                  function(x)
-                                    data.frame(x, stringsAsFactors = FALSE))
-  
-  epic_not_weekday <- bind_rows(epic_not_weekday_list)
+  if (length(epic_not_weekday_file) != 0) {
+    epic_not_weekday_list <- sapply(epic_not_weekday_file,
+                                    function(x)
+                                      read_excel(path =
+                                                   paste0(user_directory,
+                                                          "/EPIC Cytology/",
+                                                          x),
+                                                 sheet = 1),
+                                    simplify = FALSE)
+    
+    epic_not_weekday_list <- lapply(epic_not_weekday_list,
+                                    function(x)
+                                      data.frame(x, stringsAsFactors = FALSE))
+    
+    epic_not_weekday <- bind_rows(epic_not_weekday_list)
+  } else {
+    epic_not_weekday <- NULL
+  }
 }
 
 
