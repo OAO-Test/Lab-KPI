@@ -33,7 +33,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 # 5. Backlog data for anatomic pathology especially cytology-----
 #######
 
-source(here::here("Lab KPI Daily Dashboard/Daily_Raw_Data_Auto_Import.R"))
+source(here::here("Lab KPI Daily Dashboard/Daily_Run_Raw_Data_Import.R"))
 ```
 
 ```{r cp_custom_functions file, warning = FALSE, message = FALSE, echo = FALSE}
@@ -46,7 +46,7 @@ source(here::here("Lab KPI Daily Dashboard/Daily_Run_CP_Custom_Functions.R"))
 # Code for preprocessing CP data prior to receipt of Ops &
 # Quality Indicators Form
 source(here::here(paste0("Lab KPI Daily Dashboard",
-                         "/Daily_CP_PreProcessing_Analysis.R")))
+                         "/Daily_Run_CP_PreProcessing_Analysis.R")))
 ```
 
 ```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = FALSE, message = FALSE, echo = FALSE}
@@ -176,45 +176,6 @@ cyto_backlog_summarized <- pre_processing_backlog(cyto_backlog_data_raw)
 ##### This function helps in creating the analysis and tables from the
 # summarized table.
 backlog_acc_table_new2 <- analyze_backlog(cyto_backlog_summarized)
-
-```
-
-
-```{r Add the current summary to the historical repo for cytology backlog, echo = FALSE, warning = FALSE, message = FALSE, eval = TRUE}
-# backlog_repo <-
-#   readRDS(file =
-#             choose.files(default =
-#                            paste0(user_directory,
-#                                   "/AP & Cytology Historical Repo",
-#                                   "/Backlog Repo",
-#                                   "/*.*"),
-#                            caption = "Select Backlog Repository"))
-# #make sure that the summarized data is a data frame
-# cyto_backlog_df <- as.data.frame(cyto_backlog_summarized)
-# 
-# #make sure the data types for both dataframes are the same
-# common <-
-#   names(backlog_repo)[names(backlog_repo) %in% names(cyto_backlog_df)]
-# 
-# backlog_repo[common] <- lapply(common, function(x) {
-#   match.fun(paste0("as.", class(cyto_backlog_df[[x]])))(backlog_repo[[x]])
-# })
-# 
-# #3. combine the current summary with the historical repo and write them
-# #into a xlsx file
-# 
-# backlog_repo_updated <- rbind(backlog_repo, cyto_backlog_df)
-# 
-# #4. to ensure that the selected rows are the unique ones only without
-# #any dupilacation
-# 
-# backlog_repo_updated <- unique(backlog_repo_updated)
-# 
-# backlog_file_name <-
-#     paste0(user_directory, "/AP & Cytology Historical Repo", "/Backlog Repo",
-#          "/Backlog_Repo", "_", today, ".RDS")
-# 
-# saveRDS(backlog_repo_updated, file = backlog_file_name)
 
 ```
 
