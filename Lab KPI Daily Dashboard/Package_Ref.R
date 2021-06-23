@@ -51,10 +51,6 @@ yesterday <- today - 1
 #Get yesterday's DOW
 yesterday_day <- wday(yesterday, label = TRUE, abbr = TRUE)
 
-# Format yesterday's date for dashboard visualization
-result_date_text <- format(yesterday,
-                           format = "%a %m/%d/%y")
-
 #Remove Good Friday from MSHS Holidays
 nyse_holidays <- as.Date(holidayNYSE(year = 1990:2100))
 good_friday <- as.Date(GoodFriday())

@@ -14,6 +14,10 @@
 # Determine date of resulted labs/specimens
 resulted_date <- yesterday
 
+# Format yesterday's date for dashboard visualization
+result_date_text <- format(resulted_date,
+                           format = "%a %m/%d/%y")
+
 # Create regular expressions for beginning each file type
 scc_pattern_start <- "^(Doc){1}.+"
 sq_pattern_start <- "^(KPI_Daily_TAT_Report){1}.*"
