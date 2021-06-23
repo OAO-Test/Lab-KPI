@@ -106,8 +106,7 @@ source(here::here("Lab KPI Daily Dashboard/AP_Custom_Functions.R"))
 cyto_weekday_final <- cyto_prep(epic_weekday, pp_weekday)
 
 #this table gives the summarized cyto data for historical repo
-cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final,
-                                                   wkday_date)[[1]]
+cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final)[[1]]
 
 # # Filter out any specimens signed out on other dates
 cyto_table_weekday_summarized <- cyto_table_weekday_summarized %>%
@@ -116,14 +115,13 @@ cyto_table_weekday_summarized <- cyto_table_weekday_summarized %>%
 
 #this table gives the processed and cleaned raw cyto data only
 cyto_table_weekday_raw <-
-  pre_processing_pp(cyto_weekday_final,wkday_date)[[2]]
+  pre_processing_pp(cyto_weekday_final)[[2]]
 
 # a function to prepare surgical pathology data for pre-processing
 sp_weekday <- patho_prep(pp_weekday, gi_codes)
 
 #this table gives the summarized surgical pathology data for historical repo
-sp_table_weekday_summarized <- pre_processing_pp(sp_weekday,
-                                                 wkday_date)[[1]]
+sp_table_weekday_summarized <- pre_processing_pp(sp_weekday)[[1]]
 
 # # Filter out any specimens signed out on other dates
 sp_table_weekday_summarized <- sp_table_weekday_summarized %>%
@@ -131,7 +129,7 @@ sp_table_weekday_summarized <- sp_table_weekday_summarized %>%
 
 #this table gives the processed and cleaned raw surgical pathology data only
 sp_table_weekday_raw <-
-  pre_processing_pp(sp_weekday, wkday_date)[[2]]
+  pre_processing_pp(sp_weekday)[[2]]
 
 ```
 

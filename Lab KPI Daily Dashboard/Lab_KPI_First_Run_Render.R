@@ -20,6 +20,6 @@ rmarkdown::render("Lab KPI Daily Dashboard/Lab_KPI_First_Run_Dashboard.Rmd",
                     substr(user_directory, 1,
                            nchar(user_directory) - nchar("/Data")),
                     "/Dashboard Drafts",
-                    "/Lab KPI Dashboard Pre KPI Form ",
+                    "/Original Lab KPI Dashboard Pre KPI Form ",
                     format(Sys.Date(), "%m-%d-%y")))
 

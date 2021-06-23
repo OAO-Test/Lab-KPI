@@ -2,9 +2,9 @@
 title: "MSHS Laboratory KPI Dashboard"
 output:
   html_document:
-  toc: true
-toc_depth: 2
-toc_float: true
+    toc: true
+    toc_depth: 2
+    toc_float: true
 ---
   
 <!-- <h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red"> -->
@@ -103,35 +103,33 @@ source(here::here("Lab KPI Daily Dashboard/AP_Custom_Functions.R"))
 
 ```{r Calling the Custom functions for preprocessing raw Powerpath and Epic data, warning = FALSE, message = FALSE, echo = FALSE}
 # a function to prepare cytology data for pre-processing
-cyto_weekday_final <- cyto_prep(epic_weekday, pp_weekday)
+cyto_weekday_final <- cyto_prep(epic_data_raw, pp_data_raw)
 
 #this table gives the summarized cyto data for historical repo
-cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final,
-                                                   wkday_date)[[1]]
+cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final)[[1]]
 
 # # Filter out any specimens signed out on other dates
 cyto_table_weekday_summarized <- cyto_table_weekday_summarized %>%
-  filter(Signed_out_date_only %in% wkday_date)
+  filter(Signed_out_date_only %in% resulted_date)
 
 
 #this table gives the processed and cleaned raw cyto data only
 cyto_table_weekday_raw <-
-  pre_processing_pp(cyto_weekday_final,wkday_date)[[2]]
+  pre_processing_pp(cyto_weekday_final)[[2]]
 
 # a function to prepare surgical pathology data for pre-processing
-sp_weekday <- patho_prep(pp_weekday, gi_codes)
+sp_weekday <- patho_prep(pp_data_raw, gi_codes)
 
 #this table gives the summarized surgical pathology data for historical repo
-sp_table_weekday_summarized <- pre_processing_pp(sp_weekday,
-                                                 wkday_date)[[1]]
+sp_table_weekday_summarized <- pre_processing_pp(sp_weekday)[[1]]
 
 # # Filter out any specimens signed out on other dates
 sp_table_weekday_summarized <- sp_table_weekday_summarized %>%
-  filter(Signed_out_date_only %in% wkday_date)
+  filter(Signed_out_date_only %in% resulted_date)
 
 #this table gives the processed and cleaned raw surgical pathology data only
 sp_table_weekday_raw <-
-  pre_processing_pp(sp_weekday, wkday_date)[[2]]
+  pre_processing_pp(sp_weekday)[[2]]
 
 ```
 
@@ -170,7 +168,7 @@ sp_strat_vol_weekday <-
 
 ```{r Calling the Custom functions for preprocessing raw cytology backlog data, warning = FALSE, message = FALSE, echo = FALSE}
 ##### This function helps in preprocessing the raw backlog data.
-cyto_backlog_summarized <- pre_processing_backlog(cyto_backlog_raw)
+cyto_backlog_summarized <- pre_processing_backlog(cyto_backlog_data_raw)
 
 ```
 
@@ -293,7 +291,8 @@ sp_table_weekday_new3$Spec_group[
 
 ```
 
-## **Weekday Efficiency Indicators** {.tabset}
+## **Efficiency Indicators** {.tabset}
+
 ### Chemistry       
 #### *Chemistry KPI (Labs Resulted on `r result_date_text`)*
 <h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
@@ -448,9 +447,9 @@ kable_cp_tat(x = inf_dashboard_cast)
 # # Labs with missing collection times -----------------------
 # Custom function for percentage of labs with missing collection times
 # Call custom functions for missing collections and add-on order volume --------
-kable_missing_collections(x = cp_wday_summary)
+kable_missing_collections(x = cp_summary)
 
-kable_add_on_volume(x = cp_wday_summary)
+kable_add_on_volume(x = cp_summary)
 
 ```
 <h6>*Missing collection time analysis includes analytes represented in Chemistry, Hematology, and Microbiology RRL dashboard TAT analysis from ED, ICU, IP Non-ICU, and ambulatory settings.*</h6>
@@ -482,11 +481,11 @@ table_formatting2(cyto_table_weekday_new3_v2)
 <br />
   
 ## **24-Hour Volume Lookback** {.tabset}
-  
+
 ### Chemistry
 #### *Chemistry Resulted Lab Volume (Labs Resulted on `r result_date_text`)*
 ```{r Chemistry: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
-chem_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
+chem_vol_wday_table <- summarize_cp_vol(x = cp_summary,
                                         lab_division = "Chemistry")
 
 kable_cp_vol(chem_vol_wday_table)
@@ -495,7 +494,7 @@ kable_cp_vol(chem_vol_wday_table)
 ### Hematology
 #### *Hematology Resulted Lab Volume (Labs Resulted on `r result_date_text`)*
 ```{r Hematology: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
-hem_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
+hem_vol_wday_table <- summarize_cp_vol(x = cp_summary,
                                        lab_division = "Hematology")
 
 kable_cp_vol(hem_vol_wday_table)
@@ -504,7 +503,7 @@ kable_cp_vol(hem_vol_wday_table)
 ### Infusion
 #### *Infusion Resulted Lab Volume (Labs Resulted on `r result_date_text`)*
 ```{r Infusion: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
-inf_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
+inf_vol_wday_table <- summarize_cp_vol(x = cp_summary,
                                        lab_division = "Infusion")
 
 kable_cp_vol(inf_vol_wday_table)
