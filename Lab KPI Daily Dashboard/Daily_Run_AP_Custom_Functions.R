@@ -354,92 +354,95 @@ analyze_pp <- function(summarized_table) {
 # Will be used in first run
 pre_processing_backlog <- function(cyto_backlog_raw) {
   #cyto backlog Calculation
-  #vlookup the Rev_Center and its corresponding patient setting for the
-  #PowerPath Data
-  
-  cyto_backlog_ps <- merge(x = cyto_backlog_raw, y = patient_setting,
-                           all.x = TRUE)
-  
-  #vlookup targets based on spec_group and patient setting
-  cyto_backlog_ps_target <- merge(x = cyto_backlog_ps, y = tat_targets_ap,
-                                  all.x = TRUE,
-                                  by = c("spec_group", "Patient.Setting"))
-  
-  #Keep the cyto gyn and cyto non-gyn
-  cyto_backlog <-
-    cyto_backlog_ps_target[which(
-      cyto_backlog_ps_target$spec_group == "CYTO NONGYN" |
-        cyto_backlog_ps_target$spec_group == "CYTO GYN"), ]
-  
-  #Change all Dates into POSIXct format to start the calculations
-  cyto_backlog[c("Case_created_date", "Collection_Date", "Received_Date",
-                 "signed_out_date")] <-
-    lapply(cyto_backlog[c("Case_created_date", "Collection_Date",
-                          "Received_Date", "signed_out_date")],
-           as.POSIXct, tz = "", format = "%m/%d/%y %I:%M %p")
-  
-  #Backlog Calculations: Date now - case created date
-  #without weekends and holidays, subtract one so we don't include today's date
-  
-  cyto_backlog$backlog <-
-    bizdays(cyto_backlog$Case_created_date, today) - 1
-  
-  cyto_backlog$acc_date_only <- as.Date(cyto_backlog$Received_Date)
-  
-  # acc_date <- cyto_table_weekday_summarized$Signed_out_date_only[1]
-  acc_date <- resulted_date
-  cyto_backlog$Report_Date <- resulted_date + 1
-  
-  #summarize the data to be used for analysis and to be stored as historical
-  #repo
-  summarized_table <-
-    summarise(
-      group_by(cyto_backlog,
-               Spec_code,
-               spec_group,
-               Facility,
-               Patient.Setting,
-               Rev_ctr,
-               acc_date_only,
-               weekdays(acc_date_only),
-               Report_Date),
-      cyto_backlog = format(
-        round(
-          sum(
-            backlog > Received.to.signed.out.target..Days.,
-            na.rm = TRUE), 0)),
-      
-      percentile_25th =
-        format(
+  if (is.null(cyto_backlog_raw) || nrow(cyto_backlog_raw) == 0) {
+    summarized_table <- NULL
+  } else {
+    #vlookup the Rev_Center and its corresponding patient setting for the
+    #PowerPath Data
+    
+    cyto_backlog_ps <- merge(x = cyto_backlog_raw, y = patient_setting,
+                             all.x = TRUE)
+    
+    #vlookup targets based on spec_group and patient setting
+    cyto_backlog_ps_target <- merge(x = cyto_backlog_ps, y = tat_targets_ap,
+                                    all.x = TRUE,
+                                    by = c("spec_group", "Patient.Setting"))
+    
+    #Keep the cyto gyn and cyto non-gyn
+    cyto_backlog <-
+      cyto_backlog_ps_target[which(
+        cyto_backlog_ps_target$spec_group == "CYTO NONGYN" |
+          cyto_backlog_ps_target$spec_group == "CYTO GYN"), ]
+    
+    #Change all Dates into POSIXct format to start the calculations
+    cyto_backlog[c("Case_created_date", "Collection_Date", "Received_Date",
+                   "signed_out_date")] <-
+      lapply(cyto_backlog[c("Case_created_date", "Collection_Date",
+                            "Received_Date", "signed_out_date")],
+             as.POSIXct, tz = "", format = "%m/%d/%y %I:%M %p")
+    
+    #Backlog Calculations: Date now - case created date
+    #without weekends and holidays, subtract one so we don't include today's date
+    
+    cyto_backlog$backlog <-
+      bizdays(cyto_backlog$Case_created_date, today) - 1
+    
+    cyto_backlog$acc_date_only <- as.Date(cyto_backlog$Received_Date)
+    
+    # acc_date <- cyto_table_weekday_summarized$Signed_out_date_only[1]
+    acc_date <- resulted_date
+    cyto_backlog$Report_Date <- resulted_date + 1
+    
+    #summarize the data to be used for analysis and to be stored as historical
+    #repo
+    summarized_table <-
+      summarise(
+        group_by(cyto_backlog,
+                 Spec_code,
+                 spec_group,
+                 Facility,
+                 Patient.Setting,
+                 Rev_ctr,
+                 acc_date_only,
+                 weekdays(acc_date_only),
+                 Report_Date),
+        cyto_backlog = format(
+          round(
+            sum(
+              backlog > Received.to.signed.out.target..Days.,
+              na.rm = TRUE), 0)),
+        
+        percentile_25th =
+          format(
+            ceiling(
+              quantile(
+                backlog[backlog > Received.to.signed.out.target..Days.],
+                prob = 0.25, na.rm = TRUE))),
+        
+        percentile_50th =
+          format(
+            ceiling(
+              quantile(
+                backlog[backlog > Received.to.signed.out.target..Days.],
+                prob = 0.5, na.rm = TRUE))),
+        
+        maximum = format(
           ceiling(
-            quantile(
+            max(
               backlog[backlog > Received.to.signed.out.target..Days.],
-              prob = 0.25, na.rm = TRUE))),
-      
-      percentile_50th =
-        format(
-          ceiling(
-            quantile(
-              backlog[backlog > Received.to.signed.out.target..Days.],
-              prob = 0.5, na.rm = TRUE))),
-      
-      maximum = format(
-        ceiling(
-          max(
-            backlog[backlog > Received.to.signed.out.target..Days.],
-            na.rm = TRUE))),
-      
-      cyto_acc_vol = as.numeric(sum(acc_date == acc_date_only,
-                                    na.rm = TRUE)))
-  
-  summarized_table$maximum[summarized_table$maximum == "-Inf"] <- 0
-  
-  #standardize the name for the current summary to match the historical repo
-  colnames(summarized_table) <-
-    c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
-      "acc_date_only", "acc_day_only", "Report_Date", "cyto_backlog",
-      "percentile_25th", "percentile_50th", "maximum", "cyto_acc_vol")
-  
+              na.rm = TRUE))),
+        
+        cyto_acc_vol = as.numeric(sum(acc_date == acc_date_only,
+                                      na.rm = TRUE)))
+    
+    summarized_table$maximum[summarized_table$maximum == "-Inf"] <- 0
+    
+    #standardize the name for the current summary to match the historical repo
+    colnames(summarized_table) <-
+      c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
+        "acc_date_only", "acc_day_only", "Report_Date", "cyto_backlog",
+        "percentile_25th", "percentile_50th", "maximum", "cyto_acc_vol")
+  }
   return(summarized_table)
   
 }
@@ -447,67 +450,70 @@ pre_processing_backlog <- function(cyto_backlog_raw) {
 ##### This function helps in creating the analysis and tables from the
 # summarized table. Will be used in first run and second run as well.
 analyze_backlog <- function(summarized_table) {
-  cyto_backlog_vol <- summarise(group_by(summarized_table, Spec_group),
-                                cyto_backlog = sum(as.numeric(cyto_backlog),
-                                                   na.rm = TRUE),
-                                percentile_25th =
-                                  ceiling(quantile(as.numeric(percentile_25th),
-                                                   prob = 0.25,
-                                                   na.rm = TRUE)),
-                                percentile_50th =
-                                  ceiling(quantile(as.numeric(percentile_50th),
-                                                   prob = 0.5,
-                                                   na.rm = TRUE)),
-                                maximum =
-                                  ceiling(max(as.numeric(maximum),
-                                              na.rm = TRUE)))
-
-  cyto_backlog_vol$maximum[cyto_backlog_vol$maximum == "-Inf"] <- 0
-  #Days of work
-  cyto_case_vol_dow <- as.numeric(cyto_backlog_vol$cyto_backlog[1]) / 80
-
-  #count the accessioned volume that was accessioned on that date
-  #from the backlog report
-  cyto_acc_vol2 <-
-    summarise(
-      group_by(
-        summarized_table,
-        Spec_group),
-      cyto_acc_vol2 = as.numeric(sum(cyto_acc_vol,
-                                     na.rm = TRUE)))
-  #sum the two counts
-  cyto_acc_vol3 <- merge(x = cyto_acc_vol1, y = cyto_acc_vol2)
-
-  cyto_acc_vol3$total_acc_vol <-
-    cyto_acc_vol3$cyto_acc_vol1 + cyto_acc_vol3$cyto_acc_vol2
-
-  cyto_acc_vol3$cyto_acc_vol1 <- NULL
-  cyto_acc_vol3$cyto_acc_vol2 <- NULL
-
-  backlog_acc_table <- merge(x = cyto_acc_vol3,
-                             y = cyto_backlog_vol,
-                             all = TRUE)
-
-  table_temp_backlog_acc <- data.frame(matrix(ncol = 6, nrow = 2))
-  colnames(table_temp_backlog_acc) <- c("Spec_group",
-                                        "total_accessioned_volume",
-                                        "cyto_backlog",
-                                        "percentile_25th",
-                                        "percentile_50th",
-                                        "maximum")
-
-  table_temp_backlog_acc[1] <- c("CYTO GYN", "CYTO NONGYN")
-
-  backlog_acc_table_new2 <- merge(x = table_temp_backlog_acc[1],
-                                  y = backlog_acc_table,
-                                  all.x = TRUE, by = c("Spec_group"))
-
-  backlog_acc_table_new2[is.na(backlog_acc_table_new2)] <- 0
-
-  #added this line to delete the cyto gyn from the table until we get
-  #correct data. Currently not in use
-  backlog_acc_table_new3 <- backlog_acc_table_new2[-c(1), ]
-
+  if (is.null(summarized_table)) {
+    backlog_acc_table_new2 <- NULL
+  } else {
+    cyto_backlog_vol <- summarise(group_by(summarized_table, Spec_group),
+                                  cyto_backlog = sum(as.numeric(cyto_backlog),
+                                                     na.rm = TRUE),
+                                  percentile_25th =
+                                    ceiling(quantile(as.numeric(percentile_25th),
+                                                     prob = 0.25,
+                                                     na.rm = TRUE)),
+                                  percentile_50th =
+                                    ceiling(quantile(as.numeric(percentile_50th),
+                                                     prob = 0.5,
+                                                     na.rm = TRUE)),
+                                  maximum =
+                                    ceiling(max(as.numeric(maximum),
+                                                na.rm = TRUE)))
+    
+    cyto_backlog_vol$maximum[cyto_backlog_vol$maximum == "-Inf"] <- 0
+    #Days of work
+    cyto_case_vol_dow <- as.numeric(cyto_backlog_vol$cyto_backlog[1]) / 80
+    
+    #count the accessioned volume that was accessioned on that date
+    #from the backlog report
+    cyto_acc_vol2 <-
+      summarise(
+        group_by(
+          summarized_table,
+          Spec_group),
+        cyto_acc_vol2 = as.numeric(sum(cyto_acc_vol,
+                                       na.rm = TRUE)))
+    #sum the two counts
+    cyto_acc_vol3 <- merge(x = cyto_acc_vol1, y = cyto_acc_vol2)
+    
+    cyto_acc_vol3$total_acc_vol <-
+      cyto_acc_vol3$cyto_acc_vol1 + cyto_acc_vol3$cyto_acc_vol2
+    
+    cyto_acc_vol3$cyto_acc_vol1 <- NULL
+    cyto_acc_vol3$cyto_acc_vol2 <- NULL
+    
+    backlog_acc_table <- merge(x = cyto_acc_vol3,
+                               y = cyto_backlog_vol,
+                               all = TRUE)
+    
+    table_temp_backlog_acc <- data.frame(matrix(ncol = 6, nrow = 2))
+    colnames(table_temp_backlog_acc) <- c("Spec_group",
+                                          "total_accessioned_volume",
+                                          "cyto_backlog",
+                                          "percentile_25th",
+                                          "percentile_50th",
+                                          "maximum")
+    
+    table_temp_backlog_acc[1] <- c("CYTO GYN", "CYTO NONGYN")
+    
+    backlog_acc_table_new2 <- merge(x = table_temp_backlog_acc[1],
+                                    y = backlog_acc_table,
+                                    all.x = TRUE, by = c("Spec_group"))
+    
+    backlog_acc_table_new2[is.na(backlog_acc_table_new2)] <- 0
+    
+    #added this line to delete the cyto gyn from the table until we get
+    #correct data. Currently not in use
+    backlog_acc_table_new3 <- backlog_acc_table_new2[-c(1), ]
+  }
   return(backlog_acc_table_new2)
 }
 
@@ -623,6 +629,11 @@ table_merging_volume <-
       vol_table_new2 <- vol_table_new2[order(rows_order_vol), columns_order_v3]
       row.names(vol_table_new2) <- NULL
       vol_table_new2[is.na(vol_table_new2)] <- 0
+      
+      vol_table_new2 <- vol_table_new2 %>%
+        mutate(Spec_group = ifelse(Spec_group == "GI", "GI Biopsies",
+                                   ifelse(Spec_group == "Breast",
+                                          "All Breast Specimens", Spec_group)))
     }
     return(vol_table_new2)
   }
@@ -876,7 +887,11 @@ conditional_formatting_patho <- function(table_new2) {
     row.names(table_new5) <- NULL
 
     table_new5 <- table_new5 %>%
-      mutate(no_cases_signed = coalesce(no_cases_signed, 0))
+      mutate(no_cases_signed = coalesce(no_cases_signed, 0),
+             # Rename spec groups
+             Spec_group = ifelse(Spec_group == "GI", "GI Biopsies",
+                                 ifelse(Spec_group == "Breast",
+                                        "All Breast Specimens", Spec_group)))
   }
   return(table_new5)
 }

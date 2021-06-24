@@ -8,17 +8,18 @@ output:
 ---
   
 <!-- <h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red"> -->
-  
+
+
+```{r global_options, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
 ```{r package_ref file, warning = FALSE, message = FALSE, echo = FALSE}
 #######
 # Source code for importing the needed packages, constants, reference files, and
 # data templates for the lab KPI dashboard pre-processing -----
 #######
 source(here::here("Lab KPI Daily Dashboard/Package_Ref.R"))
-```
-
-```{r global_options, echo = FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
 ```{r raw_data_import file, warning = FALSE, message = FALSE, echo = FALSE}
@@ -207,13 +208,13 @@ sp_strat_vol_new2 <- table_merging_volume(
   sp_strat_vol,
   sp_vol_column_order)
 
-sp_strat_vol_new2$Spec_group[
-  sp_strat_vol_new2$Spec_group == "GI"] <-
-  "GI Biopsies"
-
-sp_strat_vol_new2$Spec_group[
-  sp_strat_vol_new2$Spec_group == "Breast"] <-
-  "All Breast Specimens"
+# sp_strat_vol_new2$Spec_group[
+#   sp_strat_vol_new2$Spec_group == "GI"] <-
+#   "GI Biopsies"
+# 
+# sp_strat_vol_new2$Spec_group[
+#   sp_strat_vol_new2$Spec_group == "Breast"] <-
+#   "All Breast Specimens"
 
 #final cyto volume table per site per patient setting
 cyto_strat_vol_new2 <- table_merging_volume(
@@ -249,12 +250,12 @@ cyto_table_new3_v3 <- cyto_table_new3_v2[-c(1, 2), ]
 sp_table_new3 <- conditional_formatting_patho(sp_table_new2)
 
 
-sp_table_new3$Spec_group[sp_table_new3$Spec_group == "GI"] <-
-  "GI Biopsies"
-
-sp_table_new3$Spec_group[
-  sp_table_new3$Spec_group == "Breast"] <-
-  "All Breast Specimens"
+# sp_table_new3$Spec_group[sp_table_new3$Spec_group == "GI"] <-
+#   "GI Biopsies"
+# 
+# sp_table_new3$Spec_group[
+#   sp_table_new3$Spec_group == "Breast"] <-
+#   "All Breast Specimens"
 
 ```
 
