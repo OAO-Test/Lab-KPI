@@ -512,7 +512,14 @@ if (holiday_det) {
   asis_output(
     paste("<i>",
           "No cases accessioned on weekends and holidays.",
-          "</i>"))
+          "</i>")
+    )
+} else if (is.null(backlog_acc_table_new2)) {
+  asis_output(
+    paste("<i>",
+          "No data available for backlog and accessioned volume reporting.",
+          "</i>")
+  )
 } else {
   backlog_acc_table_new2 %>%
     kable(escape = F, align = "c",
@@ -539,7 +546,14 @@ if (holiday_det) {
   asis_output(
     paste("<i>",
           "No cases signed out on weekends and holidays.",
-          "</i>"))
+          "</i>")
+    )
+} else if (is.null(cyto_strat_vol_new2)) {
+  asis_output(
+    paste("<i>",
+          "No data available for signed out case volume reporting.",
+          "</i>")
+    )
 } else {
   table_formatting_volume(cyto_strat_vol_new2, cyto_vol_column_names)
 }
