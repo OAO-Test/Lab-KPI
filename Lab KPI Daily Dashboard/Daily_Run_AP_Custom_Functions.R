@@ -18,7 +18,7 @@ cyto_prep <- function(epic_data, pp_data) {
     # Create dataframe of unique specimen ID for crosswalking with PowerPath data
     # cross-walking with PowerPath data
     epic_data_spec <- epic_data_final %>%
-      distinc(SPECIMEN_ID)
+      distinct(SPECIMEN_ID)
 
     # Update names for MSH and MSM
     pp_data <- pp_data %>%
@@ -49,18 +49,18 @@ patho_prep <- function(raw_data, gi_codes) {
   } else {
     
     #------------Extract the All Breast and GI specs Data Only--------------#
-    #Merge the exclusion/inclusion cloumn into the modified powerpath Dataset
-    #for weekdays and not weekdays
+    # Merge the inclusion/exclusion criteria with PowerPath data to determine
+    # which GI cases to include in the analysis
     
     raw_data <- merge(x = raw_data, y = gi_codes, all.x = TRUE)
     
-    # Create an extra column for old facility and update names for MSH and MSM
-    # Change specimen group to proper case for BREAST specimens
     raw_data <- raw_data %>%
-      mutate(Facility_Old = Facility,
-             Facility = ifelse(Facility_Old == "MSS", "MSH",
-                               ifelse(Facility_Old == "STL", "SL",
-                                      Facility_Old)),
+      mutate(
+        # Update names for MSH and MSM
+        Facility = ifelse(Facility == "MSS", "MSH",
+                               ifelse(Facility == "STL", "SL",
+                                      Facility)),
+        # Change BREAST specimens to proper case
              spec_group = ifelse(spec_group == "BREAST", "Breast", spec_group))
 
     #Create dataframe with cases that should be excluded based on GI code
@@ -84,6 +84,65 @@ patho_prep <- function(raw_data, gi_codes) {
              (spec_group == "Breast" )) &
           # Exclude NYEE
           Facility != "NYEE")
+  }
+  
+  return(sp_data)
+  
+}
+
+#create a function to prepare pathology data for pre-processing
+patho_prep2 <- function(raw_data, gi_codes) {
+  if (is.null(raw_data) || nrow(raw_data) == 0) {
+    sp_data <- NULL
+  } else {
+    
+    #------------Extract the All Breast and GI specs Data Only--------------#
+    # Merge the inclusion/exclusion criteria with PowerPath data to determine
+    # which GI cases to include in the analysis
+    
+    raw_data <- merge(x = raw_data, y = gi_codes, all.x = TRUE)
+    
+    raw_data <- raw_data %>%
+      mutate(
+        # Update names for MSH and MSM
+        Facility = ifelse(Facility == "MSS", "MSH",
+                          ifelse(Facility == "STL", "SL",
+                                 Facility)),
+        # Change BREAST specimens to proper case
+        spec_group = ifelse(spec_group == "BREAST", "Breast", spec_group))
+    
+    # Create data frame with cases that should be excluded based on GI code
+    exclude_gi_codes_df <- raw_data %>%
+      filter(!(GI_Code_InclExcl %in%
+               c("Include")))
+    
+    # Create vector of case numbers to exclude
+    exclude_case_num <- unique(exclude_gi_codes_df$Case_no)
+    
+    # Create a reference dataframe with GI specimens that are excluded from dashboard
+    excluded_gi_specimens <- raw_data %>%
+      filter(Case_no %in% exclude_case_num)
+    
+    # Subset surgical pathology data based on inclusion criteria
+    # sp_data2 <- raw_data %>%
+    #   filter(# Select primary specimens only
+    #     spec_sort_order == "A" &
+    #       # Select GI specimens with codes that are included and any breast specimens
+    #       ((spec_group == "GI" & !(Case_no %in% exclude_case_num)) |
+    #          (spec_group == "Breast" )) &
+    #       # Exclude NYEE
+    #       Facility != "NYEE")
+    
+    sp_data <- raw_data %>%
+      filter(
+        # Select primary specimens only
+        spec_sort_order == "A" &
+          # Select GI specimens with codes that are included and any breast specimens
+          ((spec_group == "GI" & (GI_Code_InclExcl %in% "Include")) |
+           (spec_group == "Breast" )) &
+          # Exclude NYEE
+          Facility != "NYEE")
+      
   }
   
   return(sp_data)
