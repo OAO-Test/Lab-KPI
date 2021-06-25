@@ -3,49 +3,43 @@
 # Anatomic Pathology (AP) includes Cytology and Surgical Pathology divisions
 #######
 
-#create a function to prepare cytology data for pre-processing
+# Function to preprate prepare cytology data for pre-processing by crosswalking
+# Epic and PowerPath data
 cyto_prep <- function(epic_data, pp_data) {
-  if (is.null(epic_data) || is.null(pp_data) || nrow(pp_data) == 0) {
+  if (is.null(epic_data) || is.null(pp_data) || 
+      nrow(epic_data) == 0 || nrow(pp_data) == 0) {
     cyto_final <- NULL
   } else {
-    #Preprocess Epic data
-    #Select specimens that were finalized/final edited in epic
+    # Preprocess Epic data
+    # Select specimens that were finalized in Epic based on Lab Status
     epic_data_final <- epic_data %>%
       filter(LAB_STATUS %in% c("Final result", "Edited Result - FINAL"))
-
-    globalVariables(names(epic_data_final))
-
-    #Select the SPECIMEN_ID Column from Epic data and rename as Case_no for matching
+    
+    # Create dataframe of unique specimen ID for crosswalking with PowerPath data
+    # cross-walking with PowerPath data
     epic_data_spec <- epic_data_final %>%
-      mutate(Case_no = SPECIMEN_ID) %>%
-      select(Case_no)
+      distinc(SPECIMEN_ID)
 
-    #Remove any duplicate specimen ids
-    epic_data_spec <- unique(epic_data_spec)
-    
-    # Create an extra column for old facility and update names for MSH and MSM
-    # Change specimen group to proper case for BREAST specimens
+    # Update names for MSH and MSM
     pp_data <- pp_data %>%
-      mutate(Facility_Old = Facility,
-             Facility = ifelse(Facility_Old == "MSS", "MSH",
-                               ifelse(Facility_Old == "STL", "SL",
-                                      Facility_Old)))
+      mutate(Facility = ifelse(Facility == "MSS", "MSH",
+                               ifelse(Facility == "STL", "SL",
+                                      Facility)))
     
-    #--------------Extract the Cytology GYN and NON-GYN Data Only------------#
-    # Subset powerpath data to keep cyto gyn and cyto non-gyn only 
-    # Cytology
-    #Keep the cyto gyn and cyto non-gyn
-
+    # Subset PowerPath data to keep Cyto Gyn and Cyto NonGyn and primary
+    # specimens only
     cyto_raw <- pp_data %>%
       filter(spec_sort_order == "A" &
                spec_group %in% c("CYTO NONGYN", "CYTO GYN"))
-
-    cyto_final <- merge(x = cyto_raw, y = epic_data_spec)
-
+    
+    cyto_final <- merge(x = cyto_raw, y = epic_data_spec,
+                        by.x = "Case_no",
+                        by.y = "SPECIMEN_ID")
+    
   }
-
+  
   return(cyto_final)
-
+  
 }
 
 #create a function to prepare pathology data for pre-processing
