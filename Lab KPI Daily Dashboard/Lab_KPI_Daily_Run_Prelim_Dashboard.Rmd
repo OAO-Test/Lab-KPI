@@ -122,7 +122,7 @@ cyto_preprocessed_df <- cyto_preprocessed[[2]]
 
 # Prepare surgical pathology data for pre-processing by subsetting data based on
 # specimen type (breast & GI) and code (for GI cases)
-sp_crosswalk <- patho_prep2(pp_data_raw, gi_codes)
+sp_crosswalk <- patho_prep(pp_data_raw, gi_codes)
 
 # Preprocess cross-walked/filtered surgical pathology data
 sp_preprocessed <- pre_processing_pp(sp_crosswalk)
