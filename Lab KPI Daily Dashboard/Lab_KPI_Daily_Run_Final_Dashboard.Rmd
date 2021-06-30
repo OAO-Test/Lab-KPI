@@ -6,7 +6,7 @@ output:
     toc_depth: 2
     toc_float: true
 ---
-  
+
 <!-- <h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red"> -->
 
 
@@ -24,7 +24,7 @@ source(here::here("Lab KPI Daily Dashboard/Package_Ref.R"))
 
 ```{r raw_data_import file, warning = FALSE, message = FALSE, echo = FALSE}
 #######
-# Source Code for importing the raw data needed for the first run of the 
+# Source Code for importing the raw data needed for the final run of the 
 # daily dashboard.
 # Imported data includes:
 # 1. SCC data for clinical pathology
@@ -41,7 +41,7 @@ source(here::here("Lab KPI Daily Dashboard/Daily_Run_Raw_Data_Import.R"))
 # Code with custom functions for preprocessing, analyzing, and displaying
 # Clinical Pathology KPI -----
 # CP includes Chemistry, Hematology, and Microbiology RRL divisions
-source(here::here("Lab KPI Daily Dashboard/Daily_Run_CP_Custom_Functions.R"))
+source(here::here("Lab KPI Daily Dashboard/CP_Custom_Functions.R"))
 ```
 
 ```{r Preprocess CP data, warning = FALSE, message = FALSE, echo = FALSE}
@@ -467,7 +467,101 @@ if (holiday_det) {
 ```
 
 <br />
-  
+
+## **Operational and Quality Indicators** {.tabset}
+### Operational Indicators
+#### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r result_date_text`)*
+```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+
+formatted_clinical_labs3 %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c",
+          col.names = c("Facility", "Lab Corp Consumable", "Vendor Services",
+                        "Enviroment", "Equipment", "IT", "Service Change",
+                        "Acute Volume Increase", "Staffing")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE,
+                  position = "center", row_label_position = "c",
+                  font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+comments_clinical_labs %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c",
+          col.names = c("Facility", "Comments if At Risk or Not Safe")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = TRUE,
+                  position = "center", row_label_position = "c",
+                  font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+```
+
+### Laboratory Information System
+#### *Operational Indicators for LIS (Submitted on `r result_date_text`)*
+
+```{r Qualitative Indicators for LIS, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+
+if (is.null(formatted_lis_new2) || nrow(formatted_lis_new2) == 0) {
+    formatted_lis_new2 <- NULL
+} else{
+  formatted_lis_new2 %>%
+      select(everything()) %>%
+      kable(escape = F, align = "c",
+            col.names = c("", "Staffing", "Service Change",
+                          "Preplanned Downtime")) %>%
+      kable_styling(bootstrap_options = "hover", full_width = FALSE,
+                    position = "center", row_label_position = "c",
+                    font_size = 11) %>%
+      row_spec(row = 0, font_size = 13)
+}
+
+```
+
+### Quality Indicators
+#### Never Events 
+##### *Reported Never Events for Each Division/Facility (Submitted on `r result_date_text`)*
+```{r Lab KPI Form for Never Events, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+
+never_events_only %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c",
+          col.names = c(
+            "Facility", "Specimen(s) Lost",
+            "QNS - specimen that cannot be recollected",
+            "Treatment based on mislabeled/misidentified specimen",
+            "Treatment based on false positive/false negative results")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE,
+                  position = "center", row_label_position = "c",
+                  font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+never_events_comments %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c",
+          col.names = c("Facility", "Comments if There is a Never Event")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE,
+                  position = "center", row_label_position = "c",
+                  font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+```
+
+#### Good Catches
+##### *Reported Good Catches for Each Division/Facility (Submitted on `r result_date_text`)*
+```{r Lab KPI Form for Good Catches, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
+
+good_catch %>%
+    select(everything()) %>%
+    kable(escape = F, align = "c",
+          col.names = c("Facility", "Good Catch Comment")) %>%
+    kable_styling(bootstrap_options = "hover", full_width = FALSE,
+                  position = "center", row_label_position = "c",
+                  font_size = 11) %>%
+    row_spec(row = 0, font_size = 13)
+
+```
+
+<br />
+
 ## **24-Hour Volume Lookback** {.tabset}
 
 ### Chemistry
@@ -643,7 +737,7 @@ tat_targets_kable %>%
 ```
 
 <h4><b>Additional notes on target turnaround times:</b></h4>
-  
+
 * Troponin and Lactate WB:
     + All labs are treated as stat regardless of documented priority and patient setting.
     + Ambulatory labs excluded from turnaround time analysis
@@ -653,8 +747,8 @@ tat_targets_kable %>%
     + All labs are treated as stat regardless of documented priority and patient setting.
     + Turnaround time for ambulatory C. diff tests are not tracked but rather volume of these labs is monitored.
 
-<h4><b>Turnaround Time Exclusions</b></h4>
-  
+<h4><b>Turnaround Time Exclusions</b></h4> 
+
 Turnaround time analysis excludes labs with out of order steps (ie, collect after receive), missing timestamps, add-on orders, and labs not originating in IP, ED, or ambulatory settings (ie, Outreach).
 
 MSH turnaround times exclude BUN and HGB labs collected at RTC.
@@ -665,10 +759,10 @@ MSH turnaround times exclude BUN and HGB labs collected at RTC.
 Add on orders are defined as labs with an order time more than 5 minutes after receive time. These labs are excluded from turnaround time analysis but the volume of these labs is monitored.
 
 <br>
-  
+
 <h4><b>Missing Collections</b></h4>
 Labs are classified as missing collections based on the following criteria:
-  
+
 * SCC: Collection time equal to receive time
 * Sunquest: Collection time equal to order time
 
@@ -700,7 +794,7 @@ Only the codes for GI biopsies are included in the analysis.
 ```{r GI Codes Table}
 gi_codes_updated <-
   gi_codes[, c("GI_Code_InclExcl",
-               "Spec_code")]
+              "Spec_code")]
 
 gi_codes_updated  %>%
   kable(format = "html", escape = FALSE, align = "c",
@@ -714,7 +808,7 @@ gi_codes_updated  %>%
 ```
 
 <h4><b>Additional notes on target turnaround times:</b></h4>
-  
+
 * Receive to Result TAT: for anatomic pathology this metric only includes MSHS business days and is a measure of internal laboratory performance.
 
 * Collect to Result TAT: for anatomic pathology this metric includes all calendar days and is a patient-centric measure of performance.
@@ -728,7 +822,7 @@ gi_codes_updated  %>%
     + Only labs from ambulatory and inpatient services with valid time stamps included in TAT calculations.
     + TAT analysis excludes labs with missing timestamps
     + All settings included in the resulted volume
-
+    
 * GI Biopsies:
     + Included only the samples that are consisted of GI biopsies
     + Only primary specimen GI biopsies included
@@ -752,6 +846,5 @@ gi_codes_updated  %>%
 
 * Backlog Cases:
     + Backlog cases are defined as all the cases that are open by cytology and microbiology.
-
+    
 <h6> *End of report.* </h6>
-  

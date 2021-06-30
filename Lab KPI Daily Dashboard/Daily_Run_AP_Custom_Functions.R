@@ -346,14 +346,15 @@ tat_targets_ap_kn <- tat_targets_ap %>%
 
 preprocessing_ap <- function(raw_data) {
   if (is.null(raw_data) || nrow(raw_data) == 0) {
-    raw_data_new <- NULL
-    summarized_table <- NULL
+    ap_div_df <- NULL
+    ap_summary_by_code <- NULL
+    vol_signed_out_site <- NULL
   } else {
     # Crosswalk Rev_ctr and patient setting for PowerPath data
-    raw_data_ps <- merge(x = raw_data, y = patient_setting, all.x = TRUE)
+    ap_div_df <- merge(x = raw_data, y = patient_setting, all.x = TRUE)
     
     # Update MSB patient setting based on patient type column
-    raw_data_ps <- raw_data_ps %>%
+    ap_div_df <- ap_div_df %>%
       mutate(Patient.Setting = ifelse(Rev_ctr %in% c("MSBK") &
                                         patient_type %in% c("A", "O"), "Amb",
                                       ifelse(Rev_ctr %in% c("MSBK") &
@@ -361,24 +362,24 @@ preprocessing_ap <- function(raw_data) {
                                              Patient.Setting)))
     
     # Crosswalk TAT targets based on spec_group and patient setting
-    raw_data_new <- merge(x = raw_data_ps, y = tat_targets_ap_kn,
+    ap_div_df <- merge(x = ap_div_df, y = tat_targets_ap_kn,
                           all.x = TRUE,
                           by = c("spec_group", "Patient.Setting"))
     
     # check if any of the dates were imported as characters
-    if (is.character(raw_data_new$Collection_Date)) {
-      raw_data_new <- raw_data_new %>%
+    if (is.character(ap_div_df$Collection_Date)) {
+      ap_div_df <- ap_div_df %>%
         mutate(Collection_Date = as.numeric(Collection_Date)) %>%
         mutate(Collection_Date = as.Date(Collection_Date,
                                          origin = "1899-12-30"))
     }
     
     # Change all Dates into POSIXct format to start the calculations
-    raw_data_new[c("Case_created_date",
+    ap_div_df[c("Case_created_date",
                    "Collection_Date",
                    "Received_Date",
                    "signed_out_date")] <-
-      lapply(raw_data_new[c("Case_created_date",
+      lapply(ap_div_df[c("Case_created_date",
                             "Collection_Date",
                             "Received_Date",
                             "signed_out_date")],
@@ -387,7 +388,7 @@ preprocessing_ap <- function(raw_data) {
     # Add columns for turnaround time calculations:
     # Collection to signed out (in calendar days) and
     # received to signed out (in business days)
-    raw_data_new <- raw_data_new %>%
+    ap_div_df <- ap_div_df %>%
       mutate(
         # Add column for collected to signed out turnaround time in calendar days
         Collection_to_signed_out =
@@ -403,11 +404,10 @@ preprocessing_ap <- function(raw_data) {
       # Filter out anything with a sign out date other than result date of interest
       filter(date(signed_out_date) %in% resulted_date)
 
-    #summarize the data to be used for analysis and to be stored as historical
-    #repo
-    summarized_table <-
+    # Summarize the data to be by spec code, spec group, facility, patient setting, etc.
+    ap_summary_by_code <-
       summarise(
-        group_by(raw_data_new,
+        group_by(ap_div_df,
                  Spec_code,
                  spec_group,
                  Facility,
@@ -424,45 +424,81 @@ preprocessing_ap <- function(raw_data) {
         # Calculate volume of cases signed out
         no_cases_signed = n(),
         # Calculate key statistics for received to signed out (lab ops metric)
-        lab_metric_tat_avg = round(mean(Received_to_signed_out,
-                                        na.rm = TRUE), 0),
-        lab_metric_tat_med = round(median(Received_to_signed_out,
-                                          na.rm = TRUE), 0),
-        lab_metric_tat_sd = round(sd(Received_to_signed_out, na.rm = TRUE), 1),
+        lab_metric_tat_avg = mean(Received_to_signed_out, na.rm = TRUE),
+        lab_metric_tat_med = median(Received_to_signed_out, na.rm = TRUE),
+        lab_metric_tat_sd = sd(Received_to_signed_out, na.rm = TRUE),
         lab_metric_within_target =
-          as.numeric(format(
-          round(
-            sum(Received_to_signed_out <= ReceiveToResultTarget,
-                na.rm = TRUE) / sum(
-                  Received_to_signed_out >= 0, na.rm = TRUE), 2))),
+          sum(Received_to_signed_out <= ReceiveToResultTarget, na.rm = TRUE) / 
+          sum(Received_to_signed_out >= 0, na.rm = TRUE),
         # Calculate key statistics for collected to singed out (patient-centric metric)
         patient_metric_tat_avg = mean(Collection_to_signed_out, na.rm = TRUE),
-        patient_metric_tat_med = round(median(Collection_to_signed_out,
-                                              na.rm = TRUE), 0),
-        patient_metric_tat_sd = round(sd(Collection_to_signed_out,
-                                         na.rm = TRUE), 1),
+        patient_metric_tat_med = median(Collection_to_signed_out, na.rm = TRUE),
+        patient_metric_tat_sd = sd(Collection_to_signed_out, na.rm = TRUE),
         # Calculate number of specimens signed out and accessioned yesterday
-        cyto_acc_vol = as.numeric(sum((report_date_only - 1) == acc_date_only,
-                                      na.rm = TRUE)))
+        acc_vol = sum((report_date_only - 1) == acc_date_only,
+                           na.rm = TRUE))
     
     # Rename columns
-    colnames(summarized_table) <-
+    colnames(ap_summary_by_code) <-
       c("Spec_code", "Spec_group", "Facility", "Patient_setting", "Rev_ctr",
         "Signed_out_date_only", "Signed_out_day_only", "Lab_metric_target",
         "Patient_metric_target", "acc_date_only", "acc_day_only",
         "report_date_only", "report_day_only", "No_cases_signed_out",
         "Lab_metric_avg", "Lab_metric_med", "Lab_metric_std",
         "Lab_metric_within_target", "Patient_metric_avg", "Patient_metric_med",
-        "Patient_metric_std", "cyto_acc_vol")
+        "Patient_metric_std", "acc_vol")
     
-    # # Filter out any specimens signed out on other dates
-    # summarize_table <- summarized_table %>%
-    #   filter(Signed_out_date_only %in% dates)
+    # Calculate volume of cases signed out across the system stratified by spec group
+    vol_signed_out_system <- ap_summary_by_code %>%
+      group_by(Spec_group,
+               Patient_setting) %>%
+      summarize(No_cases_signed = sum(No_cases_signed_out, na.rm = TRUE))
+    
+    # Calculate volume of cases signed out from each originating site stratified by spec group
+    vol_signed_out_site <- ap_summary_by_code %>%
+      group_by(Spec_group,
+               Facility,
+               Patient_setting) %>%
+      summarize(No_cases_signed = sum(No_cases_signed_out, na.rm = TRUE))
+    
+    vol_signed_out_site <- dcast(vol_signed_out_site,
+                                 Spec_group + Patient_setting ~ Facility,
+                                 value.var = "No_cases_signed")
+    
+    vol_signed_out_site[is.na(vol_signed_out_site)] <- 0
+    
+    # Calculate average collection to sign out time
+    patient_metric <- ap_summary_by_code %>%
+      group_by(Spec_group,
+               Facility,
+               Patient_setting) %>%
+      summarize(avg_collection_to_signed_out =
+                  format(
+                    round(
+                      sum((Patient_metric_avg * No_cases_signed_out) /
+                            sum(No_cases_signed_out), na.rm = TRUE), 0)))
+    
+    # Calculate average collection to sign out time using
+    patient_metric2 <- ap_div_df %>%
+      group_by(spec_group,
+               Facility,
+               Patient.Setting) %>%
+      summarize(CollectToResultAvg = (mean(Collection_to_signed_out,
+                                              na.rm = TRUE)))
+    
+    patient_metric <- dcast(patient_metric,
+                            Spec_group + Patient_setting ~ Facility,
+                            value.var = "avg_collection_to_signed_out")
+    
+    patient_metric2 <- dcast(patient_metric2,
+                             spec_group + Patient.Setting ~ Facility,
+                             value.var = "CollectToResultAvg")
     
   }
   
-  return_tables <- list(summarized_table,
-                        raw_data_new)
+  return_tables <- list(ap_summary_by_code,
+                        ap_div_df,
+                        vol_signed_out_site,)
   
   return(return_tables)
 }
