@@ -466,11 +466,18 @@ if (holiday_det) {
 
 ```
 
+```{r Lab_KPI_Form file, warning = FALSE, message = FALSE, echo = FALSE}
+# Code for calling the sources code for preprocessing and analyzing the
+# lab KPI form for the second run -----
+#######
+source(here::here("Lab KPI Daily Dashboard/Lab_KPI_Form.R"))
+```
+
 <br />
 
 ## **Operational and Quality Indicators** {.tabset}
 ### Operational Indicators
-#### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r result_date_text`)*
+#### *Operational Indicators for Labs at each Site & Centralized Anatomic Pathology (Submitted on `r format(today, "%m/%d/%y")`)*
 ```{r Qualitative Indicators for Clinical Labs, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
 
 formatted_clinical_labs3 %>%
@@ -496,7 +503,7 @@ comments_clinical_labs %>%
 ```
 
 ### Laboratory Information System
-#### *Operational Indicators for LIS (Submitted on `r result_date_text`)*
+#### *Operational Indicators for LIS (Submitted on `r format(today, "%m/%d/%y")`)*
 
 ```{r Qualitative Indicators for LIS, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
 
@@ -518,7 +525,7 @@ if (is.null(formatted_lis_new2) || nrow(formatted_lis_new2) == 0) {
 
 ### Quality Indicators
 #### Never Events 
-##### *Reported Never Events for Each Division/Facility (Submitted on `r result_date_text`)*
+##### *Reported Never Events for Each Division/Facility (Submitted on `r format(today, "%m/%d/%y")`)*
 ```{r Lab KPI Form for Never Events, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
 
 never_events_only %>%
@@ -546,7 +553,7 @@ never_events_comments %>%
 ```
 
 #### Good Catches
-##### *Reported Good Catches for Each Division/Facility (Submitted on `r result_date_text`)*
+##### *Reported Good Catches for Each Division/Facility (Submitted on `r format(today, "%m/%d/%y")`)*
 ```{r Lab KPI Form for Good Catches, echo=FALSE, message=FALSE, warning=FALSE, eval = TRUE}
 
 good_catch %>%

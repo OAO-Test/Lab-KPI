@@ -42,7 +42,7 @@ library(tidyr)
 rm(list = ls())
 #-------------------------------holiday/weekend-------------------------------#
 # Get today and yesterday's date
-today <- Sys.Date()
+today <- Sys.Date() - 3
 
 #Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
