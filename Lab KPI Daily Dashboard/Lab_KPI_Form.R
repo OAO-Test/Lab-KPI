@@ -2,11 +2,29 @@
 # Code for preprocessing and analyzing the lab KPI form for the second run -----
 #######
 
+# Create regular expression for Lab KPI Form file
+kpi_form_pattern <- "^(Lab KPI Quality Indicator Form){1}.*"
+
+kpi_form_date <- format(today, "%Y-%m-%d")
+
+kpi_data_file <- list.files(
+  path = paste0(user_directory, "/Lab KPI Form"),
+  pattern = paste0(kpi_form_pattern,
+                   "(",
+                   kpi_form_date,
+                   ".xlsx)$"))
+
 #read the excel sheet that is generated from office form responses
 kpi_form <- data.frame(read_excel(
-  choose.files(default = paste0(user_directory, "/Lab KPI Form/*.*"),
-               caption = "Select the KPI form generated today"), 1),
+  path = paste0(user_directory,
+                "/Lab KPI Form/",
+                kpi_data_file),
+  sheet = 1),
   stringsAsFactors = FALSE)
+  
+  # read_excel(choose.files(default = paste0(user_directory, "/Lab KPI Form/*.*"),
+  #              caption = "Select the KPI form generated today"), 1),
+  # stringsAsFactors = FALSE)
 
 
 #Determine the dates within the KPI excel sheet and report only the latest date

@@ -21,7 +21,7 @@ rmarkdown::render(paste0("Lab KPI Daily Dashboard/",
                     substr(user_directory, 1,
                            nchar(user_directory) - nchar("/Data")),
                     "/Dashboard Drafts",
-                    "/Daily Run Lab KPI Dashboard Pre KPI Form Test ",
+                    "/Daily Run Lab KPI Dashboard Pre KPI Form ",
                     format(Sys.Date(), "%m-%d-%y")))
 
 
