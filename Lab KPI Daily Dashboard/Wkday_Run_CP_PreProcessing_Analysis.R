@@ -77,16 +77,18 @@ cp_wday_summary <- scc_sun_wday_master %>%
            ReceiveResultTarget,
            CollectResultTarget) %>%
   summarize(TotalResulted = n(),
-            TotalResultedTAT = sum(TATInclude),
+            ReceiveTime_VolIncl = sum(ReceiveTime_TATInclude),
+            CollectTime_VolIncl = sum(CollectTime_TATInclude),
             TotalReceiveResultInTarget =
-              sum(ReceiveResultInTarget[TATInclude]),
+              sum(ReceiveResultInTarget[ReceiveTime_TATInclude]),
             TotalCollectResultInTarget =
-              sum(CollectResultInTarget[TATInclude]),
+              sum(CollectResultInTarget[CollectTime_TATInclude]),
             TotalAddOnOrder = sum(AddOnMaster == "AddOn"),
-            TotalMissingCollections = sum(MissingCollect[TATInclude]),
+            TotalMissingCollections = sum(MissingCollect),
             .groups = "keep") %>%
   arrange(Site, ResultDate) %>%
   ungroup()
+
 
 # Format and summarize data to update repository ----------------
 # Summarize and bind weekday and non-weekday data, if any exists
@@ -107,13 +109,14 @@ if (!is.null(scc_sun_not_wday_master)) {
              ReceiveResultTarget,
              CollectResultTarget) %>%
     summarize(TotalResulted = n(),
-              TotalResultedTAT = sum(TATInclude),
+              ReceiveTime_VolIncl = sum(ReceiveTime_TATInclude),
+              CollectTime_VolIncl = sum(CollectTime_TATInclude),
               TotalReceiveResultInTarget =
-                sum(ReceiveResultInTarget[TATInclude]),
+                sum(ReceiveResultInTarget[ReceiveTime_TATInclude]),
               TotalCollectResultInTarget =
-                sum(CollectResultInTarget[TATInclude]),
+                sum(CollectResultInTarget[CollectTime_TATInclude]),
               TotalAddOnOrder = sum(AddOnMaster == "AddOn"),
-              TotalMissingCollections = sum(MissingCollect[TATInclude]),
+              TotalMissingCollections = sum(MissingCollect),
               .groups = "keep") %>%
     arrange(Site, ResultDate) %>%
     ungroup()
@@ -126,33 +129,33 @@ if (!is.null(scc_sun_not_wday_master)) {
   cp_all_days <- cp_wday_summary
 }
 
-# Open existing repository
-existing_repo <-
-  readRDS(file =
-            choose.files(
-              default =
-                paste0(user_directory,
-                       "/CP Historical Repo",
-                       "/*.*"),
-              caption = "Select SCC and Sunquest Historical Repository"))
-
-# Convert ResultDate from date-time to date
-existing_repo <- existing_repo %>%
-  mutate(ResultDate  = date(ResultDate)) %>%
-  filter(!(ResultDate %in% date_range))
-
-# Bind new data with existing repository
-cp_repo <- rbind(existing_repo, cp_all_days)
-
-# Remove any duplicates
-cp_repo <- unique(cp_repo)
-
-# Determine earliest and latest date in repository for use in file name
-start_date <- format(min(cp_repo$ResultDate), "%m%d%y")
-end_date <- format(max(cp_repo$ResultDate), "%m%d%y")
-
-saveRDS(cp_repo, file = paste0(user_directory,
-                               "/CP Historical Repo",
-                               "/CP Repo ", start_date, " to ",
-                               end_date, " Created ",
-                               format(Sys.Date(), "%Y-%m-%d"), ".RDS"))
+# # Open existing repository
+# existing_repo <-
+#   readRDS(file =
+#             choose.files(
+#               default =
+#                 paste0(user_directory,
+#                        "/CP Historical Repo",
+#                        "/*.*"),
+#               caption = "Select SCC and Sunquest Historical Repository"))
+# 
+# # Convert ResultDate from date-time to date
+# existing_repo <- existing_repo %>%
+#   mutate(ResultDate  = date(ResultDate)) %>%
+#   filter(!(ResultDate %in% date_range))
+# 
+# # Bind new data with existing repository
+# cp_repo <- rbind(existing_repo, cp_all_days)
+# 
+# # Remove any duplicates
+# cp_repo <- unique(cp_repo)
+# 
+# # Determine earliest and latest date in repository for use in file name
+# start_date <- format(min(cp_repo$ResultDate), "%m%d%y")
+# end_date <- format(max(cp_repo$ResultDate), "%m%d%y")
+# 
+# saveRDS(cp_repo, file = paste0(user_directory,
+#                                "/CP Historical Repo",
+#                                "/CP Repo ", start_date, " to ",
+#                                end_date, " Created ",
+#                                format(Sys.Date(), "%Y-%m-%d"), ".RDS"))

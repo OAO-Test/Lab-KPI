@@ -18,6 +18,7 @@
 # install.packages("stringr")
 # install.packages("writexl")
 # install.packages("gsubfn")
+# install.packages("tidyr")
 #-------------------------------Required packages------------------------------#
 
 #Required packages: run these every time you run the code
@@ -35,7 +36,7 @@ library(rmarkdown)
 library(stringr)
 library(writexl)
 library(gsubfn)
-
+library(tidyr)
 
 #Clear existing history
 rm(list = ls())
@@ -45,7 +46,7 @@ today <- Sys.Date()
 
 #Determine if yesterday was a holiday/weekend
 #get yesterday's DOW
-yesterday <- today  - 1
+yesterday <- today - 1
 
 #Get yesterday's DOW
 yesterday_day <- wday(yesterday, label = TRUE, abbr = TRUE)
@@ -79,7 +80,7 @@ if ("Presidents" %in% list.files("J://")) {
 # Import analysis reference data
 reference_file <- paste0(user_directory,
                          "/Code Reference/",
-                         "Analysis Reference 2021-03-22.xlsx")
+                         "Analysis Reference 2021-06-01.xlsx")
 
 # CP and Micro --------------------------------
 scc_test_code <- read_excel(reference_file, sheet = "SCC_TestCodes")
@@ -96,13 +97,21 @@ tat_targets <- read_excel(reference_file, sheet = "Turnaround Targets")
 # Add a column concatenating test, priority, and setting for matching later
 tat_targets <- tat_targets %>%
   mutate(Concate = ifelse(
-    Priority == "All" & `Pt Setting` == "All", Test,
-    ifelse(Priority != "All" & `Pt Setting` == "All", paste(Test, Priority),
-           paste(Test, Priority, `Pt Setting`))))
+    Priority == "All" & `PtSetting` == "All", paste(Test, Division),
+    ifelse(Priority != "All" & `PtSetting` == "All",
+           paste(Test, Division, Priority),
+           paste(Test, Division, Priority, `PtSetting`))))
 
 scc_icu <- read_excel(reference_file, sheet = "SCC_ICU")
-scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")
 sun_icu <- read_excel(reference_file, sheet = "SUN_ICU")
+
+scc_icu <- scc_icu %>%
+  mutate(SiteCodeName = paste(Site, Ward, Ward_Name))
+
+sun_icu <- sun_icu %>%
+  mutate(SiteCodeName = paste(Site, LocCode, LocName))
+
+scc_setting <- read_excel(reference_file, sheet = "SCC_ClinicType")
 sun_setting <- read_excel(reference_file, sheet = "SUN_LocType")
 
 mshs_site <- read_excel(reference_file, sheet = "SiteNames")
@@ -119,14 +128,17 @@ cp_micro_lab_order <- c("Troponin",
                         "Rapid Flu",
                         "C. diff")
 
-site_order <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
-city_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM")
+all_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN", "RTC")
+hosp_sites <- c("MSH", "MSQ", "MSBI", "MSB", "MSW", "MSM", "MSSN")
+infusion_sites <- c("RTC")
 
 pt_setting_order <- c("ED", "ICU", "IP Non-ICU", "Amb", "Other")
 pt_setting_order2 <- c("ED & ICU", "IP Non-ICU", "Amb", "Other")
 dashboard_pt_setting <- c("ED & ICU", "IP Non-ICU", "Amb")
 
 dashboard_priority_order <- c("All", "Stat", "Routine")
+
+cp_division_order <- c("Chemistry", "Hematology", "Microbiology RRL", "Infusion")
 
 # Create template dataframes for combinations of tests, priority, and settings
 # that will be used in TAT and volume look back tables. These templates ensure
@@ -139,9 +151,9 @@ test_name_division <- unique(cp_test_divisions[, c("Division", "Test")])
 test_names <- cp_test_divisions$Test
 
 # Create data frame of test and site combinations
-rep_test_site <- sort(rep(test_names, length(city_sites)))
+rep_test_site <- sort(rep(test_names, length(all_sites)))
 
-rep_sites <- rep(city_sites, length(test_names))
+rep_sites <- rep(all_sites, length(test_names))
 
 test_site_comb <- data.frame("Test" = rep_test_site,
                              "Site" = rep_sites,
@@ -199,6 +211,8 @@ test_site_prty_setting_vol <- left_join(test_site_prty_setting_vol,
 # Select applicable test, priority, setting combinations based on lab operations
 tat_dashboard_templ <- test_site_prty_setting_tat %>%
   mutate(
+    # Update Division for RTC to Infusion
+    Division = ifelse(Site %in% c("RTC"), "Infusion", Division),
     # Create column for applicable combinations
     Incl = ifelse(
       # Remove ED & ICU labs with Routine priority since all labs in these
@@ -207,20 +221,30 @@ tat_dashboard_templ <- test_site_prty_setting_tat %>%
          DashboardSetting %in% c("ED & ICU")) |
         # Remove ambulatory troponin and lactate since these labs are collected
         # in ambulatory settings. Remove stat and routine stratification for
-        # these labs since all are treated as stat.
+        # these labs since all are treated as stat
         (Test %in% c("Troponin", "Lactate WB") &
            (DashboardPriority %in% c("Stat", "Routine") |
               DashboardSetting %in% c("Amb"))) |
-        # Remove "all" priority for BUN, PT, and HGB labs
-        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All")) |
+        # Remove "all" priority for BUN, PT, and HGB labs for non-infusion
+        # settings
+        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All") &
+           !(Division %in% c("Infusion"))) |
         # Remove priority stratification for rapid flu and c. diff since all
         # are treated as stat
         (Test %in% c("Rapid Flu", "C. diff") &
-           !(DashboardPriority %in% c("All"))), "Excl", "Incl")) %>%
+           !(DashboardPriority %in% c("All"))) |
+        # Remove any labs other than BUN and HGB for infusion since those are
+        # the only labs processed there. Remove stat and routine stratification
+        # for infusion labs since all labs treated the same
+        (Division %in% c("Infusion") & (!(Test %in% c("BUN", "HGB")) |
+           !(DashboardSetting %in% c("Amb")) |
+           !(DashboardPriority %in% c("All")))), "Excl", "Incl")) %>%
   filter(Incl == "Incl")
 
 vol_dashboard_templ <- test_site_prty_setting_vol %>%
   mutate(
+    # Update Division for RTC to Infusion
+    Division = ifelse(Site %in% c("RTC"), "Infusion", Division),
     # Create column for applicable combinations
     Incl = ifelse(
       # Remove ED & ICU labs with Routine priority since all labs in these
@@ -232,10 +256,17 @@ vol_dashboard_templ <- test_site_prty_setting_vol %>%
         (Test %in% c("Troponin", "Lactate WB") &
            (DashboardPriority %in% c("Stat", "Routine"))) |
         # Remove "all" priority for BUN, PT, and HGB labs
-        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All")) |
+        (Test %in% c("BUN", "PT", "HGB") & DashboardPriority %in% c("All") &
+           !(Division %in% c("Infusion"))) |
         # Remove Microbiology RRL since resulted volume is included already in
         # TAT tables
-        (Division %in% c("Microbiology RRL")), "Excl", "Incl")) %>%
+        (Division %in% c("Microbiology RRL")) |
+        # Remove any labs other than BUN and HGB from RTC since those are the
+        # only labs processed there. Also remove non-amb setting
+        (Division %in% c("Infusion") & (!(Test %in% c("BUN", "HGB")) |
+                                          !(PtSetting %in% c("Amb")) |
+                                          !(DashboardPriority %in% c("All")))),
+      "Excl", "Incl")) %>%
   filter(Incl == "Incl")
 
 

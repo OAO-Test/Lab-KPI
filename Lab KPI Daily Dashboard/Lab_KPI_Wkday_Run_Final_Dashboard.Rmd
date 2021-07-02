@@ -7,7 +7,7 @@ output:
     toc_float: true
 ---
 
-<h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red">
+<!-- <h4><span style = "color:red">Draft - Not For Distribution</h4></span style = "color:red"> -->
 
 ```{r package_ref file, warning = FALSE, message = FALSE, echo = FALSE}
 #######
@@ -21,22 +21,32 @@ source(here::here("Lab KPI Daily Dashboard/Package_Ref.R"))
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
-```{r repository_import file, warning = FALSE, message = FALSE, echo = FALSE}
+```{r raw_data_import file, warning = FALSE, message = FALSE, echo = FALSE}
 #######
-# Code for importing the REPO data needed to carry-on the second run
+# Source Code for importing the raw data needed to carry-on the first run
 # for the lab KPI daily dashboard with different logic based on the DOW.
 # Imported data includes:
-# 1. CP repo data for clinical pathology
-# 2. AP repo data for anatomic pathology
-# 3. AP Backlog repo data for anatomic pathology
+# 1. SCC data for clinical pathology
+# 2. SunQuest data for clinical pathology
+# 3. PowerPath data for anatomic pathology
+# 4. Epic data for anatomic pathology especially cytology
+# 5. Backlog data for anatomic pathology especially cytology-----
 #######
-source(here::here("Lab KPI Daily Dashboard/Repository_Import.R"))
+
+source(here::here("Lab KPI Daily Dashboard/Wkday_Run_Raw_Data_Auto_Import.R"))
 ```
 
 ```{r cp_custom_functions file, warning = FALSE, message = FALSE, echo = FALSE}
 # Code for preprocessing, analyzing, and displaying Clinical Pathology KPI -----
 # CP includes Chemistry, Hematology, and Microbiology RRL divisions
-source(here::here("Lab KPI Daily Dashboard/CP_Custom_Functions.R"))
+source(here::here("Lab KPI Daily Dashboard/Wkday_Run_CP_Custom_Functions.R"))
+```
+
+```{r cp_preprocessing_analysis_first_run file, warning = FALSE, message = FALSE, echo = FALSE}
+# Code for preprocessing CP data prior to receipt of Ops &
+# Quality Indicators Form
+source(here::here(paste0("Lab KPI Daily Dashboard",
+                         "/Wkday_Run_CP_PreProcessing_Analysis.R")))
 ```
 
 ```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = FALSE, message = FALSE, echo = FALSE}
@@ -72,6 +82,14 @@ micro_dashboard_cast <- micro_dashboard_cast %>%
   filter(!(Test == "C. diff" & DashboardSetting == "Amb"))
 row.names(micro_dashboard_cast) <- seq_len(nrow(micro_dashboard_cast))
 
+# Infusion
+inf_sub_output <- summarize_cp_tat(x = cp_wday_summary,
+                                        lab_division = "Infusion")
+inf_subset <- inf_sub_output[[1]]
+inf_summary <- inf_sub_output[[2]]
+inf_dashboard_melt <- inf_sub_output[[3]]
+inf_dashboard_cast <- inf_sub_output[[4]]
+
 ```
 
 ```{r ap_custom_functions file, warning = FALSE, message = FALSE, echo = FALSE}
@@ -80,9 +98,41 @@ row.names(micro_dashboard_cast) <- seq_len(nrow(micro_dashboard_cast))
 # Anatomic Pathology (AP) includes Cytology and Surgical Pathology divisions
 #######
 #import source code
-source(here::here("Lab KPI Daily Dashboard/AP_Custom_Functions.R"))
+source(here::here("Lab KPI Daily Dashboard/Wkday_Run_AP_Custom_Functions.R"))
 ```
 
+```{r Calling the Custom functions for preprocessing raw Powerpath and Epic data, warning = FALSE, message = FALSE, echo = FALSE}
+# a function to prepare cytology data for pre-processing
+cyto_weekday_final <- cyto_prep(epic_weekday, pp_weekday)
+
+# a function to prepare pathology data for pre-processing
+sp_weekday <- patho_prep(pp_weekday, gi_codes)
+
+##### This function helps in preprocessing the raw AP data.
+#this table gives the summarized cyto data for historical repo
+cyto_table_weekday_summarized <- pre_processing_pp(cyto_weekday_final)[[1]]
+
+# Filter out any specimens signed out on other dates
+cyto_table_weekday_summarized <- cyto_table_weekday_summarized %>%
+  filter(Signed_out_date_only %in% wkday_date)
+
+
+#this table gives the processed and cleaned raw cyto data only
+cyto_table_weekday_raw <-
+  pre_processing_pp(cyto_weekday_final)[[2]]
+
+#this table gives the summarized surgical pathology data for historical repo
+sp_table_weekday_summarized <- pre_processing_pp(sp_weekday)[[1]]
+
+# Filter out any specimens signed out on other dates
+sp_table_weekday_summarized <- sp_table_weekday_summarized %>%
+  filter(Signed_out_date_only %in% wkday_date)
+
+#this table gives the processed and cleaned raw surgical pathology data only
+sp_table_weekday_raw <-
+  pre_processing_pp(sp_weekday)[[2]]
+
+```
 
 ```{r Calling the Custom functions for creating AP analysis tables, warning = FALSE, message = FALSE, echo = FALSE}
 ##### This function helps in creating the analysis and tables from the
@@ -117,6 +167,11 @@ sp_strat_vol_weekday <-
 
 ```
 
+```{r Calling the Custom functions for preprocessing raw cytology backlog data, warning = FALSE, message = FALSE, echo = FALSE}
+##### This function helps in preprocessing the raw backlog data.
+cyto_backlog_summarized <- pre_processing_backlog(cyto_backlog_raw)
+
+```
 
 ```{r Calling the Custom functions for creating cytology backlog analysis tables, warning = FALSE, message = FALSE, echo = FALSE}
 ##### This function helps in creating the analysis and tables from the
@@ -208,7 +263,7 @@ sp_table_weekday_new3$Spec_group[
 ```{r Chemistry dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
 kable_cp_tat(x = chem_dashboard_cast)
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. MSH BUN excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>
 
 
 ### Hematology
@@ -219,7 +274,7 @@ kable_cp_tat(x = chem_dashboard_cast)
 ```{r Hematology dashboard table, warning = FALSE, message = FALSE, echo = FALSE}
 kable_cp_tat(x = hem_dashboard_cast)
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. MSH HGB excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>
 
 ```{r Microbiology RRL volume and TAT table creation, warning = FALSE, message = FALSE, echo = FALSE}
 #
@@ -256,7 +311,7 @@ micro_volume_melt <- micro_volume_melt %>%
     #
     # Set test, site, priority, and setting as factors
     Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
-    Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+    Site = droplevels(factor(Site, levels = all_sites, ordered = TRUE)),
     DashboardPriority = droplevels(factor(DashboardPriority,
                                           levels = dashboard_priority_order,
                                           ordered = TRUE)),
@@ -289,7 +344,8 @@ micro_volume_cast <- micro_volume_cast %>%
     ResultedVolume_MSBI2 = ResultedVolume_MSBI,
     ResultedVolume_MSB2 = ResultedVolume_MSB,
     ResultedVolume_MSW2 = ResultedVolume_MSW,
-    ResultedVolume_MSM2 = ResultedVolume_MSM) %>%
+    ResultedVolume_MSM2 = ResultedVolume_MSM,
+    ResultedVolume_MSSN2 = ResultedVolume_MSSN) %>%
   select(Test,
          DashboardPriority,
          TestAndPriority,
@@ -301,6 +357,7 @@ micro_volume_cast <- micro_volume_cast %>%
          ResultedVolume_MSB,
          ResultedVolume_MSW,
          ResultedVolume_MSM,
+         ResultedVolume_MSSN,
          CollectResultTarget,
          DashboardSetting2,
          ResultedVolume_MSH2,
@@ -308,7 +365,8 @@ micro_volume_cast <- micro_volume_cast %>%
          ResultedVolume_MSBI2,
          ResultedVolume_MSB2,
          ResultedVolume_MSW2,
-         ResultedVolume_MSM2)
+         ResultedVolume_MSM2,
+         ResultedVolume_MSSN2)
 
 # Rename columns to match TAT table for binding
 colnames(micro_volume_cast) <- colnames(micro_dashboard_cast)
@@ -329,6 +387,16 @@ micro_tat_vol_cast <- micro_tat_vol_cast %>%
 <span style = "color:green">Green:</span> =100%</h5>
 ```{r Create Micro RRL TAT and Volume Table, warning = FALSE, message = FALSE, echo = FALSE}
 kable_cp_tat(x = micro_tat_vol_cast)
+```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+
+### Infusion       
+#### *Infusion KPI (Labs Resulted on `r wkday_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <90%,
+<span style = "color:green">Green:</span> >=90%</h5>
+```{r Create Infusion TAT and Volume Table, warning = FALSE, message = FALSE, echo = FALSE}
+kable_cp_tat(x = inf_dashboard_cast)
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
 
@@ -494,6 +562,15 @@ hem_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
 kable_cp_vol(hem_vol_wday_table)
 ```
 
+### Infusion
+#### *Infusion Resulted Lab Volume (Labs Resulted on `r wkday_date`)*
+```{r Infusion: 24 hour volume lookback, echo = FALSE, warning = FALSE, message = FALSE}
+inf_vol_wday_table <- summarize_cp_vol(x = cp_wday_summary,
+                                         lab_division = "Infusion")
+
+kable_cp_vol(inf_vol_wday_table)
+```
+
 ### Surgical Pathology
 #### *Surgical Pathology Signed Out Cases Volume (As of `r wkday_date`)*
 ```{r Surgical Pathology Signed Out Cases on a weekday, echo=FALSE, warning=FALSE, message=FALSE}
@@ -568,6 +645,15 @@ micro_not_wday_dashboard_cast <- micro_not_wday_dashboard_cast %>%
 row.names(micro_not_wday_dashboard_cast) <-
   seq_len(nrow(micro_not_wday_dashboard_cast))
 
+# Infusion
+inf_not_wday_sub_output <- summarize_cp_tat(cp_not_wday_summary,
+                                        lab_division = "Infusion")
+
+inf_not_wday_subset <- inf_not_wday_sub_output[[1]]
+inf_not_wday_summary <- inf_not_wday_sub_output[[2]]
+inf_not_wday_dashboard_melt <- inf_not_wday_sub_output[[3]]
+inf_not_wday_dashboard_cast <- inf_not_wday_sub_output[[4]]
+
 ```
 
 `r #Begin weekend/holiday dashboard visualizations`
@@ -585,7 +671,7 @@ row.names(micro_not_wday_dashboard_cast) <-
 kable_cp_tat(chem_not_wday_dashboard_cast)
 
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>'
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. MSH BUN excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>'
 
 ### Hematology
 #### *Hematology KPI (Labs Resulted on `r wkend_holiday_result_date`)*
@@ -597,7 +683,7 @@ kable_cp_tat(chem_not_wday_dashboard_cast)
 kable_cp_tat(hem_not_wday_dashboard_cast)
 
 ```
-<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings. MSH HGB excludes labs collected and processed at RTC; see "Infusion" tab.*</h6>
 
 ```{r Microbiology RRL volume and TAT table creation for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 #
@@ -635,7 +721,7 @@ micro_not_wday_volume_melt <- micro_not_wday_volume_melt %>%
     #
     # Set test, site, priority, and setting as factors
     Test = droplevels(factor(Test, levels = test_names, ordered = TRUE)),
-    Site = droplevels(factor(Site, levels = city_sites, ordered = TRUE)),
+    Site = droplevels(factor(Site, levels = all_sites, ordered = TRUE)),
     DashboardPriority = droplevels(factor(DashboardPriority,
                                           levels = dashboard_priority_order,
                                           ordered = TRUE)),
@@ -668,7 +754,8 @@ micro_not_wday_volume_cast <- micro_not_wday_volume_cast %>%
     ResultedVolume_MSBI2 = ResultedVolume_MSBI,
     ResultedVolume_MSB2 = ResultedVolume_MSB,
     ResultedVolume_MSW2 = ResultedVolume_MSW,
-    ResultedVolume_MSM2 = ResultedVolume_MSM) %>%
+    ResultedVolume_MSM2 = ResultedVolume_MSM,
+    ResultedVolume_MSSN2 = ResultedVolume_MSSN) %>%
   select(Test,
          DashboardPriority,
          TestAndPriority,
@@ -680,6 +767,7 @@ micro_not_wday_volume_cast <- micro_not_wday_volume_cast %>%
          ResultedVolume_MSB,
          ResultedVolume_MSW,
          ResultedVolume_MSM,
+         ResultedVolume_MSSN,
          CollectResultTarget,
          DashboardSetting2,
          ResultedVolume_MSH2,
@@ -687,7 +775,8 @@ micro_not_wday_volume_cast <- micro_not_wday_volume_cast %>%
          ResultedVolume_MSBI2,
          ResultedVolume_MSB2,
          ResultedVolume_MSW2,
-         ResultedVolume_MSM2)
+         ResultedVolume_MSM2,
+         ResultedVolume_MSSN2)
 
 # Rename columns to match TAT table for binding
 colnames(micro_not_wday_volume_cast) <- colnames(micro_not_wday_dashboard_cast)
@@ -711,6 +800,18 @@ micro_not_wday_tat_vol_cast <- micro_not_wday_tat_vol_cast %>%
 ```{r Microbiology RRL dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
 
 kable_cp_tat(micro_not_wday_tat_vol_cast)
+
+```
+<h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
+
+### Infusion
+#### *Infusion KPI (Labs Resulted on `r wkend_holiday_result_date`)*
+<h5>Status Definitions: <span style = "color:red">Red:</span> <80%, 
+<span style = "color:orange">Yellow:</span> >=80% & <95%, 
+<span style = "color:green">Green:</span> >=95%</h5>
+```{r Infusion dashboard table for weekends/holidays, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+
+kable_cp_tat(inf_not_wday_dashboard_cast)
 
 ```
 <h6>*TAT Analysis excludes add on orders, labs with missing timestamps, labs with negative TAT, and labs not from above settings.*</h6>
@@ -758,6 +859,15 @@ hem_vol_not_wday_table <- summarize_cp_vol(x = cp_not_wday_summary,
 
 kable_cp_vol(hem_vol_not_wday_table)
 
+```
+
+### Infusion
+#### *Infusion Resulted Lab Volume (Labs Resulted on `r wkend_holiday_result_date`)*
+```{r Infusion Weekend/Holiday: 24 hour volume lookback, eval = include_not_wday, warning = FALSE, message = FALSE, echo = FALSE}
+inf_vol_not_wday_table <- summarize_cp_vol(x = cp_not_wday_summary,
+                                         lab_division = "Infusion")
+
+kable_cp_vol(inf_vol_not_wday_table)
 ```
 
 `r if (include_not_wday != TRUE) {"-->"}`
@@ -818,23 +928,27 @@ The table below summarizes target turnaround times as agreed upon by clinical an
 ```{r Create and format tables for TAT targets }
 
 tat_targets_kable <- tat_targets %>%
-  mutate(Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE),
+  select(Division, Test,
+         Priority, PtSetting,
+         ReceiveToResultTarget, CollectToResultTarget) %>%
+  mutate(Division = factor(Division, levels = cp_division_order, ordered = TRUE),
+         Test = factor(Test, levels = cp_micro_lab_order, ordered = TRUE),
          Priority = factor(Priority, levels = dashboard_priority_order,
                            ordered = TRUE)) %>%
-  arrange(Test, Priority)
+  arrange(Division, Test, Priority)
 
 tat_targets_kable <- tat_targets_kable %>%
   mutate(Concate = NULL)
 
 tat_targets_kable %>%
   kable(format = "html", escape = FALSE, align = "c",
-        col.names = c("Test", "Priority", "Patient Setting",
+        col.names = c("Division", "Test", "Priority", "Patient Setting",
                       "Receive to Result TAT Target (min)",
                       "Collect to Result TAT Target (min)"),
         caption = "Target Turnaround Times") %>%
   kable_styling(bootstrap_options = "hover", position = "center",
                 font_size = 11, full_width = FALSE) %>%
-  column_spec(column = c(1, 2, 3, 5), border_right = "thin solid lightgray") %>%
+  column_spec(column = c(1:ncol(tat_targets_kable)), border_right = "thin solid lightgray") %>%
   row_spec(row = 0, font_size = 13, background = "#221f72", color = "white")
 
 ```
@@ -850,9 +964,11 @@ tat_targets_kable %>%
     + All labs are treated as stat regardless of documented priority and patient setting.
     + Turnaround time for ambulatory C. diff tests are not tracked but rather volume of these labs is monitored.
 
-<h4><b>Turnaround Time Exclusions</b></h4>
+<h4><b>Turnaround Time Exclusions</b></h4> 
 
 Turnaround time analysis excludes labs with out of order steps (ie, collect after receive), missing timestamps, add-on orders, and labs not originating in IP, ED, or ambulatory settings (ie, Outreach).
+
+MSH turnaround times exclude BUN and HGB labs collected at RTC.
 
 <br>
   
@@ -894,7 +1010,7 @@ Only the codes for GI biopsies are included in the analysis.
 
 ```{r GI Codes Table}
 gi_codes_updated <-
-  gi_codes[, c("GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies.",
+  gi_codes[, c("GI_Code_InclExcl",
               "Spec_code")]
 
 gi_codes_updated  %>%

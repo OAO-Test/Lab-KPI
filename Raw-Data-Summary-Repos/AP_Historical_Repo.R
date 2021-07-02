@@ -263,7 +263,15 @@ if (initial_run == TRUE) {
   # Determine today's date to determine last possible data report
   todays_date <- today
   # Create vector with possible data report dates
-  date_range <- seq(from = last_date + 2, to = todays_date, by = "day")
+  if (last_date + 2 > todays_date) {
+    date_range <- seq(from = todays_date,
+                          to = todays_date,
+                          by = "day")
+  } else {
+    date_range <- seq(from = last_date + 2,
+                          to = todays_date,
+                          by = "day")
+  }
 
   ##### pull powerpath daily data
   file_list_sp <-
@@ -370,7 +378,7 @@ if (initial_run == TRUE) {
 # Import analysis reference data
 reference_file <- paste0(user_directory,
                          "/Code Reference/",
-                         "Analysis Reference 2021-03-22.xlsx")
+                         "Analysis Reference 2021-06-01.xlsx")
 
 
 #-----------Patient Setting Excel File-----------#
@@ -456,7 +464,7 @@ exclude_gi_codes_df <-
   sp_df_exc[
     which(
       (sp_df_exc$spec_group == "GI") &
-        (sp_df_exc$GI.Codes.Must.Include.in.Analysis..All.GI.Biopsies. ==
+        (sp_df_exc$GI_Code_InclExcl ==
            "Exclude")), ]
 must_exclude_cnum <- unique(exclude_gi_codes_df$Case_no)
 

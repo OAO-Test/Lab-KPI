@@ -1,5 +1,4 @@
-# This code renders the final run markdown for the daily dashboard after the
-# Lab KPI form has been completed
+# This code renders the 30-day lookback trended dashboard
 
 # Clear environment
 rm(list = ls())
@@ -16,11 +15,11 @@ if ("Presidents" %in% list.files("J://")) {
 }
 
 # Render markdown file with dashboard code and save with today's date
-rmarkdown::render(paste0("Lab KPI Daily Dashboard/",
-                         "Lab_KPI_Daily_Wkday_Run_Final_Dashboard.Rmd"), 
+rmarkdown::render(paste0("30-Day-Lookback-Folder/",
+                         "Lab_KPI_Efficiency_Indicator_Trends.Rmd"), 
                   output_file = paste0(
                     substr(user_directory, 1,
                            nchar(user_directory) - nchar("/Data")),
                     "/Dashboard Drafts",
-                    "/Daily Run Lab KPI Dashboard Final ",
+                    "/Lab KPI Trending ",
                     format(Sys.Date(), "%m-%d-%y")))

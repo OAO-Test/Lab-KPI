@@ -10,7 +10,7 @@
 # 1. SCC data for: MSH and MSQ
 # 2. SnQuest data for: MSBI, MSB, MSW, MSM, and MSSN
 #######
-source(here::here("Lab KPI Daily Dashboard/CP_Historical_Repo.R"))
+source(here::here("Raw-Data-Summary-Repos/CP_Raw_Data_and_Summary_Repo.R"))
 
 #######
 # Code for compiling the historical data for pathology and cytology analysis
@@ -19,4 +19,4 @@ source(here::here("Lab KPI Daily Dashboard/CP_Historical_Repo.R"))
 # 2. EPIC daily data for cytology
 # 3. Cytology Backlog Data
 #######
-source(here::here("Lab KPI Daily Dashboard/AP_Historical_Repo.R"))
+source(here::here("Raw-Data-Summary-Repos/AP_Historical_Repo.R"))

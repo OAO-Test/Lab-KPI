@@ -102,5 +102,26 @@ all_sites_units <- all_sites_units %>%
 ip_units <- all_sites_units %>%
   filter(Setting %in% c("I", "Inpatient"))
 
+mssn_units <- all_sites_units %>%
+  filter(Site == "SNCH")
+
 write_xlsx(ip_units, path = paste0(user_directory,
-                                   "/AdHoc/2021 Inpatient Units 2021-04-19.xlsx"))
+                                   "/AdHoc/2021 Inpatient Units ",
+                                   Sys.Date(),
+                                   ".xlsx"))
+
+
+scc_all_data <- scc_all_data %>%
+  mutate(NonMSHSite = ifelse(SITE != "Sinai", NA,
+                             str_detect(Ward,
+                                        "(BIMC)|(RVT)|(BIKH)|(STL)|(SNCH)")))
+
+nonsinai_sites_summary <- scc_all_data %>%
+  filter(NonMSHSite) %>%
+  group_by(Ward, WARD_NAME, GROUP_TEST_ID, TEST_NAME) %>%
+  summarize(Count = n())
+
+nonsinai_test_summary <- scc_all_data %>%
+  filter(NonMSHSite) %>%
+  group_by(GROUP_TEST_ID, TEST_NAME) %>%
+  summarize(Count = n())
