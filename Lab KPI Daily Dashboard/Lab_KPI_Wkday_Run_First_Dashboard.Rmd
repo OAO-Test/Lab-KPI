@@ -33,20 +33,20 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 # 5. Backlog data for anatomic pathology especially cytology-----
 #######
 
-source(here::here("Lab KPI Daily Dashboard/Raw_Data_Auto_Import.R"))
+source(here::here("Lab KPI Daily Dashboard/Wkday_Run_Raw_Data_Auto_Import.R"))
 ```
 
 ```{r cp_custom_functions file, warning = FALSE, message = FALSE, echo = FALSE}
 # Code for preprocessing, analyzing, and displaying Clinical Pathology KPI -----
 # CP includes Chemistry, Hematology, and Microbiology RRL divisions
-source(here::here("Lab KPI Daily Dashboard/CP_Custom_Functions.R"))
+source(here::here("Lab KPI Daily Dashboard/Wkday_Run_CP_Custom_Functions.R"))
 ```
 
 ```{r cp_preprocessing_analysis_first_run file, warning = FALSE, message = FALSE, echo = FALSE}
 # Code for preprocessing CP data prior to receipt of Ops &
 # Quality Indicators Form
 source(here::here(paste0("Lab KPI Daily Dashboard",
-                         "/CP_PreProcessing_Analysis.R")))
+                         "/Wkday_Run_CP_PreProcessing_Analysis.R")))
 ```
 
 ```{r Subset and format SCC and Sunquest data for each lab division weekday dashboard, warning = FALSE, message = FALSE, echo = FALSE}
@@ -98,7 +98,7 @@ inf_dashboard_cast <- inf_sub_output[[4]]
 # Anatomic Pathology (AP) includes Cytology and Surgical Pathology divisions
 #######
 #import source code
-source(here::here("Lab KPI Daily Dashboard/AP_Custom_Functions.R"))
+source(here::here("Lab KPI Daily Dashboard/Wkday_Run_AP_Custom_Functions.R"))
 ```
 
 ```{r Calling the Custom functions for preprocessing raw Powerpath and Epic data, warning = FALSE, message = FALSE, echo = FALSE}
