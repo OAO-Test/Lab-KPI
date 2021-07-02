@@ -233,24 +233,37 @@ missing_collection_kable <- function(site, test, setting) {
                                   accuracy = 1),
            # Convert total missing collections to character for binding/pivot
            # longer with percent missing
-           TotalMissingCollections = as.character(TotalMissingCollections)) %>%
-    select(WeekStart, TotalMissingCollections, PercentMissing) %>%
+           TotalMissingCollections = as.character(TotalMissingCollections),
+           TotalResultedVolume = as.character(TotalResultedVolume)) %>%
+    select(WeekStart,
+           TotalMissingCollections,
+           PercentMissing,
+           TotalResultedVolume) %>%
     # Pivot longer to get volume and percentage of missing labs in 1 column
     pivot_longer(cols = c(TotalMissingCollections,
-                          PercentMissing),
-                 names_to = "Missing Collections") %>%
+                          PercentMissing,
+                          TotalResultedVolume),
+                 names_to = "Metric") %>%
+    # Add a column for metric roll up for use later in kable
+    mutate(Category = ifelse(Metric %in% c("TotalMissingCollections",
+                                           "PercentMissing"),
+                             "Missing Collections", "Total Resulted Labs"),
+           Metric = ifelse(Metric %in% c("TotalMissingCollections",
+                                         "TotalResultedVolume"),
+                           "Vol of Labs", "% of Labs")) %>%
+    select(Category, Metric, WeekStart, value) %>%
     # Pivot wider to get a column for each week
     pivot_wider(names_from = WeekStart,
                 names_sort = FALSE) %>%
-    mutate(`Missing Collections` = ifelse(
-      `Missing Collections` == "TotalMissingCollections", "Vol of Labs",
-      "% of Labs")) %>%
     ungroup()
   
   kable(missing_collect_summary,
       format = "html",
       escape = FALSE,
       align = "c",
+      col.names =
+        c("",
+          colnames(missing_collect_summary[2:ncol(missing_collect_summary)])),
       caption = paste("Table 1:",
                       site,
                       setting,
@@ -261,11 +274,12 @@ missing_collection_kable <- function(site, test, setting) {
                   font_size = 11) %>%
     column_spec(column = c(1),
                 border_right = "thin solid lightgray") %>%
-    add_header_above(c(" " = 1,
-                       "Week Of" = ncol(missing_collect_summary) - 1),
+    add_header_above(c(" " = 2,
+                       "Week Of" = ncol(missing_collect_summary) - 2),
                      background = c("white", "#221f72"),
                      color = "white", line = FALSE, font_size = 13) %>%
-    row_spec(row = 0, font_size = 13)
+    row_spec(row = 0, font_size = 13) %>%
+    collapse_rows()
   
 }
 
