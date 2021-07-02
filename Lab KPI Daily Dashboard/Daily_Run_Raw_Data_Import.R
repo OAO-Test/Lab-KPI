@@ -22,7 +22,7 @@ result_date_text <- format(resulted_date,
 scc_pattern_start <- "^(Doc){1}.+"
 sq_pattern_start <- "^(KPI_Daily_TAT_Report){1}.*"
 pp_pattern_start <- "^(KPI REPORT - RAW DATA V4_V2){1}.*"
-epic_pattern_start <- "^(MSHS Pathology Orders EPIC){1}.*"
+epic_pattern_start <- "^(MSHS Pathology Orders Epic){1}.*"
 cyto_backlog_pattern_start <- "^(KPI REPORT - CYTOLOGY PENDING CASES){1}.*"
 
 # Format resulted date as it would appear in saved files
@@ -35,7 +35,8 @@ scc_data_file <- list.files(
   pattern = paste0(scc_pattern_start,
                    "(",
                    report_date_file_format,
-                   ".xlsx)$"))
+                   ".xlsx)$"),
+  ignore.case = TRUE)
 
 # Import SCC file for labs resulted yesterday, if file exists
 if (length(scc_data_file) != 0) {
@@ -54,7 +55,8 @@ sq_data_file <- list.files(
   pattern = paste0(sq_pattern_start,
                    "(",
                    report_date_file_format,
-                   ".xls)$"))
+                   ".xls)$"),
+  ignore.case = TRUE)
 
 # Import Sunquest file for labs resulted yesterday, if file exists
 if (length(sq_data_file) != 0) {
@@ -74,7 +76,8 @@ pp_data_file <- list.files(
   pattern = paste0(pp_pattern_start,
                    "(",
                    report_date_file_format,
-                   ".xls)$"))
+                   ".xls)$"),
+  ignore.case = TRUE)
 
 # Import Powerpath file for cases signed out yesterday, if any exists
 if (length(pp_data_file) != 0) {
@@ -97,7 +100,8 @@ epic_data_file <- list.files(
   pattern = paste0(epic_pattern_start,
                    "(",
                    report_date_file_format,
-                   ".xlsx)$"))
+                   ".xlsx)$"),
+  ignore.case = TRUE)
 
 # Import Epic Cytology file for cases signed out yesterday, if any exists
 if (length(epic_data_file) != 0) {
@@ -116,7 +120,8 @@ cyto_backlog_data_file <- list.files(
   pattern = paste0(cyto_backlog_pattern_start,
                    "(",
                    report_date_file_format,
-                   ".xls)$"))
+                   ".xls)$"),
+  ignore.case = TRUE)
 
 # Import Cytology backlog file for backlog as of yesterday, if any exists
 if (length(cyto_backlog_data_file) != 0) {

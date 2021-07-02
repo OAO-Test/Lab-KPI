@@ -447,6 +447,18 @@ preprocess_scc <- function(raw_scc)  {
   raw_scc <- raw_scc %>%
     filter(!DuplTest)
   
+  # Determine volume of labs associated with each date and identify correct date
+  scc_resulted_dates_vol <- raw_scc %>%
+    group_by(ResultedDate) %>%
+    summarize(VolLabs = n()) %>%
+    arrange(desc(VolLabs)) %>%
+    ungroup()
+  
+  scc_correct_date <- scc_resulted_dates_vol$ResultedDate[1]
+  
+  raw_scc <- raw_scc %>%
+    filter(ResultedDate %in% scc_correct_date)
+  
   # Select columns
   scc_master <- raw_scc[, c("Ward", "WARD_NAME",
                             "ORDER_ID", "REQUESTING_DOC NAME",
@@ -667,6 +679,18 @@ preprocess_daily_sun <- function(raw_sun) {
   raw_sun <- raw_sun %>%
     filter(!DuplTest)
   
+  # Determine volume of labs associated with each date and identify correct date
+  sun_resulted_dates_vol <- raw_sun %>%
+    group_by(ResultedDate) %>%
+    summarize(VolLabs = n()) %>%
+    arrange(desc(VolLabs)) %>%
+    ungroup()
+  
+  sun_correct_date <- sun_resulted_dates_vol$ResultedDate[1]
+  
+  raw_sun <- raw_sun %>%
+    filter(ResultedDate %in% sun_correct_date)
+  
   # Select columns
   sun_master <- raw_sun[, c("LocCode", "LocName",
                             "HISOrderNumber", "PhysName",
@@ -708,22 +732,22 @@ preprocess_daily_sun <- function(raw_sun) {
   
 }
 
-# Custom function to determine resulted lab date from preprocessed data -------
-# SCC data often has a few labs with incorrect result date
-correct_result_dates <- function(data, number_days) {
-  all_resulted_dates_vol <- data %>%
-    group_by(ResultDate) %>%
-    summarize(VolLabs = n()) %>%
-    arrange(desc(VolLabs)) %>%
-    ungroup()
-  
-  
-  correct_dates <- all_resulted_dates_vol$ResultDate[1:number_days]
-  
-  new_data <- data %>%
-    filter(ResultDate %in% correct_dates)
-  return(new_data)
-}
+# # Custom function to determine resulted lab date from preprocessed data -------
+# # SCC data often has a few labs with incorrect result date
+# correct_result_dates <- function(data, number_days) {
+#   all_resulted_dates_vol <- data %>%
+#     group_by(ResultDate) %>%
+#     summarize(VolLabs = n()) %>%
+#     arrange(desc(VolLabs)) %>%
+#     ungroup()
+#   
+#   
+#   correct_dates <- all_resulted_dates_vol$ResultDate[1:number_days]
+#   
+#   new_data <- data %>%
+#     filter(ResultDate %in% correct_dates)
+#   return(new_data)
+# }
 
 
 # Compile processed SCC daily data ------------------------------
@@ -734,9 +758,9 @@ if (!is.null(scc_raw_data_list)) {
   # Select the second element of the list of lists
   scc_preprocessed_data <- lapply(scc_daily_preprocessed, function(x) x[[2]])
   
-  # Remove any labs with incorrect dates then bind daily reports into one data frame
-  scc_preprocessed_data <- lapply(scc_preprocessed_data, 
-                                  function(x) correct_result_dates(x, number_days = 1))
+  # # Remove any labs with incorrect dates then bind daily reports into one data frame
+  # scc_preprocessed_data <- lapply(scc_preprocessed_data, 
+  #                                 function(x) correct_result_dates(x, number_days = 1))
   
   # Bind all data together
   scc_daily_bind <- bind_rows(scc_preprocessed_data)
@@ -790,7 +814,7 @@ if (initial_run == TRUE) {
   # latest data imports
   mod_raw_data_repo <- raw_data_repo %>%
     filter(ResultDate >= (todays_date - 60) &
-             !(ResultDate %in% bind_all_data$ResultDate)) %>%
+             !(ResultDate %in% unique(bind_all_data$ResultDate))) %>%
     mutate(CompleteWeek = NULL,
            CompleteMonth = NULL)
   
@@ -1012,6 +1036,78 @@ if (initial_run == TRUE) {
 } else {
   raw_data_repo_export <- latest_raw_data_repo
 }
+
+# Test code for comparing existing repos to new repos; want to make sure historical data remains unchanged
+# old_monthly_repo_months <- unique(monthly_repo$MonthRollUp)
+# 
+# check_new_monthly_repo <- latest_monthly_repo %>%
+#   filter(MonthRollUp %in% old_monthly_repo_months)
+# 
+# new_monthly_repo_data <- latest_monthly_repo %>%
+#   filter(!(MonthRollUp %in% old_monthly_repo_months))
+# 
+# old_weekly_repo_weeks <- unique(weekly_repo$WeekOf)
+# 
+# check_new_weekly_repo <- latest_weekly_repo %>%
+#   filter(WeekOf %in% old_weekly_repo_weeks)
+# 
+# weekly_repo <- weekly_repo %>%
+#   arrange(Site,
+#           WeekStart,                 
+#           WeekEnd,                  
+#           WeekOf,                    
+#           Test,                      
+#           Division,                 
+#           MasterSetting,             
+#           DashboardSetting,          
+#           DashboardPriority,        
+#           ReceiveResultTarget,       
+#           CollectResultTarget,       
+#           TotalResulted,            
+#           ReceiveTime_VolIncl,       
+#           CollectTime_VolIncl,       
+#           TotalReceiveResultInTarget,
+#           TotalCollectResultInTarget,
+#           TotalAddOnOrder,           
+#           TotalMissingCollections,  
+#           CollectReceive_Avg,        
+#           CollectReceive_Median,     
+#           CollectReceive_95,        
+#           ReceiveResult_Avg,         
+#           ReceiveResult_Median,      
+#           ReceiveResult_95,         
+#           CollectResult_Avg,         
+#           CollectResult_Median,      
+#           CollectResult_95)
+# 
+# check_new_weekly_repo <- check_new_weekly_repo %>%
+#   arrange(Site,
+#           WeekStart,                 
+#           WeekEnd,                  
+#           WeekOf,                    
+#           Test,                      
+#           Division,                 
+#           MasterSetting,             
+#           DashboardSetting,          
+#           DashboardPriority,        
+#           ReceiveResultTarget,       
+#           CollectResultTarget,       
+#           TotalResulted,            
+#           ReceiveTime_VolIncl,       
+#           CollectTime_VolIncl,       
+#           TotalReceiveResultInTarget,
+#           TotalCollectResultInTarget,
+#           TotalAddOnOrder,           
+#           TotalMissingCollections,  
+#           CollectReceive_Avg,        
+#           CollectReceive_Median,     
+#           CollectReceive_95,        
+#           ReceiveResult_Avg,         
+#           ReceiveResult_Median,      
+#           ReceiveResult_95,         
+#           CollectResult_Avg,         
+#           CollectResult_Median,      
+#           CollectResult_95)
 
 saveRDS(raw_data_repo_export,
         file = paste0(user_directory,

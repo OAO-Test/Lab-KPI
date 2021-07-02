@@ -424,18 +424,18 @@ preprocessing_ap <- function(raw_data) {
         # Calculate volume of cases signed out
         no_cases_signed = n(),
         # Calculate key statistics for received to signed out (lab ops metric)
-        lab_metric_tat_avg = mean(Received_to_signed_out, na.rm = TRUE),
-        lab_metric_tat_med = median(Received_to_signed_out, na.rm = TRUE),
-        lab_metric_tat_sd = sd(Received_to_signed_out, na.rm = TRUE),
-        lab_metric_within_target =
+        ReceiveResultAvg = mean(Received_to_signed_out, na.rm = TRUE),
+        ReceiveResultMed = median(Received_to_signed_out, na.rm = TRUE),
+        ReceiveResultSD = sd(Received_to_signed_out, na.rm = TRUE),
+        ReceiveResultInTarget =
           sum(Received_to_signed_out <= ReceiveToResultTarget, na.rm = TRUE) / 
           sum(Received_to_signed_out >= 0, na.rm = TRUE),
         # Calculate key statistics for collected to singed out (patient-centric metric)
-        patient_metric_tat_avg = mean(Collection_to_signed_out, na.rm = TRUE),
-        patient_metric_tat_med = median(Collection_to_signed_out, na.rm = TRUE),
-        patient_metric_tat_sd = sd(Collection_to_signed_out, na.rm = TRUE),
+        CollectResultAvg = mean(Collection_to_signed_out, na.rm = TRUE),
+        CollectResultMed = median(Collection_to_signed_out, na.rm = TRUE),
+        CollectResultSD = sd(Collection_to_signed_out, na.rm = TRUE),
         # Calculate number of specimens signed out and accessioned yesterday
-        acc_vol = sum((report_date_only - 1) == acc_date_only,
+        AccVol = sum((report_date_only - 1) == acc_date_only,
                       na.rm = TRUE))
     
     # Rename columns
