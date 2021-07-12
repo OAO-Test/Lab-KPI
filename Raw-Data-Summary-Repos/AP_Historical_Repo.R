@@ -464,8 +464,9 @@ exclude_gi_codes_df <-
   sp_df_exc[
     which(
       (sp_df_exc$spec_group == "GI") &
-        (sp_df_exc$GI_Code_InclExcl ==
-           "Exclude")), ]
+        !(sp_df_exc$GI_Code_InclExcl %in%
+           "Include")), ]
+
 must_exclude_cnum <- unique(exclude_gi_codes_df$Case_no)
 
 surgical_pathology <-
