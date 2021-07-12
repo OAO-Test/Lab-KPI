@@ -4,7 +4,7 @@ date: "`r format(Sys.Date(), '%m/%d/%y')`"
 output: html_document
 ---
 
-<h3><span style="color: red;">Draft - Not for Distribution</span></h3>
+<!-- <h3><span style="color: red;">Draft - Not for Distribution</span></h3> -->
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)

@@ -20,6 +20,6 @@ rmarkdown::render(paste0("OI-Team-Folder/",
                   output_file = paste0(
                     substr(user_directory, 1,
                            nchar(user_directory) - nchar("/Data")),
-                    "/Dashboard Drafts",
+                    "/MSHS Lab OI Dashboards",
                     "/MSHS Lab PI Dashboard ",
                     format(Sys.Date(), "%m-%d-%y")))
